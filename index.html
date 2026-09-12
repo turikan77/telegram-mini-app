@@ -2,40 +2,382 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Моё приложение</title>
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Профиль участника</title>
 
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 24px;
+            background: var(--tg-theme-bg-color, #ffffff);
+            color: var(--tg-theme-text-color, #000000);
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: 25px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .field {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: bold;
+        }
+
+        input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 13px;
+            font-size: 16px;
+            border: 1px solid #cccccc;
+            border-radius: 10px;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            font-size: 17px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            background: var(
+                --tg-theme-button-color,
+                #2481cc
+            );
+            color: var(
+                --tg-theme-button-text-color,
+                #ffffff
+            );
+        }
+
+        .info {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 10px;
+            background: var(
+                --tg-theme-secondary-bg-color,
+                #f3f3f3
+            );
+        }
+
+        .error {
+            color: #d00000;
+            margin-top: 12px;
+        }
+
+        .consent {
+            margin: 18px 0;
+            font-size: 14px;
+        }
+
+        .consent input {
+            width: auto;
+        }
+    </style>
 </head>
 
 <body>
 
-    <h1>Моё Telegram Mini App</h1>
+<div class="container">
 
-    <p id="user">Привет!</p>
+    <div id="loading">
+        Проверяем профиль...
+    </div>
 
-    <button onclick="testButton()">
-        Проверить
-    </button>
+    <div
+        id="registration"
+        class="hidden"
+    >
+        <h1>Регистрация</h1>
 
-    <script>
-        const tg = window.Telegram.WebApp;
+        <p>
+            Укажите ваше настоящее полное ФИО.
+            Эти данные будут сохранены в вашем
+            профиле.
+        </p>
 
-        tg.ready();
-        tg.expand();
+        <div class="field">
+            <label for="lastName">
+                Фамилия
+            </label>
 
-        const user = tg.initDataUnsafe?.user;
+            <input
+                id="lastName"
+                autocomplete="family-name"
+            >
+        </div>
 
-        if (user) {
-            document.getElementById("user").innerText =
-                "Привет, " + user.first_name + "!";
+        <div class="field">
+            <label for="firstName">
+                Имя
+            </label>
+
+            <input
+                id="firstName"
+                autocomplete="given-name"
+            >
+        </div>
+
+        <div class="field">
+            <label for="patronymic">
+                Отчество
+            </label>
+
+            <input
+                id="patronymic"
+            >
+        </div>
+
+        <div class="consent">
+            <label>
+                <input
+                    id="consent"
+                    type="checkbox"
+                >
+
+                Я понимаю, что моё ФИО
+                будет отображаться другим
+                участникам приложения.
+            </label>
+        </div>
+
+        <button id="saveButton">
+            Сохранить ФИО
+        </button>
+
+        <div
+            id="error"
+            class="error"
+        ></div>
+    </div>
+
+
+    <div
+        id="profile"
+        class="hidden"
+    >
+        <h1>Ваш профиль</h1>
+
+        <div class="info">
+            <strong id="fullName"></strong>
+        </div>
+
+        <p>
+            Профиль успешно зарегистрирован.
+        </p>
+    </div>
+
+</div>
+
+
+<script>
+    const tg = window.Telegram.WebApp;
+
+    tg.ready();
+    tg.expand();
+
+
+    /*
+        СЮДА НУЖНО ВСТАВИТЬ
+        АДРЕС CLOUDFLARE TUNNEL.
+    */
+    const API_BASE =
+        "https://ВАШ-АДРЕС.trycloudflare.com";
+
+
+    const loading =
+        document.getElementById("loading");
+
+    const registration =
+        document.getElementById("registration");
+
+    const profile =
+        document.getElementById("profile");
+
+    const errorBox =
+        document.getElementById("error");
+
+
+    function showRegistration() {
+        loading.classList.add("hidden");
+        profile.classList.add("hidden");
+        registration.classList.remove("hidden");
+    }
+
+
+    function showProfile(fullName) {
+        loading.classList.add("hidden");
+        registration.classList.add("hidden");
+        profile.classList.remove("hidden");
+
+        document.getElementById(
+            "fullName"
+        ).innerText = fullName;
+    }
+
+
+    async function checkUser() {
+
+        if (!tg.initData) {
+            loading.innerText =
+                "Откройте приложение через Telegram.";
+
+            return;
         }
 
-        function testButton() {
-            alert("Mini App работает!");
+        try {
+            const response = await fetch(
+                API_BASE + "/api/auth/telegram",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+                    body: JSON.stringify({
+                        init_data: tg.initData
+                    })
+                }
+            );
+
+            if (!response.ok) {
+                const data = await response.json();
+
+                throw new Error(
+                    data.detail ||
+                    "Ошибка авторизации"
+                );
+            }
+
+            const user = await response.json();
+
+            if (user.profile_completed) {
+                showProfile(user.full_name);
+            } else {
+                showRegistration();
+            }
+
+        } catch (error) {
+            loading.innerText =
+                "Ошибка подключения к серверу: "
+                + error.message;
         }
-    </script>
+    }
+
+
+    document.getElementById(
+        "saveButton"
+    ).addEventListener(
+        "click",
+        async function () {
+
+            errorBox.innerText = "";
+
+            const lastName =
+                document.getElementById(
+                    "lastName"
+                ).value.trim();
+
+            const firstName =
+                document.getElementById(
+                    "firstName"
+                ).value.trim();
+
+            const patronymic =
+                document.getElementById(
+                    "patronymic"
+                ).value.trim();
+
+            const consent =
+                document.getElementById(
+                    "consent"
+                ).checked;
+
+
+            if (!lastName || !firstName) {
+                errorBox.innerText =
+                    "Введите фамилию и имя.";
+
+                return;
+            }
+
+
+            if (!consent) {
+                errorBox.innerText =
+                    "Необходимо подтвердить "
+                    + "условие отображения ФИО.";
+
+                return;
+            }
+
+
+            try {
+                const response = await fetch(
+                    API_BASE
+                    + "/api/profile/complete",
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type":
+                                "application/json"
+                        },
+                        body: JSON.stringify({
+                            init_data: tg.initData,
+                            last_name: lastName,
+                            first_name: firstName,
+                            patronymic:
+                                patronymic || null
+                        })
+                    }
+                );
+
+
+                const data =
+                    await response.json();
+
+
+                if (!response.ok) {
+                    throw new Error(
+                        data.detail ||
+                        "Ошибка сохранения"
+                    );
+                }
+
+
+                showProfile(
+                    data.full_name
+                );
+
+            } catch (error) {
+                errorBox.innerText =
+                    error.message;
+            }
+        }
+    );
+
+
+    checkUser();
+</script>
 
 </body>
 </html>
