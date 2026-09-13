@@ -2,1709 +2,328 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
-    >
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
     <title>АНОД Наставник</title>
-
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-
     <style>
-        * {
-            box-sizing: border-box;
-        }
-
+        * { box-sizing: border-box; }
         body {
             margin: 0;
             font-family: Arial, sans-serif;
-
-            background:
-                var(--tg-theme-bg-color, #f5f6f8);
-
-            color:
-                var(--tg-theme-text-color, #111111);
-
-            padding-bottom: 90px;
+            background: var(--tg-theme-bg-color, #f5f6f8);
+            color: var(--tg-theme-text-color, #111);
+            padding-bottom: 88px;
         }
-
-        button,
-        input {
-            font-family: inherit;
-        }
-
-        .hidden {
-            display: none !important;
-        }
-
-        .page {
-            max-width: 700px;
-            margin: 0 auto;
-            padding: 20px 18px 30px;
-        }
-
-        .page-title {
-            font-size: 28px;
-            font-weight: 700;
-            margin: 6px 0 24px;
-        }
-
-        .section-title {
-            margin-top: 26px;
-            margin-bottom: 12px;
-            font-size: 19px;
-            font-weight: 700;
-        }
-
-        .muted {
-            color:
-                var(--tg-theme-hint-color, #777777);
-        }
-
+        .hidden { display: none !important; }
+        .page { max-width: 720px; margin: 0 auto; padding: 20px 16px 32px; }
+        .title { font-size: 28px; font-weight: 700; margin: 4px 0 20px; }
+        .section-title { font-size: 19px; font-weight: 700; margin: 24px 0 12px; }
         .card {
-            background:
-                var(--tg-theme-secondary-bg-color, #ffffff);
-
+            background: var(--tg-theme-secondary-bg-color, #fff);
             border-radius: 18px;
-            padding: 18px;
+            padding: 17px;
             margin-bottom: 12px;
-
-            box-shadow:
-                0 2px 12px rgba(0, 0, 0, 0.06);
+            box-shadow: 0 2px 12px rgba(0,0,0,.06);
         }
-
-        .clickable {
-            cursor: pointer;
+        .clickable { cursor: pointer; }
+        .muted { color: var(--tg-theme-hint-color, #777); }
+        .button {
+            width: 100%; border: 0; border-radius: 12px; padding: 13px 16px;
+            font-size: 16px; font-weight: 600; cursor: pointer;
+            background: var(--tg-theme-button-color, #3390ec);
+            color: var(--tg-theme-button-text-color, #fff);
         }
-
-        .clickable:active {
-            transform: scale(0.99);
+        .button.secondary {
+            background: var(--tg-theme-secondary-bg-color, #eceff2);
+            color: var(--tg-theme-text-color, #111);
         }
-
-        .primary-button {
-            width: 100%;
-            border: none;
-            padding: 14px 18px;
-            border-radius: 13px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-
-            background:
-                var(--tg-theme-button-color, #3390ec);
-
-            color:
-                var(--tg-theme-button-text-color, #ffffff);
-        }
-
-        .secondary-button {
-            width: 100%;
-            border: none;
-            padding: 13px 18px;
-            border-radius: 13px;
-            font-size: 15px;
-            cursor: pointer;
-
-            background:
-                var(--tg-theme-secondary-bg-color, #eeeeee);
-
-            color:
-                var(--tg-theme-text-color, #111111);
-        }
-
-        /* ---------- Нижняя навигация ---------- */
-
         .bottom-nav {
-            position: fixed;
-            left: 0;
-            right: 0;
-            bottom: 0;
-
-            display: flex;
-
-            background:
-                var(--tg-theme-bg-color, #ffffff);
-
-            border-top:
-                1px solid rgba(120, 120, 120, 0.2);
-
-            padding-bottom:
-                env(safe-area-inset-bottom);
-
-            z-index: 100;
+            position: fixed; left: 0; right: 0; bottom: 0; display: flex;
+            background: var(--tg-theme-bg-color, #fff);
+            border-top: 1px solid rgba(120,120,120,.2);
+            padding-bottom: env(safe-area-inset-bottom); z-index: 50;
         }
-
         .nav-button {
-            flex: 1;
-            border: none;
-            background: transparent;
-            padding: 10px 4px 8px;
-
-            color:
-                var(--tg-theme-hint-color, #777777);
-
-            font-size: 12px;
-            cursor: pointer;
+            flex: 1; border: 0; background: transparent; padding: 9px 2px 8px;
+            font-size: 12px; color: var(--tg-theme-hint-color, #777); cursor: pointer;
         }
-
-        .nav-icon {
-            display: block;
-            font-size: 23px;
-            margin-bottom: 3px;
-        }
-
-        .nav-button.active {
-            color:
-                var(--tg-theme-button-color, #3390ec);
-
-            font-weight: 700;
-        }
-
-        /* ---------- Профиль ---------- */
-
-        .my-profile-card {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-        }
-
+        .nav-button.active { color: var(--tg-theme-button-color, #3390ec); font-weight: 700; }
+        .nav-icon { display: block; font-size: 23px; margin-bottom: 3px; }
+        .profile-row { display: flex; align-items: center; gap: 13px; }
         .avatar {
-            width: 58px;
-            height: 58px;
-            min-width: 58px;
-
-            border-radius: 50%;
-
-            display: flex;
-            align-items: center;
-            justify-content: center;
-
-            font-size: 20px;
-            font-weight: 700;
-
-            background:
-                var(--tg-theme-button-color, #3390ec);
-
-            color:
-                var(--tg-theme-button-text-color, #ffffff);
+            width: 58px; height: 58px; min-width: 58px; border-radius: 50%; overflow: hidden;
+            display: flex; align-items: center; justify-content: center;
+            background: var(--tg-theme-button-color, #3390ec);
+            color: var(--tg-theme-button-text-color, #fff); font-weight: 700;
         }
-
-        .profile-main-name {
-            font-size: 18px;
-            font-weight: 700;
-            margin-bottom: 5px;
-        }
-
-        .profile-arrow {
-            margin-left: auto;
-            font-size: 24px;
-            color:
-                var(--tg-theme-hint-color, #888888);
-        }
-
-        .divider {
-            height: 1px;
-            margin: 24px 0;
-
-            background:
-                rgba(120, 120, 120, 0.2);
-        }
-
-        .participant {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .participant .avatar {
-            width: 46px;
-            height: 46px;
-            min-width: 46px;
-            font-size: 16px;
-        }
-
-        /* ---------- Полный профиль ---------- */
-
-        .back-button {
-            border: none;
-            background: transparent;
-            padding: 0;
-
-            color:
-                var(--tg-theme-link-color, #3390ec);
-
-            font-size: 16px;
-            cursor: pointer;
-
-            margin-bottom: 18px;
-        }
-
-        .profile-header {
-            text-align: center;
-            margin-bottom: 24px;
-        }
-
-        .large-avatar {
-            width: 86px;
-            height: 86px;
-
-            margin: 0 auto 14px;
-
-            border-radius: 50%;
-
-            display: flex;
-            align-items: center;
-            justify-content: center;
-
-            font-weight: 700;
-            font-size: 26px;
-
-            background:
-                var(--tg-theme-button-color, #3390ec);
-
-            color:
-                var(--tg-theme-button-text-color, #ffffff);
-        }
-
-        .full-name {
-            font-size: 23px;
-            font-weight: 700;
-            line-height: 1.25;
-        }
-
-        .profile-meta {
-            margin-top: 8px;
-            color:
-                var(--tg-theme-hint-color, #777777);
-        }
-
-        .profile-block-title {
-            font-weight: 700;
-            font-size: 18px;
-            margin-bottom: 10px;
-        }
-
-        .achievement {
-            margin: 8px 0;
-            line-height: 1.4;
-        }
-
-        /* ---------- Проекты ---------- */
-
-        .project-title {
-            font-size: 18px;
-            font-weight: 700;
-            margin-bottom: 7px;
-        }
-
-        .project-description {
-            line-height: 1.45;
-            margin-bottom: 14px;
-            color:
-                var(--tg-theme-hint-color, #666666);
-        }
-
-        .project-badge {
-            display: inline-block;
-
-            font-size: 13px;
-            border-radius: 20px;
-            padding: 6px 10px;
-            margin-bottom: 10px;
-
-            background:
-                rgba(51, 144, 236, 0.12);
-
-            color:
-                var(--tg-theme-link-color, #2476b9);
-        }
-
-        .roles-needed {
-            font-size: 14px;
-            margin-bottom: 14px;
-        }
-
-        /* ---------- Материалы ---------- */
-
-        .material-row {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-        }
-
-        .material-icon {
-            width: 46px;
-            height: 46px;
-            min-width: 46px;
-
-            display: flex;
-            align-items: center;
-            justify-content: center;
-
-            font-size: 24px;
-
-            border-radius: 12px;
-
-            background:
-                rgba(51, 144, 236, 0.10);
-        }
-
-        .material-info {
-            flex: 1;
-        }
-
-        .material-title {
-            font-weight: 700;
-            margin-bottom: 4px;
-        }
-
-        .material-meta {
-            font-size: 13px;
-
-            color:
-                var(--tg-theme-hint-color, #777777);
-        }
-
-        .download-small {
-            border: none;
-
-            background:
-                var(--tg-theme-button-color, #3390ec);
-
-            color:
-                var(--tg-theme-button-text-color, white);
-
-            padding: 9px 12px;
-            border-radius: 10px;
-            cursor: pointer;
-        }
-
-        /* ---------- Регистрация ---------- */
-
-        .field {
-            margin-bottom: 15px;
-        }
-
-        .field label {
-            display: block;
-            margin-bottom: 6px;
-            font-weight: 700;
-        }
-
+        .avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .name { font-size: 18px; font-weight: 700; }
+        .arrow { margin-left: auto; font-size: 26px; color: var(--tg-theme-hint-color, #888); }
+        .profile-header { text-align: center; }
+        .profile-header .avatar { width: 90px; height: 90px; margin: 0 auto 14px; font-size: 26px; }
+        .full-name { font-size: 23px; font-weight: 700; line-height: 1.3; }
+        .profile-line { margin-top: 7px; color: var(--tg-theme-hint-color, #666); }
+        .back { border: 0; background: transparent; padding: 0; margin-bottom: 18px;
+            color: var(--tg-theme-link-color, #3390ec); font-size: 16px; cursor: pointer; }
+        .field { margin-bottom: 14px; }
+        .field label { display: block; font-weight: 700; margin-bottom: 6px; }
         .field input {
-            width: 100%;
-            padding: 13px;
-            font-size: 16px;
-
-            border:
-                1px solid rgba(120, 120, 120, 0.4);
-
-            border-radius: 12px;
-
-            background:
-                var(--tg-theme-bg-color, white);
-
-            color:
-                var(--tg-theme-text-color, black);
+            width: 100%; padding: 13px; font-size: 16px; border-radius: 11px;
+            border: 1px solid rgba(120,120,120,.35);
+            background: var(--tg-theme-bg-color, #fff); color: var(--tg-theme-text-color, #111);
         }
-
-        .consent {
-            margin: 18px 0;
-            line-height: 1.4;
-        }
-
-        .error {
-            color: #d00000;
-            margin-top: 12px;
-        }
-
-        /* ---------- Загрузка ---------- */
-
-        #loading {
-            padding: 40px 20px;
-            text-align: center;
-            font-size: 17px;
-        }
+        .error { color: #d00000; margin-top: 10px; }
+        #loading { padding: 40px 20px; text-align: center; }
+        .project-title, .material-title { font-weight: 700; font-size: 18px; margin-bottom: 7px; }
+        .project-desc { color: var(--tg-theme-hint-color, #666); line-height: 1.45; margin-bottom: 12px; }
+        .badge { display: inline-block; padding: 5px 9px; border-radius: 14px; margin-bottom: 10px;
+            background: rgba(51,144,236,.12); color: var(--tg-theme-link-color, #2476b9); font-size: 13px; }
+        .list-line { margin: 7px 0; line-height: 1.4; }
     </style>
 </head>
-
 <body>
+<div id="loading">Загружаем приложение...</div>
 
-
-<!-- ===================================================== -->
-<!-- ЗАГРУЗКА -->
-<!-- ===================================================== -->
-
-<div id="loading">
-    Загружаем приложение...
+<div id="registration" class="page hidden">
+    <div class="title">Регистрация</div>
+    <p>Укажите ваше настоящее полное ФИО. Оно будет сохранено в профиле.</p>
+    <div class="field"><label>Фамилия</label><input id="regLastName"></div>
+    <div class="field"><label>Имя</label><input id="regFirstName"></div>
+    <div class="field"><label>Отчество</label><input id="regPatronymic"></div>
+    <label style="display:block;margin:16px 0;line-height:1.4">
+        <input id="regConsent" type="checkbox"> Я понимаю, что ФИО будет отображаться другим участникам приложения.
+    </label>
+    <button class="button" id="registerButton">Сохранить ФИО</button>
+    <div id="registrationError" class="error"></div>
 </div>
 
-
-<!-- ===================================================== -->
-<!-- РЕГИСТРАЦИЯ -->
-<!-- ===================================================== -->
-
-<div
-    id="registrationScreen"
-    class="page hidden"
->
-    <div class="page-title">
-        Регистрация
-    </div>
-
-    <p>
-        Укажите ваше настоящее полное ФИО.
-        Эти данные будут сохранены в вашем профиле.
-    </p>
-
-    <div class="field">
-        <label for="lastName">
-            Фамилия
-        </label>
-
-        <input
-            id="lastName"
-            autocomplete="family-name"
-        >
-    </div>
-
-    <div class="field">
-        <label for="firstName">
-            Имя
-        </label>
-
-        <input
-            id="firstName"
-            autocomplete="given-name"
-        >
-    </div>
-
-    <div class="field">
-        <label for="patronymic">
-            Отчество
-        </label>
-
-        <input id="patronymic">
-    </div>
-
-    <div class="consent">
-        <label>
-            <input
-                id="consent"
-                type="checkbox"
-            >
-
-            Я понимаю, что моё ФИО будет
-            отображаться другим участникам приложения.
-        </label>
-    </div>
-
-    <button
-        id="saveProfileButton"
-        class="primary-button"
-    >
-        Сохранить ФИО
-    </button>
-
-    <div
-        id="registrationError"
-        class="error"
-    ></div>
-</div>
-
-
-<!-- ===================================================== -->
-<!-- ПРИЛОЖЕНИЕ -->
-<!-- ===================================================== -->
-
-<div
-    id="app"
-    class="hidden"
->
-
-
-    <!-- =============================================== -->
-    <!-- НАСТАВНИКИ -->
-    <!-- =============================================== -->
-
-    <section
-        id="mentorsPage"
-        class="page hidden"
-    >
-
-        <div class="page-title">
-            Наставники
+<div id="app" class="hidden">
+    <section id="mentorsPage" class="page hidden">
+        <div class="title">Наставники</div>
+        <div class="section-title">Мой профиль</div>
+        <div class="card clickable profile-row" onclick="openMyProfile()">
+            <div id="myAvatar" class="avatar">Я</div>
+            <div><div id="myName" class="name">Пользователь</div><div class="muted">Открыть мой профиль</div></div>
+            <div class="arrow">›</div>
         </div>
-
-        <div class="section-title">
-            Мой профиль
-        </div>
-
-        <div
-            class="card clickable my-profile-card"
-            onclick="openMyProfile()"
-        >
-            <div
-                id="myAvatar"
-                class="avatar"
-            >
-                Я
-            </div>
-
-            <div>
-                <div
-                    id="myName"
-                    class="profile-main-name"
-                >
-                    Пользователь
-                </div>
-
-                <div class="muted">
-                    Открыть мой профиль
-                </div>
-            </div>
-
-            <div class="profile-arrow">
-                ›
-            </div>
-        </div>
-
-
-        <div class="divider"></div>
-
-
-        <div class="section-title">
-            Все участники
-        </div>
-
-        <div id="participantsList"></div>
-
+        <div class="section-title">Все участники</div>
+        <div id="participants"></div>
     </section>
 
-
-    <!-- =============================================== -->
-    <!-- ПРОЕКТЫ -->
-    <!-- =============================================== -->
-
-    <section
-        id="projectsPage"
-        class="page"
-    >
-
-        <div class="page-title">
-            Проекты
-        </div>
-
-
-        <div class="section-title">
-            Мои проекты
-        </div>
-
-
-        <div
-            class="card clickable"
-            onclick="showDemoMessage(
-                'Позже здесь будет открываться страница конкретного проекта.'
-            )"
-        >
-            <div class="project-badge">
-                Моя роль: редактор
-            </div>
-
-            <div class="project-title">
-                Олимпиада АНОД — 2026
-            </div>
-
-            <div class="project-description">
-                Подготовка комплекта заданий,
-                редактура и финальная сборка материалов.
-            </div>
-        </div>
-
-
-        <div
-            class="card clickable"
-            onclick="showDemoMessage(
-                'Позже здесь будет подробная информация о проекте.'
-            )"
-        >
-            <div class="project-badge">
-                Моя роль: автор
-            </div>
-
-            <div class="project-title">
-                Методический сборник
-            </div>
-
-            <div class="project-description">
-                Работа над новым сборником
-                материалов для наставников.
-            </div>
-        </div>
-
-
-        <div class="section-title">
-            Текущие проекты
-        </div>
-
-
-        <div class="card">
-
-            <div class="project-title">
-                Весенняя олимпиада
-            </div>
-
-            <div class="project-description">
-                Подготовка новой олимпиады.
-                Проект находится на этапе набора команды.
-            </div>
-
-            <div class="roles-needed">
-                Требуются:
-                <strong>
-                    2 редактора, 3 автора
-                </strong>
-            </div>
-
-            <button
-                class="primary-button"
-                onclick="joinDemoProject(
-                    'Весенняя олимпиада'
-                )"
-            >
-                Принять участие
-            </button>
-
-        </div>
-
-
-        <div class="card">
-
-            <div class="project-title">
-                Летняя школа
-            </div>
-
-            <div class="project-description">
-                Образовательный проект
-                с лекциями, практическими занятиями
-                и командной работой.
-            </div>
-
-            <div class="roles-needed">
-                Требуются:
-                <strong>
-                    кураторы и авторы материалов
-                </strong>
-            </div>
-
-            <button
-                class="primary-button"
-                onclick="joinDemoProject(
-                    'Летняя школа'
-                )"
-            >
-                Принять участие
-            </button>
-
-        </div>
-
+    <section id="projectsPage" class="page">
+        <div class="title">Проекты</div>
+        <div class="section-title">Мои проекты</div>
+        <div class="card"><div class="badge">Моя роль: редактор</div><div class="project-title">Олимпиада АНОД — 2026</div><div class="project-desc">Демонстрационный проект.</div></div>
+        <div class="section-title">Текущие проекты</div>
+        <div class="card"><div class="project-title">Весенняя олимпиада</div><div class="project-desc">Идёт набор команды. Требуются 2 редактора и 3 автора.</div><button class="button" onclick="demo('Позже здесь будет отклик на роль в проекте.')">Принять участие</button></div>
+        <div class="card"><div class="project-title">Летняя школа</div><div class="project-desc">Образовательный проект. Набор команды открыт.</div><button class="button" onclick="demo('Позже здесь будет отклик на роль в проекте.')">Принять участие</button></div>
     </section>
 
-
-    <!-- =============================================== -->
-    <!-- МАТЕРИАЛЫ -->
-    <!-- =============================================== -->
-
-    <section
-        id="materialsPage"
-        class="page hidden"
-    >
-
-        <div class="page-title">
-            Материалы
-        </div>
-
-        <div class="section-title">
-            Общие материалы
-        </div>
-
-
-        <div class="card">
-
-            <div class="material-row">
-
-                <div class="material-icon">
-                    📄
-                </div>
-
-                <div class="material-info">
-                    <div class="material-title">
-                        Методичка наставника
-                    </div>
-
-                    <div class="material-meta">
-                        PDF • демонстрационный файл
-                    </div>
-                </div>
-
-                <button
-                    class="download-small"
-                    onclick="downloadDemoMaterial(
-                        'Методичка наставника'
-                    )"
-                >
-                    Получить
-                </button>
-
-            </div>
-
-        </div>
-
-
-        <div class="card">
-
-            <div class="material-row">
-
-                <div class="material-icon">
-                    📊
-                </div>
-
-                <div class="material-info">
-                    <div class="material-title">
-                        Шаблон отчёта по проекту
-                    </div>
-
-                    <div class="material-meta">
-                        XLSX • демонстрационный файл
-                    </div>
-                </div>
-
-                <button
-                    class="download-small"
-                    onclick="downloadDemoMaterial(
-                        'Шаблон отчёта по проекту'
-                    )"
-                >
-                    Получить
-                </button>
-
-            </div>
-
-        </div>
-
-
-        <div class="card">
-
-            <div class="material-row">
-
-                <div class="material-icon">
-                    📚
-                </div>
-
-                <div class="material-info">
-                    <div class="material-title">
-                        Архив олимпиадных материалов
-                    </div>
-
-                    <div class="material-meta">
-                        Архив • демонстрация
-                    </div>
-                </div>
-
-                <button
-                    class="download-small"
-                    onclick="downloadDemoMaterial(
-                        'Архив олимпиадных материалов'
-                    )"
-                >
-                    Получить
-                </button>
-
-            </div>
-
-        </div>
-
+    <section id="materialsPage" class="page hidden">
+        <div class="title">Материалы</div>
+        <div class="card"><div class="material-title">Методичка наставника</div><div class="muted">PDF • демонстрационный файл</div><br><button class="button" onclick="demo('Позже бот отправит этот файл в Telegram.')">Получить</button></div>
+        <div class="card"><div class="material-title">Шаблон отчёта по проекту</div><div class="muted">XLSX • демонстрационный файл</div><br><button class="button" onclick="demo('Позже бот отправит этот файл в Telegram.')">Получить</button></div>
     </section>
 
-
-    <!-- =============================================== -->
-    <!-- ПРОФИЛЬ ЧЕЛОВЕКА -->
-    <!-- =============================================== -->
-
-    <section
-        id="profilePage"
-        class="page hidden"
-    >
-
-        <button
-            class="back-button"
-            onclick="closeProfile()"
-        >
-            ← Назад
-        </button>
-
-
+    <section id="profilePage" class="page hidden">
+        <button class="back" onclick="closeProfile()">← Назад</button>
         <div class="profile-header">
-
-            <div
-                id="profileAvatar"
-                class="large-avatar"
-            >
-                ИИ
-            </div>
-
-            <div
-                id="profileName"
-                class="full-name"
-            >
-                Иванов Иван Иванович
-            </div>
-
-            <div
-                id="profileBirth"
-                class="profile-meta"
-            >
-                15.04.2001 (25 лет)
-            </div>
-
-            <div
-                id="profileAnodYears"
-                class="profile-meta"
-            >
-                (5 лет в АНОДе)
-            </div>
-
+            <div id="profileAvatar" class="avatar">ИИ</div>
+            <div id="profileName" class="full-name"></div>
+            <div id="profileBirth" class="profile-line"></div>
+            <div id="profileAnod" class="profile-line"></div>
         </div>
 
+        <div id="myEditBlock" class="card hidden" style="margin-top:22px">
+            <div class="section-title" style="margin-top:0">Редактирование профиля</div>
+            <div class="field"><label>Дата рождения</label><input id="birthDateInput" type="date"></div>
+            <button class="button" onclick="saveBirthDate()">Сохранить дату рождения</button>
+            <div id="profileError" class="error"></div>
+            <p class="muted" style="font-size:13px">Дату вступления в АНОД позднее сможет изменять только администратор.</p>
+        </div>
 
+        <div class="card" style="margin-top:12px">
+            <div class="section-title" style="margin-top:0">Олимпиадные достижения:</div>
+            <div class="list-line">• Демонстрационное достижение</div>
+        </div>
         <div class="card">
-
-            <div class="profile-block-title">
-                Олимпиадные достижения
-            </div>
-
-            <div id="profileAchievements"></div>
-
+            <div class="section-title" style="margin-top:0">Участие в проектах:</div>
+            <div class="list-line">• 2025-2026, демонстрационный проект, редактор 7-11 кл.</div>
         </div>
-
-
-        <div class="card">
-
-            <div class="profile-block-title">
-                Участие в проектах
-            </div>
-
-            <div id="profileProjects"></div>
-
-        </div>
-
-
-        <button
-            id="editMyProfileButton"
-            class="secondary-button hidden"
-            onclick="showDemoMessage(
-                'Позже здесь будет форма редактирования профиля.'
-            )"
-        >
-            Редактировать мой профиль
-        </button>
-
     </section>
-
-
-    <!-- =============================================== -->
-    <!-- НИЖНЕЕ МЕНЮ -->
-    <!-- =============================================== -->
 
     <nav class="bottom-nav">
-
-        <button
-            id="navMentors"
-            class="nav-button"
-            onclick="switchTab('mentors')"
-        >
-            <span class="nav-icon">
-                👥
-            </span>
-
-            Наставники
-        </button>
-
-
-        <button
-            id="navProjects"
-            class="nav-button active"
-            onclick="switchTab('projects')"
-        >
-            <span class="nav-icon">
-                📋
-            </span>
-
-            Проекты
-        </button>
-
-
-        <button
-            id="navMaterials"
-            class="nav-button"
-            onclick="switchTab('materials')"
-        >
-            <span class="nav-icon">
-                📁
-            </span>
-
-            Материалы
-        </button>
-
+        <button id="navMentors" class="nav-button" onclick="switchTab('mentors')"><span class="nav-icon">👥</span>Наставники</button>
+        <button id="navProjects" class="nav-button active" onclick="switchTab('projects')"><span class="nav-icon">📋</span>Проекты</button>
+        <button id="navMaterials" class="nav-button" onclick="switchTab('materials')"><span class="nav-icon">📁</span>Материалы</button>
     </nav>
-
 </div>
 
-
 <script>
+const tg = window.Telegram.WebApp;
+tg.ready();
+tg.expand();
 
-    /* ================================================= */
-    /* TELEGRAM                                         */
-    /* ================================================= */
+const query = new URLSearchParams(window.location.search);
+const apiFromQuery = query.get('api');
+if (apiFromQuery) localStorage.setItem('anod_api_base', apiFromQuery.replace(/\/$/, ''));
+const API_BASE = (apiFromQuery || localStorage.getItem('anod_api_base') || '').replace(/\/$/, '');
 
-    const tg = window.Telegram.WebApp;
+let currentUser = null;
+let previousTab = 'mentors';
 
-    tg.ready();
-    tg.expand();
+const demoParticipants = [
+    {name:'Иванов Иван Иванович', birth:'15.04.2001', age:25, anodYears:5},
+    {name:'Петрова Анна Сергеевна', birth:'21.08.2002', age:24, anodYears:3},
+    {name:'Сидоров Михаил Андреевич', birth:'03.02.1999', age:27, anodYears:7}
+];
 
+function initials(name) {
+    return (name || '?').split(' ').filter(Boolean).slice(0,2).map(x => x[0]).join('').toUpperCase();
+}
 
-    /* ================================================= */
-    /* BACKEND                                          */
-    /* ================================================= */
-
-    const API_BASE =
-        "https://profession-dakota-lightweight-politicians.trycloudflare.com";
-
-
-    /* ================================================= */
-    /* ТЕКУЩИЙ ПОЛЬЗОВАТЕЛЬ                             */
-    /* ================================================= */
-
-    let currentUser = null;
-
-    let lastOpenedTab = "mentors";
-
-
-    /* ================================================= */
-    /* ДЕМО-ПОЛЬЗОВАТЕЛИ                                */
-    /* ================================================= */
-
-    const demoParticipants = [
-
-        {
-            id: 101,
-            name: "Иванов Иван Иванович",
-            birth: "15.04.2001",
-            age: 25,
-            anodYears: 5,
-
-            achievements: [
-                "Призёр регионального этапа олимпиады",
-                "Победитель университетского турнира",
-                "Член жюри олимпиады АНОД — 2025"
-            ],
-
-            projects: [
-                "Олимпиада АНОД — редактор",
-                "Летняя школа — куратор",
-                "Методический сборник — автор"
-            ]
-        },
-
-        {
-            id: 102,
-            name: "Петрова Анна Сергеевна",
-            birth: "21.08.2002",
-            age: 24,
-            anodYears: 3,
-
-            achievements: [
-                "Призёр всероссийской олимпиады",
-                "Автор олимпиадных задач"
-            ],
-
-            projects: [
-                "Весенняя олимпиада — автор",
-                "Школа наставников — лектор"
-            ]
-        },
-
-        {
-            id: 103,
-            name: "Сидоров Михаил Андреевич",
-            birth: "03.02.1999",
-            age: 27,
-            anodYears: 7,
-
-            achievements: [
-                "Победитель студенческой олимпиады",
-                "Член организационного комитета"
-            ],
-
-            projects: [
-                "Олимпиада АНОД — менеджер",
-                "Летняя школа — организатор"
-            ]
-        }
-
-    ];
-
-
-    /* ================================================= */
-    /* ИНИЦИАЛЫ                                         */
-    /* ================================================= */
-
-    function initials(name) {
-
-        if (!name) {
-            return "?";
-        }
-
-        return name
-            .split(" ")
-            .filter(Boolean)
-            .slice(0, 2)
-            .map(part => part[0])
-            .join("")
-            .toUpperCase();
+function setAvatar(elementId, name, photoUrl) {
+    const el = document.getElementById(elementId);
+    el.innerHTML = '';
+    if (photoUrl) {
+        const img = document.createElement('img');
+        img.src = photoUrl;
+        img.onerror = () => { el.innerHTML = initials(name); };
+        el.appendChild(img);
+    } else {
+        el.innerHTML = initials(name);
     }
+}
 
+async function api(path, options = {}) {
+    if (!API_BASE) throw new Error('Не задан адрес backend. Перезапустите бота после обновления BACKEND_PUBLIC_URL в .env.');
+    const response = await fetch(API_BASE + path, options);
+    let data = {};
+    try { data = await response.json(); } catch (_) {}
+    if (!response.ok) throw new Error(data.detail || `Ошибка сервера ${response.status}`);
+    return data;
+}
 
-    /* ================================================= */
-    /* АВТОРИЗАЦИЯ                                      */
-    /* ================================================= */
-
-    async function loadUser() {
-
-        if (!tg.initData) {
-
-            document.getElementById(
-                "loading"
-            ).innerText =
-                "Откройте приложение через Telegram.";
-
-            return;
-        }
-
-
-        try {
-
-            const response = await fetch(
-                API_BASE + "/api/auth/telegram",
-                {
-                    method: "POST",
-
-                    headers: {
-                        "Content-Type":
-                            "application/json"
-                    },
-
-                    body: JSON.stringify({
-                        init_data: tg.initData
-                    })
-                }
-            );
-
-
-            const data =
-                await response.json();
-
-
-            if (!response.ok) {
-
-                throw new Error(
-                    data.detail ||
-                    "Ошибка авторизации"
-                );
-            }
-
-
-            currentUser = data;
-
-
-            if (
-                !currentUser.profile_completed
-            ) {
-
-                showRegistration();
-
-                return;
-            }
-
-
-            showApplication();
-
-        }
-
-        catch (error) {
-
-            document.getElementById(
-                "loading"
-            ).innerText =
-                "Ошибка подключения к серверу: "
-                + error.message;
-        }
-
+async function loadUser() {
+    if (!tg.initData) {
+        document.getElementById('loading').innerText = 'Откройте приложение через Telegram.';
+        return;
     }
-
-
-    /* ================================================= */
-    /* РЕГИСТРАЦИЯ                                      */
-    /* ================================================= */
-
-    function showRegistration() {
-
-        document.getElementById(
-            "loading"
-        ).classList.add("hidden");
-
-        document.getElementById(
-            "registrationScreen"
-        ).classList.remove("hidden");
-
-    }
-
-
-    document.getElementById(
-        "saveProfileButton"
-    ).addEventListener(
-        "click",
-        async () => {
-
-            const errorBox =
-                document.getElementById(
-                    "registrationError"
-                );
-
-            errorBox.innerText = "";
-
-
-            const lastName =
-                document.getElementById(
-                    "lastName"
-                ).value.trim();
-
-            const firstName =
-                document.getElementById(
-                    "firstName"
-                ).value.trim();
-
-            const patronymic =
-                document.getElementById(
-                    "patronymic"
-                ).value.trim();
-
-            const consent =
-                document.getElementById(
-                    "consent"
-                ).checked;
-
-
-            if (
-                !lastName ||
-                !firstName
-            ) {
-
-                errorBox.innerText =
-                    "Введите фамилию и имя.";
-
-                return;
-            }
-
-
-            if (!consent) {
-
-                errorBox.innerText =
-                    "Необходимо подтвердить "
-                    + "условие отображения ФИО.";
-
-                return;
-            }
-
-
-            try {
-
-                const response = await fetch(
-                    API_BASE
-                    + "/api/profile/complete",
-                    {
-                        method: "POST",
-
-                        headers: {
-                            "Content-Type":
-                                "application/json"
-                        },
-
-                        body: JSON.stringify({
-                            init_data:
-                                tg.initData,
-
-                            last_name:
-                                lastName,
-
-                            first_name:
-                                firstName,
-
-                            patronymic:
-                                patronymic || null
-                        })
-                    }
-                );
-
-
-                const data =
-                    await response.json();
-
-
-                if (!response.ok) {
-
-                    throw new Error(
-                        data.detail ||
-                        "Ошибка сохранения"
-                    );
-                }
-
-
-                currentUser = data;
-
-
-                document.getElementById(
-                    "registrationScreen"
-                ).classList.add(
-                    "hidden"
-                );
-
-
-                showApplication();
-
-            }
-
-            catch (error) {
-
-                errorBox.innerText =
-                    error.message;
-            }
-
-        }
-    );
-
-
-    /* ================================================= */
-    /* ЗАПУСК ОСНОВНОГО ИНТЕРФЕЙСА                      */
-    /* ================================================= */
-
-    function showApplication() {
-
-        document.getElementById(
-            "loading"
-        ).classList.add("hidden");
-
-
-        document.getElementById(
-            "registrationScreen"
-        ).classList.add("hidden");
-
-
-        document.getElementById(
-            "app"
-        ).classList.remove("hidden");
-
-
-        document.getElementById(
-            "myName"
-        ).innerText =
-            currentUser.full_name;
-
-
-        document.getElementById(
-            "myAvatar"
-        ).innerText =
-            initials(
-                currentUser.full_name
-            );
-
-
-        renderParticipants();
-
-
-        switchTab("projects");
-    }
-
-
-    /* ================================================= */
-    /* НИЖНЕЕ МЕНЮ                                      */
-    /* ================================================= */
-
-    function switchTab(tab) {
-
-        document.getElementById(
-            "profilePage"
-        ).classList.add("hidden");
-
-
-        const pages = {
-            mentors:
-                "mentorsPage",
-
-            projects:
-                "projectsPage",
-
-            materials:
-                "materialsPage"
-        };
-
-
-        Object.values(
-            pages
-        ).forEach(id => {
-
-            document.getElementById(
-                id
-            ).classList.add("hidden");
-
+    try {
+        currentUser = await api('/api/auth/telegram', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({init_data:tg.initData})
         });
+        if (!currentUser.profile_completed) showRegistration();
+        else showApp();
+    } catch (e) {
+        document.getElementById('loading').innerText = 'Ошибка подключения к серверу: ' + e.message;
+    }
+}
 
+function showRegistration() {
+    document.getElementById('loading').classList.add('hidden');
+    document.getElementById('registration').classList.remove('hidden');
+}
 
-        document.getElementById(
-            pages[tab]
-        ).classList.remove("hidden");
-
-
-        document.querySelectorAll(
-            ".nav-button"
-        ).forEach(button => {
-
-            button.classList.remove(
-                "active"
-            );
-
+document.getElementById('registerButton').onclick = async () => {
+    const error = document.getElementById('registrationError');
+    error.innerText = '';
+    const last_name = document.getElementById('regLastName').value.trim();
+    const first_name = document.getElementById('regFirstName').value.trim();
+    const patronymic = document.getElementById('regPatronymic').value.trim();
+    if (!last_name || !first_name) return error.innerText = 'Введите фамилию и имя.';
+    if (!document.getElementById('regConsent').checked) return error.innerText = 'Подтвердите условие отображения ФИО.';
+    try {
+        currentUser = await api('/api/profile/complete', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({init_data:tg.initData,last_name,first_name,patronymic:patronymic || null})
         });
+        document.getElementById('registration').classList.add('hidden');
+        showApp();
+    } catch(e) { error.innerText = e.message; }
+};
 
+function showApp() {
+    document.getElementById('loading').classList.add('hidden');
+    document.getElementById('registration').classList.add('hidden');
+    document.getElementById('app').classList.remove('hidden');
+    document.getElementById('myName').innerText = currentUser.full_name;
+    setAvatar('myAvatar', currentUser.full_name, currentUser.photo_url);
+    renderParticipants();
+    switchTab('projects');
+}
 
-        const buttons = {
-            mentors:
-                "navMentors",
+function switchTab(tab) {
+    ['mentorsPage','projectsPage','materialsPage','profilePage'].forEach(id => document.getElementById(id).classList.add('hidden'));
+    const pages = {mentors:'mentorsPage',projects:'projectsPage',materials:'materialsPage'};
+    document.getElementById(pages[tab]).classList.remove('hidden');
+    document.querySelectorAll('.nav-button').forEach(x => x.classList.remove('active'));
+    document.getElementById({mentors:'navMentors',projects:'navProjects',materials:'navMaterials'}[tab]).classList.add('active');
+    previousTab = tab;
+    window.scrollTo(0,0);
+}
 
-            projects:
-                "navProjects",
+function renderParticipants() {
+    const c = document.getElementById('participants');
+    c.innerHTML = '';
+    demoParticipants.forEach(p => {
+        const d = document.createElement('div');
+        d.className = 'card clickable profile-row';
+        d.innerHTML = `<div class="avatar">${initials(p.name)}</div><div><div class="name">${p.name}</div><div class="muted">Открыть профиль</div></div><div class="arrow">›</div>`;
+        d.onclick = () => openProfile({...p, photo_url:null, isMe:false});
+        c.appendChild(d);
+    });
+}
 
-            materials:
-                "navMaterials"
-        };
+function formatDateISO(iso) {
+    if (!iso) return null;
+    const [y,m,d] = iso.split('-');
+    return `${d}.${m}.${y}`;
+}
 
+function openMyProfile() {
+    openProfile({
+        name:currentUser.full_name,
+        birth:currentUser.birth_date ? formatDateISO(currentUser.birth_date) : null,
+        age:currentUser.age,
+        anodYears:currentUser.anod_years,
+        photo_url:currentUser.photo_url,
+        isMe:true
+    });
+}
 
-        document.getElementById(
-            buttons[tab]
-        ).classList.add("active");
+function openProfile(p) {
+    ['mentorsPage','projectsPage','materialsPage'].forEach(id => document.getElementById(id).classList.add('hidden'));
+    document.getElementById('profilePage').classList.remove('hidden');
+    document.getElementById('profileName').innerText = p.name;
+    setAvatar('profileAvatar', p.name, p.photo_url);
+    document.getElementById('profileBirth').innerText = p.birth ? `${p.birth}${p.age !== null && p.age !== undefined ? ` (${p.age} лет)` : ''}` : 'Дата рождения не указана';
+    document.getElementById('profileAnod').innerText = p.anodYears !== null && p.anodYears !== undefined ? `(${p.anodYears} лет в АНОДе)` : '(Дата вступления в АНОД пока не указана)';
+    document.getElementById('myEditBlock').classList.toggle('hidden', !p.isMe);
+    if (p.isMe) document.getElementById('birthDateInput').value = currentUser.birth_date || '';
+    window.scrollTo(0,0);
+}
 
+function closeProfile() { switchTab(previousTab); }
 
-        lastOpenedTab = tab;
-
-
-        window.scrollTo({
-            top: 0,
-            behavior: "instant"
+async function saveBirthDate() {
+    const error = document.getElementById('profileError');
+    error.innerText = '';
+    const birth_date = document.getElementById('birthDateInput').value || null;
+    try {
+        currentUser = await api('/api/profile/me', {
+            method:'PATCH', headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({init_data:tg.initData,birth_date})
         });
+        openMyProfile();
+        if (tg.showAlert) tg.showAlert('Дата рождения сохранена.');
+    } catch(e) { error.innerText = e.message; }
+}
 
-    }
+function demo(text) { tg.showAlert ? tg.showAlert(text) : alert(text); }
 
-
-    /* ================================================= */
-    /* УЧАСТНИКИ                                        */
-    /* ================================================= */
-
-    function renderParticipants() {
-
-        const container =
-            document.getElementById(
-                "participantsList"
-            );
-
-
-        container.innerHTML = "";
-
-
-        demoParticipants.forEach(
-            person => {
-
-                const card =
-                    document.createElement(
-                        "div"
-                    );
-
-
-                card.className =
-                    "card clickable participant";
-
-
-                card.innerHTML = `
-                    <div class="avatar">
-                        ${initials(person.name)}
-                    </div>
-
-                    <div>
-                        <div class="profile-main-name">
-                            ${person.name}
-                        </div>
-
-                        <div class="muted">
-                            Открыть профиль
-                        </div>
-                    </div>
-
-                    <div class="profile-arrow">
-                        ›
-                    </div>
-                `;
-
-
-                card.addEventListener(
-                    "click",
-                    () =>
-                        openPersonProfile(
-                            person
-                        )
-                );
-
-
-                container.appendChild(
-                    card
-                );
-
-            }
-        );
-
-    }
-
-
-    /* ================================================= */
-    /* МОЙ ПРОФИЛЬ                                      */
-    /* ================================================= */
-
-    function openMyProfile() {
-
-        const person = {
-
-            name:
-                currentUser.full_name,
-
-            birth:
-                "12.04.2001",
-
-            age:
-                25,
-
-            anodYears:
-                5,
-
-            achievements: [
-                "Демонстрационное достижение №1",
-                "Демонстрационное достижение №2"
-            ],
-
-            projects: [
-                "Олимпиада АНОД — редактор",
-                "Методический сборник — автор"
-            ],
-
-            isMe:
-                true
-        };
-
-
-        openPersonProfile(
-            person
-        );
-
-    }
-
-
-    /* ================================================= */
-    /* ОТКРЫТИЕ ПРОФИЛЯ                                 */
-    /* ================================================= */
-
-    function openPersonProfile(
-        person
-    ) {
-
-        document.getElementById(
-            "mentorsPage"
-        ).classList.add("hidden");
-
-        document.getElementById(
-            "projectsPage"
-        ).classList.add("hidden");
-
-        document.getElementById(
-            "materialsPage"
-        ).classList.add("hidden");
-
-
-        document.getElementById(
-            "profilePage"
-        ).classList.remove("hidden");
-
-
-        document.getElementById(
-            "profileAvatar"
-        ).innerText =
-            initials(
-                person.name
-            );
-
-
-        document.getElementById(
-            "profileName"
-        ).innerText =
-            person.name;
-
-
-        document.getElementById(
-            "profileBirth"
-        ).innerText =
-            `${person.birth} (${person.age} лет)`;
-
-
-        document.getElementById(
-            "profileAnodYears"
-        ).innerText =
-            `(${person.anodYears} лет в АНОДе)`;
-
-
-        const achievements =
-            document.getElementById(
-                "profileAchievements"
-            );
-
-
-        achievements.innerHTML =
-            person.achievements
-                .map(
-                    item =>
-                        `<div class="achievement">
-                            • ${item}
-                        </div>`
-                )
-                .join("");
-
-
-        const projects =
-            document.getElementById(
-                "profileProjects"
-            );
-
-
-        projects.innerHTML =
-            person.projects
-                .map(
-                    item =>
-                        `<div class="achievement">
-                            • ${item}
-                        </div>`
-                )
-                .join("");
-
-
-        const editButton =
-            document.getElementById(
-                "editMyProfileButton"
-            );
-
-
-        if (person.isMe) {
-
-            editButton.classList.remove(
-                "hidden"
-            );
-
-        } else {
-
-            editButton.classList.add(
-                "hidden"
-            );
-
-        }
-
-
-        window.scrollTo({
-            top: 0,
-            behavior: "instant"
-        });
-
-    }
-
-
-    function closeProfile() {
-
-        switchTab(
-            lastOpenedTab
-        );
-
-    }
-
-
-    /* ================================================= */
-    /* ДЕМО-ДЕЙСТВИЯ                                    */
-    /* ================================================= */
-
-    function showDemoMessage(
-        message
-    ) {
-
-        if (tg.showAlert) {
-
-            tg.showAlert(message);
-
-        } else {
-
-            alert(message);
-        }
-
-    }
-
-
-    function joinDemoProject(
-        projectName
-    ) {
-
-        showDemoMessage(
-            "Прототип: здесь будет "
-            + "отклик на проект «"
-            + projectName
-            + "»."
-        );
-
-    }
-
-
-    function downloadDemoMaterial(
-        materialName
-    ) {
-
-        showDemoMessage(
-            "Прототип: позднее бот "
-            + "отправит вам материал «"
-            + materialName
-            + "»."
-        );
-
-    }
-
-
-    /* ================================================= */
-    /* СТАРТ                                            */
-    /* ================================================= */
-
-    loadUser();
-
+loadUser();
 </script>
-
 </body>
 </html>
