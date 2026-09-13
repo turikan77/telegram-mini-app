@@ -34,8 +34,21 @@
             color: var(--tg-theme-button-text-color, #fff);
         }
         .button.secondary {
-            background: var(--tg-theme-secondary-bg-color, #eceff2);
+            background: rgba(120,120,120,.12);
             color: var(--tg-theme-text-color, #111);
+        }
+        .button.danger {
+            background: rgba(210,40,40,.10);
+            color: #c62828;
+        }
+        .small-button {
+            border: 0; border-radius: 10px; padding: 9px 11px; cursor: pointer;
+            background: rgba(120,120,120,.12); color: var(--tg-theme-text-color, #111);
+        }
+        .plus-row { display: flex; gap: 8px; margin-top: 12px; }
+        .plus-button {
+            flex: 1; border: 0; border-radius: 12px; padding: 11px 12px; font-size: 15px;
+            cursor: pointer; background: rgba(51,144,236,.12); color: var(--tg-theme-link-color, #2476b9);
         }
         .bottom-nav {
             position: fixed; left: 0; right: 0; bottom: 0; display: flex;
@@ -63,22 +76,49 @@
         .profile-header .avatar { width: 90px; height: 90px; margin: 0 auto 14px; font-size: 26px; }
         .full-name { font-size: 23px; font-weight: 700; line-height: 1.3; }
         .profile-line { margin-top: 7px; color: var(--tg-theme-hint-color, #666); }
-        .back { border: 0; background: transparent; padding: 0; margin-bottom: 18px;
-            color: var(--tg-theme-link-color, #3390ec); font-size: 16px; cursor: pointer; }
+        .education-public { margin-top: 18px; text-align: left; }
+        .education-public-line { margin: 7px 0; line-height: 1.35; }
+        .back {
+            border: 0; background: transparent; padding: 0; margin-bottom: 18px;
+            color: var(--tg-theme-link-color, #3390ec); font-size: 16px; cursor: pointer;
+        }
         .field { margin-bottom: 14px; }
         .field label { display: block; font-weight: 700; margin-bottom: 6px; }
-        .field input {
+        .field input, .field select {
             width: 100%; padding: 13px; font-size: 16px; border-radius: 11px;
             border: 1px solid rgba(120,120,120,.35);
             background: var(--tg-theme-bg-color, #fff); color: var(--tg-theme-text-color, #111);
         }
+        .field input::placeholder { color: #9aa0a6; }
+        .two-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .error { color: #d00000; margin-top: 10px; }
         #loading { padding: 40px 20px; text-align: center; }
         .project-title, .material-title { font-weight: 700; font-size: 18px; margin-bottom: 7px; }
         .project-desc { color: var(--tg-theme-hint-color, #666); line-height: 1.45; margin-bottom: 12px; }
-        .badge { display: inline-block; padding: 5px 9px; border-radius: 14px; margin-bottom: 10px;
-            background: rgba(51,144,236,.12); color: var(--tg-theme-link-color, #2476b9); font-size: 13px; }
+        .badge {
+            display: inline-block; padding: 5px 9px; border-radius: 14px; margin-bottom: 10px;
+            background: rgba(51,144,236,.12); color: var(--tg-theme-link-color, #2476b9); font-size: 13px;
+        }
         .list-line { margin: 7px 0; line-height: 1.4; }
+        .education-edit-row { padding: 12px 0; border-bottom: 1px solid rgba(120,120,120,.18); }
+        .education-edit-row:last-child { border-bottom: 0; }
+        .education-edit-text { line-height: 1.4; margin-bottom: 9px; }
+        .education-actions { display: flex; gap: 8px; }
+        .modal-backdrop {
+            position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,.45);
+            display: flex; align-items: flex-end; justify-content: center;
+        }
+        .modal {
+            width: 100%; max-width: 720px; max-height: 90vh; overflow-y: auto;
+            background: var(--tg-theme-bg-color, #fff); border-radius: 22px 22px 0 0;
+            padding: 20px 16px calc(20px + env(safe-area-inset-bottom));
+        }
+        .modal-title { font-size: 21px; font-weight: 700; margin-bottom: 18px; }
+        .modal-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; }
+        @media (min-width: 720px) {
+            .modal-backdrop { align-items: center; }
+            .modal { border-radius: 22px; }
+        }
     </style>
 </head>
 <body>
@@ -132,14 +172,32 @@
             <div id="profileName" class="full-name"></div>
             <div id="profileBirth" class="profile-line"></div>
             <div id="profileAnod" class="profile-line"></div>
+            <div id="profileEducation" class="education-public"></div>
         </div>
 
-        <div id="myEditBlock" class="card hidden" style="margin-top:22px">
-            <div class="section-title" style="margin-top:0">Редактирование профиля</div>
-            <div class="field"><label>Дата рождения</label><input id="birthDateInput" type="date"></div>
-            <button class="button" onclick="saveBirthDate()">Сохранить дату рождения</button>
-            <div id="profileError" class="error"></div>
-            <p class="muted" style="font-size:13px">Дату вступления в АНОД позднее сможет изменять только администратор.</p>
+        <div id="myEditBlock" class="hidden" style="margin-top:22px">
+            <div class="card">
+                <div class="section-title" style="margin-top:0">Личные данные</div>
+                <div class="field"><label>Дата рождения</label><input id="birthDateInput" type="date"></div>
+                <button class="button" onclick="saveBirthDate()">Сохранить дату рождения</button>
+                <div id="profileError" class="error"></div>
+
+                <div id="adminAnodBlock" class="hidden" style="margin-top:20px">
+                    <div class="field"><label>Дата вступления в АНОД — только администратор</label><input id="anodJoinDateInput" type="date"></div>
+                    <button class="button secondary" onclick="saveAnodJoinDate()">Сохранить дату вступления</button>
+                    <div id="adminError" class="error"></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="section-title" style="margin-top:0">Образование</div>
+                <div id="educationEditorList"></div>
+                <div id="educationEmpty" class="muted">Пока ничего не добавлено.</div>
+                <div class="plus-row">
+                    <button class="plus-button" onclick="openEducationModal('university')">＋ ВУЗ</button>
+                    <button class="plus-button" onclick="openEducationModal('school')">＋ Школа</button>
+                </div>
+            </div>
         </div>
 
         <div class="card" style="margin-top:12px">
@@ -159,6 +217,42 @@
     </nav>
 </div>
 
+<div id="educationModalBackdrop" class="modal-backdrop hidden" onclick="educationBackdropClick(event)">
+    <div class="modal" onclick="event.stopPropagation()">
+        <div id="educationModalTitle" class="modal-title">Добавить образование</div>
+        <input id="educationId" type="hidden">
+        <input id="educationType" type="hidden">
+
+        <div class="field">
+            <label id="institutionLabel">Название</label>
+            <input id="educationInstitution" placeholder="ВУЗ сокращённо">
+        </div>
+        <div class="field">
+            <label>Город</label>
+            <input id="educationCity" placeholder="Город">
+        </div>
+        <div class="two-cols">
+            <div class="field">
+                <label>Год начала</label>
+                <input id="educationStartYear" type="number" inputmode="numeric" placeholder="2020">
+            </div>
+            <div class="field">
+                <label>Год окончания</label>
+                <input id="educationEndYear" type="number" inputmode="numeric" placeholder="2026">
+            </div>
+        </div>
+        <div id="programCodeField" class="field">
+            <label>Код образовательной программы</label>
+            <input id="educationProgramCode" placeholder="04.05.01">
+        </div>
+        <div id="educationModalError" class="error"></div>
+        <div class="modal-actions">
+            <button class="button secondary" onclick="closeEducationModal()">Отмена</button>
+            <button class="button" onclick="saveEducation()">Сохранить</button>
+        </div>
+    </div>
+</div>
+
 <script>
 const tg = window.Telegram.WebApp;
 tg.ready();
@@ -170,12 +264,13 @@ if (apiFromQuery) localStorage.setItem('anod_api_base', apiFromQuery.replace(/\/
 const API_BASE = (apiFromQuery || localStorage.getItem('anod_api_base') || '').replace(/\/$/, '');
 
 let currentUser = null;
+let currentEducation = [];
 let previousTab = 'mentors';
 
 const demoParticipants = [
-    {name:'Иванов Иван Иванович', birth:'15.04.2001', age:25, anodYears:5},
-    {name:'Петрова Анна Сергеевна', birth:'21.08.2002', age:24, anodYears:3},
-    {name:'Сидоров Михаил Андреевич', birth:'03.02.1999', age:27, anodYears:7}
+    {name:'Иванов Иван Иванович', birth:'15.04.2001', age:25, anodYears:5, education:['04.05.01, УГНТУ, г. Уфа, 2020-2026','МБОУ Лицей №1, г. Уфа, 2010-2020']},
+    {name:'Петрова Анна Сергеевна', birth:'21.08.2002', age:24, anodYears:3, education:['04.03.01, МГУ, г. Москва, 2020-2026']},
+    {name:'Сидоров Михаил Андреевич', birth:'03.02.1999', age:27, anodYears:7, education:['РХТУ, г. Москва, 2016-2022']}
 ];
 
 function initials(name) {
@@ -251,6 +346,7 @@ function showApp() {
     document.getElementById('myName').innerText = currentUser.full_name;
     setAvatar('myAvatar', currentUser.full_name, currentUser.photo_url);
     renderParticipants();
+    refreshEducation().catch(() => {});
     switchTab('projects');
 }
 
@@ -282,14 +378,36 @@ function formatDateISO(iso) {
     return `${d}.${m}.${y}`;
 }
 
-function openMyProfile() {
+async function refreshEducation() {
+    currentEducation = await api('/api/profile/me/education/list', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({init_data:tg.initData})
+    });
+    renderEducationEditor();
+    return currentEducation;
+}
+
+async function openMyProfile() {
+    try { await refreshEducation(); } catch (e) { demo('Не удалось загрузить образование: ' + e.message); }
     openProfile({
         name:currentUser.full_name,
         birth:currentUser.birth_date ? formatDateISO(currentUser.birth_date) : null,
         age:currentUser.age,
         anodYears:currentUser.anod_years,
         photo_url:currentUser.photo_url,
+        education:currentEducation.map(x => x.display_text),
         isMe:true
+    });
+}
+
+function renderPublicEducation(lines) {
+    const box = document.getElementById('profileEducation');
+    box.innerHTML = '';
+    (lines || []).forEach(text => {
+        const line = document.createElement('div');
+        line.className = 'education-public-line';
+        line.textContent = text;
+        box.appendChild(line);
     });
 }
 
@@ -300,8 +418,16 @@ function openProfile(p) {
     setAvatar('profileAvatar', p.name, p.photo_url);
     document.getElementById('profileBirth').innerText = p.birth ? `${p.birth}${p.age !== null && p.age !== undefined ? ` (${p.age} лет)` : ''}` : 'Дата рождения не указана';
     document.getElementById('profileAnod').innerText = p.anodYears !== null && p.anodYears !== undefined ? `(${p.anodYears} лет в АНОДе)` : '(Дата вступления в АНОД пока не указана)';
+    renderPublicEducation(p.education || []);
+
     document.getElementById('myEditBlock').classList.toggle('hidden', !p.isMe);
-    if (p.isMe) document.getElementById('birthDateInput').value = currentUser.birth_date || '';
+    document.getElementById('adminAnodBlock').classList.toggle('hidden', !(p.isMe && currentUser.is_admin));
+
+    if (p.isMe) {
+        document.getElementById('birthDateInput').value = currentUser.birth_date || '';
+        document.getElementById('anodJoinDateInput').value = currentUser.anod_join_date || '';
+        renderEducationEditor();
+    }
     window.scrollTo(0,0);
 }
 
@@ -316,9 +442,132 @@ async function saveBirthDate() {
             method:'PATCH', headers:{'Content-Type':'application/json'},
             body:JSON.stringify({init_data:tg.initData,birth_date})
         });
-        openMyProfile();
-        if (tg.showAlert) tg.showAlert('Дата рождения сохранена.');
+        await openMyProfile();
+        demo('Дата рождения сохранена.');
     } catch(e) { error.innerText = e.message; }
+}
+
+async function saveAnodJoinDate() {
+    const error = document.getElementById('adminError');
+    error.innerText = '';
+    const anod_join_date = document.getElementById('anodJoinDateInput').value;
+    if (!anod_join_date) return error.innerText = 'Укажите дату вступления.';
+    try {
+        currentUser = await api(`/api/admin/users/${currentUser.telegram_id}/anod-join-date`, {
+            method:'PATCH', headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({init_data:tg.initData,anod_join_date})
+        });
+        await openMyProfile();
+        demo('Дата вступления в АНОД сохранена.');
+    } catch(e) { error.innerText = e.message; }
+}
+
+function renderEducationEditor() {
+    const list = document.getElementById('educationEditorList');
+    const empty = document.getElementById('educationEmpty');
+    list.innerHTML = '';
+    empty.classList.toggle('hidden', currentEducation.length > 0);
+
+    currentEducation.forEach(entry => {
+        const row = document.createElement('div');
+        row.className = 'education-edit-row';
+
+        const text = document.createElement('div');
+        text.className = 'education-edit-text';
+        text.textContent = entry.display_text;
+
+        const actions = document.createElement('div');
+        actions.className = 'education-actions';
+
+        const edit = document.createElement('button');
+        edit.className = 'small-button';
+        edit.textContent = 'Изменить';
+        edit.onclick = () => openEducationModal(entry.education_type, entry);
+
+        const del = document.createElement('button');
+        del.className = 'small-button';
+        del.textContent = 'Удалить';
+        del.onclick = () => deleteEducation(entry.id);
+
+        actions.append(edit, del);
+        row.append(text, actions);
+        list.appendChild(row);
+    });
+}
+
+function openEducationModal(type, entry = null) {
+    const isUniversity = type === 'university';
+    document.getElementById('educationModalBackdrop').classList.remove('hidden');
+    document.getElementById('educationType').value = type;
+    document.getElementById('educationId').value = entry ? entry.id : '';
+    document.getElementById('educationModalTitle').innerText = entry ? 'Изменить образование' : (isUniversity ? 'Добавить ВУЗ' : 'Добавить школу');
+    document.getElementById('institutionLabel').innerText = isUniversity ? 'ВУЗ' : 'Школа';
+    document.getElementById('educationInstitution').placeholder = isUniversity ? 'ВУЗ сокращённо' : 'Название школы сокращённо';
+    document.getElementById('programCodeField').classList.toggle('hidden', !isUniversity);
+    document.getElementById('educationModalError').innerText = '';
+
+    document.getElementById('educationInstitution').value = entry ? entry.institution_short_name : '';
+    document.getElementById('educationCity').value = entry ? entry.city : '';
+    document.getElementById('educationStartYear').value = entry ? entry.start_year : '';
+    document.getElementById('educationEndYear').value = entry ? entry.end_year : '';
+    document.getElementById('educationProgramCode').value = entry && entry.program_code ? entry.program_code : '';
+}
+
+function closeEducationModal() {
+    document.getElementById('educationModalBackdrop').classList.add('hidden');
+}
+
+function educationBackdropClick(event) {
+    if (event.target.id === 'educationModalBackdrop') closeEducationModal();
+}
+
+async function saveEducation() {
+    const error = document.getElementById('educationModalError');
+    error.innerText = '';
+
+    const id = document.getElementById('educationId').value;
+    const education_type = document.getElementById('educationType').value;
+    const institution_short_name = document.getElementById('educationInstitution').value.trim();
+    const city = document.getElementById('educationCity').value.trim();
+    const start_year = Number(document.getElementById('educationStartYear').value);
+    const end_year = Number(document.getElementById('educationEndYear').value);
+    const program_code = document.getElementById('educationProgramCode').value.trim() || null;
+
+    if (!institution_short_name || !city || !start_year || !end_year) {
+        error.innerText = 'Заполните все обязательные поля.';
+        return;
+    }
+    if (education_type === 'university' && !program_code) {
+        error.innerText = 'Укажите код образовательной программы.';
+        return;
+    }
+
+    const payload = {init_data:tg.initData,education_type,institution_short_name,city,start_year,end_year,program_code};
+
+    try {
+        await api(id ? `/api/profile/me/education/${id}` : '/api/profile/me/education', {
+            method:id ? 'PUT' : 'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify(payload)
+        });
+        await refreshEducation();
+        closeEducationModal();
+        await openMyProfile();
+        demo('Образование сохранено.');
+    } catch(e) { error.innerText = e.message; }
+}
+
+async function deleteEducation(id) {
+    const confirmed = confirm('Удалить эту запись об образовании?');
+    if (!confirmed) return;
+    try {
+        await api(`/api/profile/me/education/${id}`, {
+            method:'DELETE', headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({init_data:tg.initData})
+        });
+        await refreshEducation();
+        await openMyProfile();
+    } catch(e) { demo('Ошибка удаления: ' + e.message); }
 }
 
 function demo(text) { tg.showAlert ? tg.showAlert(text) : alert(text); }
