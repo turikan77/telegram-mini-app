@@ -134,6 +134,17 @@
             border-radius: 10px; background: rgba(120,120,120,.10); cursor: pointer;
         }
         .date-help { margin-top: 6px; font-size: 12px; color: var(--tg-theme-hint-color, #777); }
+
+        .admin-role-list { display: grid; gap: 9px; margin: 12px 0 14px; }
+        .admin-role-item {
+            display: flex; gap: 9px; align-items: flex-start; padding: 10px 11px;
+            border-radius: 11px; background: rgba(120,120,120,.08); cursor: pointer;
+        }
+        .admin-role-item input { margin-top: 3px; }
+        .admin-role-text { flex: 1; }
+        .admin-role-label { font-weight: 700; }
+        .admin-role-description { margin-top: 3px; font-size: 12px; color: var(--tg-theme-hint-color, #777); line-height: 1.35; }
+        .participant-empty { text-align:center; padding:18px 8px; color:var(--tg-theme-hint-color,#777); }
         .modal-backdrop {
             position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,.45);
             display: flex; align-items: flex-end; justify-content: center;
@@ -218,15 +229,17 @@
         </div>
 
         <div id="myEditBlock" class="hidden" style="margin-top:22px">
-            <div class="card">
+            <div id="selfPersonalDataBlock" class="card">
                 <div class="section-title" style="margin-top:0">Личные данные</div>
-                <div class="field">
-                    <label>Дата рождения</label>
-                    <input id="birthDateInput" type="text" inputmode="numeric" maxlength="10" placeholder="дд.мм.гггг" autocomplete="bday" oninput="formatDateInput(this)">
-                    <div class="date-help">Введите 8 цифр, например 12042001 → 12.04.2001</div>
+                <div id="selfBirthEditBlock">
+                    <div class="field">
+                        <label>Дата рождения</label>
+                        <input id="birthDateInput" type="text" inputmode="numeric" maxlength="10" placeholder="дд.мм.гггг" autocomplete="bday" oninput="formatDateInput(this)">
+                        <div class="date-help">Введите 8 цифр, например 12042001 → 12.04.2001</div>
+                    </div>
+                    <button class="button" onclick="saveBirthDate()">Сохранить дату рождения</button>
+                    <div id="profileError" class="error"></div>
                 </div>
-                <button class="button" onclick="saveBirthDate()">Сохранить дату рождения</button>
-                <div id="profileError" class="error"></div>
 
                 <div id="adminAnodBlock" class="hidden" style="margin-top:20px">
                     <div class="field">
@@ -239,7 +252,7 @@
                 </div>
             </div>
 
-            <div class="card">
+            <div id="selfEducationEditBlock" class="card">
                 <div class="section-title" style="margin-top:0">Образование</div>
                 <div id="educationEditorList"></div>
                 <div id="educationEmpty" class="muted">Пока ничего не добавлено.</div>
@@ -249,7 +262,7 @@
                 </div>
             </div>
 
-            <div class="card">
+            <div id="selfAchievementEditBlock" class="card">
                 <div class="section-title" style="margin-top:0">Олимпиадные достижения</div>
                 <div id="achievementEditorList"></div>
                 <div id="achievementEditorEmpty" class="muted">Пока ничего не добавлено.</div>
@@ -271,6 +284,17 @@
                 <div class="achievement-note">
                     Можно одновременно отметить автора, редактора и тестировщика. Эти сведения обычный участник менять не может.
                 </div>
+            </div>
+
+            <div id="adminRolesBlock" class="card hidden">
+                <div class="section-title" style="margin-top:0">Роли — только администратор</div>
+                <div class="achievement-note" style="margin-bottom:10px">
+                    Автор, редактор, тестировщик и преподаватель здесь означают потенциальные роли.
+                    Они дают право откликаться на соответствующую роль внутри конкретного проекта.
+                </div>
+                <div id="adminRolesList" class="admin-role-list"></div>
+                <button class="button secondary" onclick="saveAdminRoles()">Сохранить роли</button>
+                <div id="adminRolesError" class="error"></div>
             </div>
         </div>
     </section>
@@ -371,7 +395,12 @@
 
         <div class="field">
             <label>Название олимпиады / проекта</label>
-            <input id="projectParticipationName" placeholder="Например, Турнир Ломоносова отбор">
+            <select id="projectParticipationNameSelect" onchange="projectParticipationNameChanged()"></select>
+        </div>
+
+        <div id="projectParticipationCustomNameField" class="field hidden">
+            <label>Название вручную</label>
+            <input id="projectParticipationCustomName" placeholder="Введите название">
         </div>
 
         <div class="field">
@@ -427,15 +456,16 @@ let currentUser = null;
 let currentEducation = [];
 let currentAchievements = [];
 let currentProjectParticipations = [];
+let registeredUsers = [];
+let currentProfile = null;
+let currentProfileTelegramId = null;
+let roleCatalog = [];
+let currentProfileRoleCodes = [];
+let ownerAdminLocked = false;
+let projectCompositionNames = [];
 let olympiadCatalog = [];
 let academicYears = [];
 let previousTab = 'mentors';
-
-const demoParticipants = [
-    {name:'Иванов Иван Иванович', birth:'15.04.2001', age:25, anodYears:5, education:['04.05.01, УГНТУ, г. Уфа, 2020-2026','МБОУ Лицей №1, г. Уфа, 2010-2020'], achievements:[{display_year:2026,display_text:'ВсОШ, закл., призёр'},{display_year:2026,display_text:'СПбГУ, II степень'},{display_year:2025,display_text:'МОШ, I степень'}], projects:[{academic_year_label:'2025-2026',display_text:'Турнир Ломоносова отбор, 5 задач, редактор 7-11 кл., тестировщик 7-11 кл.'},{academic_year_label:'2025-2026',display_text:'Олимпиада АНОД, редактор 10-11 кл.'},{academic_year_label:'2024-2025',display_text:'Методический турнир, 3 задачи'}]},
-    {name:'Петрова Анна Сергеевна', birth:'21.08.2002', age:24, anodYears:3, education:['04.03.01, МГУ, г. Москва, 2020-2026'], achievements:[{display_year:2025,display_text:'«Ломоносов», I степень'}], projects:[{academic_year_label:'2025-2026',display_text:'Весенняя олимпиада, 4 задачи'}]},
-    {name:'Сидоров Михаил Андреевич', birth:'03.02.1999', age:27, anodYears:7, education:['РХТУ, г. Москва, 2016-2022'], achievements:[], projects:[]}
-];
 
 function initials(name) {
     return (name || '?').split(' ').filter(Boolean).slice(0,2).map(x => x[0]).join('').toUpperCase();
@@ -509,7 +539,7 @@ function showApp() {
     document.getElementById('app').classList.remove('hidden');
     document.getElementById('myName').innerText = currentUser.full_name;
     setAvatar('myAvatar', currentUser.full_name, currentUser.photo_url);
-    renderParticipants();
+    refreshParticipants().catch(e => demo('Не удалось загрузить список наставников: ' + e.message));
     refreshEducation().catch(() => {});
     switchTab('projects');
 }
@@ -524,17 +554,57 @@ function switchTab(tab) {
     window.scrollTo(0,0);
 }
 
+async function refreshParticipants() {
+    registeredUsers = await api('/api/users/list', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({init_data:tg.initData})
+    });
+    renderParticipants();
+    return registeredUsers;
+}
+
 function renderParticipants() {
     const c = document.getElementById('participants');
     c.innerHTML = '';
-    demoParticipants.forEach(p => {
+
+    const others = registeredUsers.filter(p => p.telegram_id !== currentUser.telegram_id);
+    if (!others.length) {
+        const empty = document.createElement('div');
+        empty.className = 'participant-empty';
+        empty.textContent = 'Других зарегистрированных наставников пока нет.';
+        c.appendChild(empty);
+        return;
+    }
+
+    others.forEach(p => {
         const d = document.createElement('div');
         d.className = 'card clickable profile-row';
-        d.innerHTML = `<div class="avatar">${initials(p.name)}</div><div><div class="name">${p.name}</div><div class="muted">Открыть профиль</div></div><div class="arrow">›</div>`;
-        d.onclick = () => openProfile({...p, photo_url:null, isMe:false});
+
+        const avatar = document.createElement('div');
+        avatar.className = 'avatar';
+        if (p.photo_url) {
+            const img = document.createElement('img');
+            img.src = p.photo_url;
+            img.onerror = () => { avatar.innerHTML = initials(p.full_name); };
+            avatar.appendChild(img);
+        } else {
+            avatar.textContent = initials(p.full_name);
+        }
+
+        const info = document.createElement('div');
+        info.innerHTML = `<div class="name"></div><div class="muted">Открыть профиль</div>`;
+        info.querySelector('.name').textContent = p.full_name;
+
+        const arrow = document.createElement('div');
+        arrow.className = 'arrow';
+        arrow.textContent = '›';
+
+        d.append(avatar, info, arrow);
+        d.onclick = () => openRegisteredProfile(p.telegram_id);
         c.appendChild(d);
     });
 }
+
 
 function formatDateISO(iso) {
     if (!iso) return null;
@@ -576,22 +646,53 @@ async function refreshEducation() {
     return currentEducation;
 }
 
-async function openMyProfile() {
-    try { await refreshEducation(); } catch (e) { demo('Не удалось загрузить образование: ' + e.message); }
-    try { await refreshAchievements(); } catch (e) { demo('Не удалось загрузить достижения: ' + e.message); }
-    try { await refreshProjectParticipations(); } catch (e) { demo('Не удалось загрузить участие в проектах: ' + e.message); }
-    openProfile({
-        name:currentUser.full_name,
-        birth:currentUser.birth_date ? formatDateISO(currentUser.birth_date) : null,
-        age:currentUser.age,
-        anodYears:currentUser.anod_years,
-        photo_url:currentUser.photo_url,
-        education:currentEducation.map(x => x.display_text),
-        achievements:currentAchievements,
-        projects:currentProjectParticipations,
-        isMe:true
+async function loadProfileByTelegramId(telegramId) {
+    return api(`/api/users/${telegramId}/profile`, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({init_data:tg.initData})
     });
 }
+
+async function openRegisteredProfile(telegramId) {
+    try {
+        const data = await loadProfileByTelegramId(telegramId);
+        currentProfile = data;
+        currentProfileTelegramId = data.telegram_id;
+        currentEducation = data.education || [];
+        currentAchievements = data.achievements || [];
+        currentProjectParticipations = data.project_participations || [];
+        currentProfileRoleCodes = data.role_codes || [];
+        openProfile({
+            telegram_id:data.telegram_id,
+            name:data.full_name,
+            birth:data.birth_date ? formatDateISO(data.birth_date) : null,
+            age:data.age,
+            anodYears:data.anod_years,
+            anod_join_date:data.anod_join_date,
+            photo_url:data.photo_url,
+            education:(data.education || []).map(x => x.display_text),
+            achievements:data.achievements || [],
+            projects:data.project_participations || [],
+            role_codes:data.role_codes || [],
+            isMe:data.telegram_id === currentUser.telegram_id
+        });
+    } catch (e) {
+        demo('Не удалось открыть профиль: ' + e.message);
+    }
+}
+
+async function openMyProfile() {
+    await openRegisteredProfile(currentUser.telegram_id);
+}
+
+async function reopenCurrentProfile() {
+    if (currentProfileTelegramId) {
+        await openRegisteredProfile(currentProfileTelegramId);
+    } else {
+        await openMyProfile();
+    }
+}
+
 
 function renderPublicEducation(lines) {
     const box = document.getElementById('profileEducation');
@@ -667,19 +768,32 @@ function openProfile(p) {
     renderPublicAchievements(p.achievements || []);
     renderPublicProjectParticipations(p.projects || []);
 
-    document.getElementById('myEditBlock').classList.toggle('hidden', !p.isMe);
-    document.getElementById('adminAnodBlock').classList.toggle('hidden', !(p.isMe && currentUser.is_admin));
-    document.getElementById('adminProjectParticipationBlock').classList.toggle('hidden', !(p.isMe && currentUser.is_admin));
+    const canAdminManage = !!currentUser.is_admin;
+    document.getElementById('myEditBlock').classList.toggle('hidden', !(p.isMe || canAdminManage));
+    document.getElementById('selfPersonalDataBlock').classList.toggle('hidden', !(p.isMe || canAdminManage));
+    document.getElementById('selfBirthEditBlock').classList.toggle('hidden', !p.isMe);
+    document.getElementById('selfEducationEditBlock').classList.toggle('hidden', !p.isMe);
+    document.getElementById('selfAchievementEditBlock').classList.toggle('hidden', !p.isMe);
+    document.getElementById('adminAnodBlock').classList.toggle('hidden', !canAdminManage);
+    document.getElementById('adminProjectParticipationBlock').classList.toggle('hidden', !canAdminManage);
+    document.getElementById('adminRolesBlock').classList.toggle('hidden', !canAdminManage);
 
     if (p.isMe) {
         document.getElementById('birthDateInput').value = currentUser.birth_date ? formatDateISO(currentUser.birth_date) : '';
-        document.getElementById('anodJoinDateInput').value = currentUser.anod_join_date ? formatDateISO(currentUser.anod_join_date) : '';
         renderEducationEditor();
         renderAchievementEditor();
+    }
+
+    if (canAdminManage) {
+        document.getElementById('anodJoinDateInput').value = p.anod_join_date ? formatDateISO(p.anod_join_date) : '';
         renderProjectParticipationEditor();
+        loadAdminRolesForCurrentProfile().catch(e => {
+            document.getElementById('adminRolesError').innerText = e.message;
+        });
     }
     window.scrollTo(0,0);
 }
+
 
 function closeProfile() { switchTab(previousTab); }
 
@@ -704,11 +818,12 @@ async function saveAnodJoinDate() {
     let anod_join_date = null;
     try {
         anod_join_date = parseRuDate(document.getElementById('anodJoinDateInput').value, false);
-        currentUser = await api(`/api/admin/users/${currentUser.telegram_id}/anod-join-date`, {
+        const updated = await api(`/api/admin/users/${currentProfileTelegramId}/anod-join-date`, {
             method:'PATCH', headers:{'Content-Type':'application/json'},
             body:JSON.stringify({init_data:tg.initData,anod_join_date})
         });
-        await openMyProfile();
+        if (currentProfileTelegramId === currentUser.telegram_id) currentUser = {...currentUser, ...updated};
+        await reopenCurrentProfile();
         demo('Дата вступления в АНОД сохранена.');
     } catch(e) { error.innerText = e.message; }
 }
@@ -1024,13 +1139,19 @@ async function deleteAchievement(id) {
 }
 
 async function refreshProjectParticipations() {
-    currentProjectParticipations = await api('/api/profile/me/project-participations/list', {
+    const targetId = currentProfileTelegramId || currentUser.telegram_id;
+    const path = (currentUser.is_admin && targetId !== currentUser.telegram_id)
+        ? `/api/admin/users/${targetId}/project-participations/list`
+        : '/api/profile/me/project-participations/list';
+
+    currentProjectParticipations = await api(path, {
         method:'POST', headers:{'Content-Type':'application/json'},
         body:JSON.stringify({init_data:tg.initData})
     });
     renderProjectParticipationEditor();
     return currentProjectParticipations;
 }
+
 
 function renderProjectParticipationEditor() {
     const list = document.getElementById('projectParticipationEditorList');
@@ -1094,13 +1215,59 @@ function getProjectClasses(prefix) {
     return [7,8,9,10,11].filter(value => document.getElementById(`${prefix}${value}`).checked);
 }
 
+async function refreshProjectParticipationCatalog() {
+    const data = await api('/api/project-participations/catalog', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({init_data:tg.initData})
+    });
+    projectCompositionNames = data.project_names || [];
+    if (data.academic_years?.length) academicYears = data.academic_years;
+    return data;
+}
+
+function fillProjectNameSelect(entry = null) {
+    const select = document.getElementById('projectParticipationNameSelect');
+    select.innerHTML = '';
+    projectCompositionNames.forEach(name => {
+        const option = document.createElement('option');
+        option.value = name;
+        option.textContent = name;
+        select.appendChild(option);
+    });
+    const custom = document.createElement('option');
+    custom.value = '__custom__';
+    custom.textContent = 'Другое — написать вручную';
+    select.appendChild(custom);
+
+    if (entry) {
+        if (projectCompositionNames.includes(entry.project_name)) {
+            select.value = entry.project_name;
+            document.getElementById('projectParticipationCustomName').value = '';
+        } else {
+            select.value = '__custom__';
+            document.getElementById('projectParticipationCustomName').value = entry.project_name || '';
+        }
+    } else if (projectCompositionNames.length) {
+        select.value = projectCompositionNames[0];
+        document.getElementById('projectParticipationCustomName').value = '';
+    } else {
+        select.value = '__custom__';
+    }
+    projectParticipationNameChanged();
+}
+
+function projectParticipationNameChanged() {
+    const isCustom = document.getElementById('projectParticipationNameSelect').value === '__custom__';
+    document.getElementById('projectParticipationCustomNameField').classList.toggle('hidden', !isCustom);
+}
+
 async function openProjectParticipationModal(entry = null) {
     if (!currentUser.is_admin) return demo('Только администратор может изменять участие в проектах.');
 
     try {
-        if (!academicYears.length) await refreshOlympiadCatalog();
+        await refreshProjectParticipationCatalog();
     } catch (e) {
-        return demo('Не удалось загрузить учебные годы: ' + e.message);
+        return demo('Не удалось загрузить список проектов и учебные годы: ' + e.message);
     }
 
     renderClassCheckboxes('projectEditorClasses', 'editorClass');
@@ -1109,7 +1276,7 @@ async function openProjectParticipationModal(entry = null) {
     document.getElementById('projectParticipationModalBackdrop').classList.remove('hidden');
     document.getElementById('projectParticipationModalTitle').innerText = entry ? 'Изменить участие в проекте' : 'Добавить участие в проекте';
     document.getElementById('projectParticipationId').value = entry ? entry.id : '';
-    document.getElementById('projectParticipationName').value = entry ? entry.project_name : '';
+    fillProjectNameSelect(entry);
     document.getElementById('projectParticipationModalError').innerText = '';
 
     const yearSelect = document.getElementById('projectParticipationAcademicYear');
@@ -1144,7 +1311,10 @@ async function saveProjectParticipation() {
     error.innerText = '';
 
     const id = document.getElementById('projectParticipationId').value;
-    const project_name = document.getElementById('projectParticipationName').value.trim();
+    const nameChoice = document.getElementById('projectParticipationNameSelect').value;
+    const project_name = nameChoice === '__custom__'
+        ? document.getElementById('projectParticipationCustomName').value.trim()
+        : nameChoice;
     const academic_year_start = Number(document.getElementById('projectParticipationAcademicYear').value);
     const is_author = document.getElementById('projectRoleAuthor').checked;
     const is_editor = document.getElementById('projectRoleEditor').checked;
@@ -1165,7 +1335,7 @@ async function saveProjectParticipation() {
         is_author, author_task_count, is_editor, editor_classes, is_tester, tester_classes
     };
 
-    const base = `/api/admin/users/${currentUser.telegram_id}/project-participations`;
+    const base = `/api/admin/users/${currentProfileTelegramId}/project-participations`;
     try {
         await api(id ? `${base}/${id}` : base, {
             method:id ? 'PUT' : 'POST',
@@ -1174,7 +1344,7 @@ async function saveProjectParticipation() {
         });
         await refreshProjectParticipations();
         closeProjectParticipationModal();
-        await openMyProfile();
+        await reopenCurrentProfile();
         demo('Участие в проекте сохранено.');
     } catch (e) {
         error.innerText = e.message;
@@ -1183,16 +1353,98 @@ async function saveProjectParticipation() {
 
 async function deleteProjectParticipation(id) {
     if (!confirm('Удалить эту запись об участии в проекте?')) return;
-    const base = `/api/admin/users/${currentUser.telegram_id}/project-participations/${id}`;
+    const base = `/api/admin/users/${currentProfileTelegramId}/project-participations/${id}`;
     try {
         await api(base, {
             method:'DELETE', headers:{'Content-Type':'application/json'},
             body:JSON.stringify({init_data:tg.initData})
         });
         await refreshProjectParticipations();
-        await openMyProfile();
+        await reopenCurrentProfile();
     } catch (e) {
         demo('Ошибка удаления: ' + e.message);
+    }
+}
+
+async function refreshRoleCatalog() {
+    if (roleCatalog.length) return roleCatalog;
+    const data = await api('/api/roles/catalog', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({init_data:tg.initData})
+    });
+    roleCatalog = data.roles || [];
+    return roleCatalog;
+}
+
+async function loadAdminRolesForCurrentProfile() {
+    if (!currentUser.is_admin || !currentProfileTelegramId) return;
+    await refreshRoleCatalog();
+    const data = await api(`/api/admin/users/${currentProfileTelegramId}/roles/list`, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({init_data:tg.initData})
+    });
+    currentProfileRoleCodes = data.role_codes || [];
+    ownerAdminLocked = !!data.owner_admin_locked;
+    renderAdminRoles();
+}
+
+function renderAdminRoles() {
+    const box = document.getElementById('adminRolesList');
+    box.innerHTML = '';
+    roleCatalog.forEach(role => {
+        const label = document.createElement('label');
+        label.className = 'admin-role-item';
+
+        const input = document.createElement('input');
+        input.type = 'checkbox';
+        input.value = role.code;
+        input.checked = currentProfileRoleCodes.includes(role.code);
+        if (ownerAdminLocked && role.code === 'admin') {
+            input.checked = true;
+            input.disabled = true;
+        }
+
+        const text = document.createElement('div');
+        text.className = 'admin-role-text';
+        const title = document.createElement('div');
+        title.className = 'admin-role-label';
+        title.textContent = role.label;
+        const description = document.createElement('div');
+        description.className = 'admin-role-description';
+        description.textContent = role.description || '';
+        text.append(title, description);
+
+        label.append(input, text);
+        box.appendChild(label);
+    });
+}
+
+async function saveAdminRoles() {
+    if (!currentUser.is_admin || !currentProfileTelegramId) return;
+    const error = document.getElementById('adminRolesError');
+    error.innerText = '';
+
+    const role_codes = Array.from(
+        document.querySelectorAll('#adminRolesList input[type="checkbox"]')
+    ).filter(input => input.checked).map(input => input.value);
+
+    try {
+        const data = await api(`/api/admin/users/${currentProfileTelegramId}/roles`, {
+            method:'PUT', headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({init_data:tg.initData, role_codes})
+        });
+        currentProfileRoleCodes = data.role_codes || [];
+        ownerAdminLocked = !!data.owner_admin_locked;
+        renderAdminRoles();
+
+        if (currentProfileTelegramId === currentUser.telegram_id) {
+            currentUser.role_codes = currentProfileRoleCodes;
+            currentUser.roles = data.roles || [];
+            currentUser.is_admin = currentProfileRoleCodes.includes('admin');
+        }
+        demo('Роли сохранены.');
+    } catch (e) {
+        error.innerText = e.message;
     }
 }
 
