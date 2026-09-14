@@ -160,6 +160,56 @@
             .modal-backdrop { align-items: center; }
             .modal { border-radius: 22px; }
         }
+
+        .title-row { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:20px; }
+        .plus-button.compact { flex:0 0 auto; width:auto; }
+        .project-card { position:relative; }
+        .project-card-title { font-size:20px; font-weight:800; text-transform:uppercase; padding-right:74px; }
+        .project-card-actions { position:absolute; top:12px; right:12px; display:flex; gap:6px; }
+        .icon-button { width:34px; height:34px; border:0; border-radius:10px; cursor:pointer; background:rgba(120,120,120,.10); }
+        .icon-button.delete { color:#c62828; background:rgba(210,40,40,.10); }
+        .vacancy-title { font-size:18px; font-weight:800; }
+        .vacancy-card { width:100%; text-align:left; border:1px solid rgba(51,144,236,.18); border-radius:14px; padding:13px; margin-top:9px; background:rgba(51,144,236,.07); color:var(--tg-theme-text-color,#111); cursor:pointer; }
+        .vacancy-primary { font-weight:700; margin-top:3px; }
+        .vacancy-small { margin-top:4px; font-size:13px; color:var(--tg-theme-hint-color,#666); line-height:1.35; }
+        .subsection-title { font-size:16px; font-weight:700; margin:14px 0 10px; }
+        .task-row { display:grid; grid-template-columns:34px 86px 70px 1fr; gap:8px; align-items:center; padding:7px 0; }
+        .task-row input { width:70px; padding:9px; border:1px solid rgba(120,120,120,.35); border-radius:9px; background:var(--tg-theme-bg-color,#fff); color:var(--tg-theme-text-color,#111); }
+        .remove-class { border:0; background:rgba(210,40,40,.10); color:#c62828; border-radius:9px; width:32px; height:32px; cursor:pointer; }
+        .common-row { margin-left:42px; display:flex; gap:8px; align-items:center; color:var(--tg-theme-hint-color,#777); font-size:13px; padding:1px 0 7px; }
+        .common-row input { width:60px; padding:7px; border:1px solid rgba(120,120,120,.30); border-radius:8px; }
+        .total-line { font-size:18px; margin:14px 0; }
+        .inline-money { display:grid; grid-template-columns:minmax(120px,1fr) 100px auto; gap:8px; align-items:center; }
+        .inline-money label { margin:0; }
+        .inline-money input { width:100px; }
+        .editor-slot { border:1px solid rgba(120,120,120,.18); border-radius:12px; padding:11px; margin-bottom:9px; }
+        .editor-slot-head { display:flex; align-items:center; justify-content:space-between; font-weight:700; margin-bottom:8px; }
+        .editor-classes { display:flex; flex-wrap:wrap; gap:6px; }
+        .editor-class-option { padding:7px 9px; border-radius:9px; background:rgba(120,120,120,.09); }
+        .editor-class-option.disabled { opacity:.4; }
+        .budget-card { background:rgba(51,144,236,.06); }
+        .budget-breakdown { font-size:13px; color:var(--tg-theme-hint-color,#666); line-height:1.55; white-space:pre-line; }
+        .budget-total { font-size:22px; font-weight:800; margin-top:9px; }
+        .big-textarea { width:100%; min-height:110px; resize:vertical; padding:13px; border-radius:11px; border:1px solid rgba(120,120,120,.35); background:var(--tg-theme-bg-color,#fff); color:var(--tg-theme-text-color,#111); font:inherit; }
+        .range-row { display:grid; grid-template-columns:auto 1fr auto 1fr; align-items:center; gap:8px; }
+        .attachment-buttons { display:grid; grid-template-columns:1fr 1fr; gap:9px; }
+        .attach-button { border:0; border-radius:12px; padding:12px; text-align:center; cursor:pointer; font-weight:600; }
+        .attach-button.device { background:rgba(51,144,236,.12); color:var(--tg-theme-link-color,#2476b9); }
+        .attach-button.library { background:rgba(70,160,90,.12); color:#2d7d3f; }
+        .selected-attachments { margin-top:10px; font-size:13px; line-height:1.5; }
+        .breadcrumb { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; }
+        .crumb { border:0; background:rgba(120,120,120,.10); border-radius:9px; padding:7px 9px; cursor:pointer; color:var(--tg-theme-text-color,#111); }
+        .material-entry { display:flex; align-items:center; gap:10px; }
+        .material-entry-main { flex:1; }
+        .material-entry-actions { display:flex; gap:6px; }
+        .material-manage-buttons { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-top:16px; }
+        .material-manage-buttons button, .material-manage-buttons label { border:0; border-radius:11px; padding:11px 7px; text-align:center; cursor:pointer; font-size:13px; font-weight:700; }
+        .manage-folder { background:#d9efff; color:#176b9c; }
+        .manage-file { background:#dff3df; color:#2d7d3f; }
+        .manage-edit { background:#ead7a6; color:#6b5314; }
+        .red-x { border:0; background:#d32f2f; color:#fff; border-radius:9px; width:32px; height:32px; cursor:pointer; }
+        .material-selector-list { max-height:45vh; overflow:auto; }
+        .selector-item { display:flex; gap:8px; padding:9px; border-bottom:1px solid rgba(120,120,120,.15); }
     </style>
 </head>
 <body>
@@ -192,18 +242,167 @@
     </section>
 
     <section id="projectsPage" class="page">
-        <div class="title">Проекты</div>
+        <div class="title-row">
+            <div class="title" style="margin-bottom:0">Проекты</div>
+            <button id="createProjectButton" class="plus-button compact hidden" onclick="openProjectTypeModal()">＋ Создать проект</button>
+        </div>
         <div class="section-title">Мои проекты</div>
-        <div class="card"><div class="badge">Моя роль: редактор</div><div class="project-title">Олимпиада АНОД — 2026</div><div class="project-desc">Демонстрационный проект.</div></div>
+        <div id="myProjectsList"></div>
+        <div id="myProjectsEmpty" class="card muted">Пока нет проектов.</div>
         <div class="section-title">Текущие проекты</div>
-        <div class="card"><div class="project-title">Весенняя олимпиада</div><div class="project-desc">Идёт набор команды. Требуются 2 редактора и 3 автора.</div><button class="button" onclick="demo('Позже здесь будет отклик на роль в проекте.')">Принять участие</button></div>
-        <div class="card"><div class="project-title">Летняя школа</div><div class="project-desc">Образовательный проект. Набор команды открыт.</div><button class="button" onclick="demo('Позже здесь будет отклик на роль в проекте.')">Принять участие</button></div>
+        <div id="currentProjectsList"></div>
+        <div id="currentProjectsEmpty" class="card muted">Пока нет текущих проектов.</div>
+    </section>
+
+    <section id="projectCreatePage" class="page hidden">
+        <button class="back" onclick="cancelProjectCreation()">← К проектам</button>
+        <div class="title">Настройка проекта</div>
+        <div class="card">
+            <div class="section-title" style="margin-top:0">Составление задач</div>
+            <div class="field">
+                <label>Название</label>
+                <select id="projectNameSelect" onchange="projectNameChanged()"></select>
+            </div>
+            <div id="customProjectNameField" class="field hidden">
+                <label>Своё название</label>
+                <input id="customProjectName" maxlength="220" placeholder="Введите название олимпиады">
+                <div class="date-help">После создания это название появится в списке для будущих проектов.</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="section-title" style="margin-top:0">Задачи по классам</div>
+            <div id="taskClassRows"></div>
+            <div class="total-line">Всего: <strong id="totalTasksValue">0</strong> задач</div>
+            <div class="field inline-money">
+                <label>Оплата задачи</label>
+                <input id="taskPrice" type="number" min="0" inputmode="numeric" value="0" oninput="recalculateProjectBudget()">
+                <span>рублей</span>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="section-title" style="margin-top:0">Редактура</div>
+            <div id="editorSlots"></div>
+            <button id="addEditorButton" class="plus-button" onclick="addEditorSlot()">＋ Редактор</button>
+            <div class="field inline-money" style="margin-top:14px">
+                <label>Оплата редактору</label>
+                <input id="editorPay" type="number" min="0" inputmode="numeric" value="0" oninput="recalculateProjectBudget()">
+                <span>рублей</span>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="section-title" style="margin-top:0">Тестирование</div>
+            <div class="field inline-money">
+                <label>Тестировщиков</label>
+                <input id="testerCount" type="number" min="0" max="100" inputmode="numeric" value="0" oninput="recalculateProjectBudget()">
+                <span>человек</span>
+            </div>
+            <div class="field inline-money">
+                <label>Оплата тестировщику</label>
+                <input id="testerPay" type="number" min="0" inputmode="numeric" value="0" oninput="recalculateProjectBudget()">
+                <span>рублей</span>
+            </div>
+        </div>
+
+        <div class="card budget-card">
+            <div id="budgetBreakdown" class="budget-breakdown"></div>
+            <div class="budget-total">Сумма: <span id="budgetTotal">0</span> руб.</div>
+        </div>
+
+        <div class="card">
+            <div class="section-title" style="margin-top:0">Описание</div>
+            <div class="subsection-title">Дедлайны</div>
+            <div class="field">
+                <label>Срок сдачи</label>
+                <input id="submissionDeadline" type="text" inputmode="numeric" maxlength="10" placeholder="дд.мм.гггг" oninput="formatDateInput(this)">
+            </div>
+            <div class="field">
+                <label>Срок конца тестирования *</label>
+                <input id="testingEndDeadline" type="text" inputmode="numeric" maxlength="10" placeholder="дд.мм.гггг" oninput="formatDateInput(this)">
+            </div>
+            <div class="field">
+                <label>Срок подготовки версии для тестирования *</label>
+                <input id="testingVersionDeadline" type="text" inputmode="numeric" maxlength="10" placeholder="дд.мм.гггг" oninput="formatDateInput(this)">
+            </div>
+            <div class="field">
+                <label>Срок подготовки прототипов задач *</label>
+                <input id="prototypesDeadline" type="text" inputmode="numeric" maxlength="10" placeholder="дд.мм.гггг" oninput="formatDateInput(this)">
+            </div>
+            <div class="date-help">* может заполнить и менять редактор комплекта. Срок сдачи редактор менять не сможет.</div>
+
+            <div class="field" style="margin-top:20px">
+                <label>Тематика олимпиады</label>
+                <textarea id="themeText" class="big-textarea" placeholder="отображается первым в описании"></textarea>
+            </div>
+
+            <div class="field">
+                <label>Платформа проведения</label>
+                <select id="platformSelect" onchange="platformChanged()">
+                    <option value="очно">очно</option>
+                    <option value="платформа Сириус">платформа Сириус</option>
+                    <option value="платформа Цифрус">платформа Цифрус</option>
+                    <option value="__custom__">Другое — написать</option>
+                </select>
+            </div>
+            <div id="customPlatformField" class="field hidden">
+                <input id="customPlatform" placeholder="Своя платформа">
+            </div>
+
+            <div class="field">
+                <label>Уровень сложности</label>
+                <select id="difficultySelect">
+                    <option value="" selected disabled>относительно ВсОШ</option>
+                    <option>школьный</option>
+                    <option>между школьным и муниципальным</option>
+                    <option>муниципальный</option>
+                    <option>между муниципальным и региональным</option>
+                    <option>региональный</option>
+                    <option>выше регионального</option>
+                </select>
+            </div>
+
+            <div class="field">
+                <label>Кол-во вопросов в задаче</label>
+                <div class="range-row"><span>от</span><input id="questionsMin" type="number" min="1" max="100" inputmode="numeric"><span>до</span><input id="questionsMax" type="number" min="1" max="100" inputmode="numeric"></div>
+            </div>
+
+            <div class="field">
+                <label>Длина текста задачи</label>
+                <select id="textLengthSelect">
+                    <option value="short">короткая</option>
+                    <option value="medium" selected>средняя (стандартная)</option>
+                    <option value="long">длинная</option>
+                </select>
+            </div>
+
+            <div class="field">
+                <label>Дополнительно об олимпиаде</label>
+                <textarea id="additionalText" class="big-textarea"></textarea>
+            </div>
+
+            <div class="attachment-buttons">
+                <label class="attach-button device">Прикрепить файлы с устройства<input id="projectDeviceFiles" type="file" multiple hidden onchange="projectDeviceFilesChanged()"></label>
+                <button class="attach-button library" onclick="openMaterialSelector()">Выбрать из материалов АНОД</button>
+            </div>
+            <div id="selectedAttachments" class="selected-attachments muted"></div>
+        </div>
+
+        <div id="createProjectError" class="error"></div>
+        <button id="submitProjectButton" class="button" onclick="submitTaskCompositionProject()">Создать проект</button>
     </section>
 
     <section id="materialsPage" class="page hidden">
-        <div class="title">Материалы</div>
-        <div class="card"><div class="material-title">Методичка наставника</div><div class="muted">PDF • демонстрационный файл</div><br><button class="button" onclick="demo('Позже бот отправит этот файл в Telegram.')">Получить</button></div>
-        <div class="card"><div class="material-title">Шаблон отчёта по проекту</div><div class="muted">XLSX • демонстрационный файл</div><br><button class="button" onclick="demo('Позже бот отправит этот файл в Telegram.')">Получить</button></div>
+        <div class="title">Материалы АНОД</div>
+        <div id="materialsBreadcrumb" class="breadcrumb"></div>
+        <div id="materialsList"></div>
+        <div id="materialsEmpty" class="card muted hidden">В этой папке пока пусто.</div>
+        <div id="materialManageButtons" class="material-manage-buttons hidden">
+            <button class="manage-folder" onclick="createFolderPrompt()">Добавить папку</button>
+            <label class="manage-file">Добавить файл<input id="materialFileInput" type="file" hidden onchange="uploadMaterialFile()"></label>
+            <button id="materialEditToggle" class="manage-edit" onclick="toggleMaterialEditMode()">Редактировать</button>
+        </div>
     </section>
 
     <section id="profilePage" class="page hidden">
@@ -442,6 +641,26 @@
     </div>
 </div>
 
+
+<div id="projectTypeModalBackdrop" class="modal-backdrop hidden" onclick="modalBackdropClose(event, 'projectTypeModalBackdrop')">
+    <div class="modal" onclick="event.stopPropagation()">
+        <div class="modal-title">Создать проект</div>
+        <div id="projectTypeChoices"></div>
+        <button class="button secondary" style="margin-top:10px" onclick="closeProjectTypeModal()">Отмена</button>
+    </div>
+</div>
+
+<div id="materialSelectorBackdrop" class="modal-backdrop hidden" onclick="modalBackdropClose(event, 'materialSelectorBackdrop')">
+    <div class="modal" onclick="event.stopPropagation()">
+        <div class="modal-title">Выбрать из материалов АНОД</div>
+        <div id="materialSelectorList" class="material-selector-list"></div>
+        <div class="modal-actions">
+            <button class="button secondary" onclick="closeMaterialSelector()">Отмена</button>
+            <button class="button" onclick="applyMaterialSelection()">Выбрать</button>
+        </div>
+    </div>
+</div>
+
 <script>
 const tg = window.Telegram.WebApp;
 tg.ready();
@@ -466,6 +685,17 @@ let projectCompositionNames = [];
 let olympiadCatalog = [];
 let academicYears = [];
 let previousTab = 'mentors';
+let projectCreateOptions = null;
+let activeTaskClasses = [6,7,8,9,10,11];
+let editorSlotsState = [];
+let selectedMaterialIds = [];
+let selectedMaterialMap = new Map();
+let pendingProjectFiles = [];
+let currentMaterialsFolderId = null;
+let currentMaterialsParentId = null;
+let materialEditMode = false;
+let materialBreadcrumbStack = [];
+
 
 function initials(name) {
     return (name || '?').split(' ').filter(Boolean).slice(0,2).map(x => x[0]).join('').toUpperCase();
@@ -545,12 +775,14 @@ function showApp() {
 }
 
 function switchTab(tab) {
-    ['mentorsPage','projectsPage','materialsPage','profilePage'].forEach(id => document.getElementById(id).classList.add('hidden'));
+    ['mentorsPage','projectsPage','materialsPage','profilePage','projectCreatePage'].forEach(id => document.getElementById(id).classList.add('hidden'));
     const pages = {mentors:'mentorsPage',projects:'projectsPage',materials:'materialsPage'};
     document.getElementById(pages[tab]).classList.remove('hidden');
     document.querySelectorAll('.nav-button').forEach(x => x.classList.remove('active'));
     document.getElementById({mentors:'navMentors',projects:'navProjects',materials:'navMaterials'}[tab]).classList.add('active');
     previousTab = tab;
+    if (tab === 'projects') refreshProjects().catch(e => demo('Не удалось загрузить проекты: ' + e.message));
+    if (tab === 'materials') loadMaterialsRoot().catch(e => demo('Не удалось загрузить материалы: ' + e.message));
     window.scrollTo(0,0);
 }
 
@@ -634,6 +866,22 @@ function parseRuDate(value, allowEmpty = false) {
         throw new Error('Такой даты не существует. Проверьте день, месяц и год.');
     }
     if (year < 1900 || test > new Date()) throw new Error('Укажите корректную дату, не позднее сегодняшнего дня.');
+    return `${String(year).padStart(4,'0')}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+}
+
+
+function parseProjectDate(value) {
+    const text = (value || '').trim();
+    const match = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(text);
+    if (!match) throw new Error('Введите дату в формате дд.мм.гггг.');
+    const day = Number(match[1]);
+    const month = Number(match[2]);
+    const year = Number(match[3]);
+    const test = new Date(Date.UTC(year, month - 1, day));
+    if (test.getUTCFullYear() !== year || test.getUTCMonth() !== month - 1 || test.getUTCDate() !== day) {
+        throw new Error('Такой даты не существует.');
+    }
+    if (year < 2020 || year > 2100) throw new Error('Проверьте год дедлайна.');
     return `${String(year).padStart(4,'0')}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
 }
 
@@ -758,7 +1006,7 @@ function renderPublicProjectParticipations(items) {
 }
 
 function openProfile(p) {
-    ['mentorsPage','projectsPage','materialsPage'].forEach(id => document.getElementById(id).classList.add('hidden'));
+    ['mentorsPage','projectsPage','materialsPage','projectCreatePage'].forEach(id => document.getElementById(id).classList.add('hidden'));
     document.getElementById('profilePage').classList.remove('hidden');
     document.getElementById('profileName').innerText = p.name;
     setAvatar('profileAvatar', p.name, p.photo_url);
@@ -1447,6 +1695,550 @@ async function saveAdminRoles() {
         error.innerText = e.message;
     }
 }
+
+
+// =========================================================
+// ЭТАП 7: ПРОЕКТЫ
+// =========================================================
+let taskClassValues = {6:0,7:0,8:0,9:0,10:0,11:0};
+let commonTaskValues = {};
+
+async function refreshProjects() {
+    const data = await api('/api/projects/list', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({init_data:tg.initData})
+    });
+    document.getElementById('createProjectButton').classList.toggle('hidden', !data.can_create_project);
+    renderProjectCards('myProjectsList', 'myProjectsEmpty', data.my_projects || []);
+    renderProjectCards('currentProjectsList', 'currentProjectsEmpty', data.current_projects || []);
+}
+
+function renderProjectCards(listId, emptyId, projects) {
+    const list = document.getElementById(listId);
+    const empty = document.getElementById(emptyId);
+    list.innerHTML = '';
+    empty.classList.toggle('hidden', projects.length > 0);
+    projects.forEach(project => list.appendChild(buildProjectCard(project)));
+}
+
+function buildProjectCard(project) {
+    const card = document.createElement('div');
+    card.className = 'card project-card';
+
+    const title = document.createElement('div');
+    title.className = 'project-card-title';
+    title.textContent = project.title;
+    card.appendChild(title);
+
+    if (project.can_manage) {
+        const actions = document.createElement('div');
+        actions.className = 'project-card-actions';
+        const bell = document.createElement('button');
+        bell.className = 'icon-button';
+        bell.textContent = '🔔';
+        bell.title = 'Уведомления';
+        bell.onclick = () => demo('На следующем этапе здесь будет создание уведомлений по проекту.');
+        const del = document.createElement('button');
+        del.className = 'icon-button delete';
+        del.textContent = '✕';
+        del.title = 'Удалить проект';
+        del.onclick = () => deleteCurrentProject(project.id, project.title);
+        actions.append(bell, del);
+        card.appendChild(actions);
+    }
+
+    const theme = document.createElement('div');
+    theme.className = 'project-desc';
+    theme.style.marginTop = '8px';
+    theme.textContent = project.theme_text || '';
+    card.appendChild(theme);
+
+    const heading = document.createElement('div');
+    heading.className = 'section-title';
+    heading.style.margin = '14px 0 6px';
+    heading.textContent = 'Принять участие:';
+    card.appendChild(heading);
+
+    const buttons = project.vacancy_buttons || [];
+    if (!buttons.length) {
+        const noRoles = document.createElement('div');
+        noRoles.className = 'muted';
+        noRoles.textContent = 'Для ваших потенциальных ролей сейчас нет доступных кнопок.';
+        card.appendChild(noRoles);
+    }
+
+    buttons.forEach(vacancy => {
+        const button = document.createElement('button');
+        button.className = 'vacancy-card';
+        button.onclick = () => demo(`Отклик на роль «${vacancy.title}» подключим следующим этапом.`);
+        button.innerHTML = `
+            <div class="vacancy-title">${escapeHtml(vacancy.title)}</div>
+            <div class="vacancy-primary">${escapeHtml(vacancy.primary_text || '')}</div>
+            <div class="vacancy-small">${escapeHtml(vacancy.description || '')}</div>
+            <div class="vacancy-small"><strong>${escapeHtml(vacancy.deadline_text || '')}</strong></div>
+        `;
+        card.appendChild(button);
+    });
+
+    return card;
+}
+
+function escapeHtml(text) {
+    return String(text ?? '').replace(/[&<>'"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));
+}
+
+async function deleteCurrentProject(id, title) {
+    if (!confirm(`Удалить проект «${title}»? Это действие нельзя отменить.`)) return;
+    try {
+        await api(`/api/projects/${id}`, {
+            method:'DELETE', headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({init_data:tg.initData})
+        });
+        await refreshProjects();
+    } catch(e) { demo('Ошибка удаления: ' + e.message); }
+}
+
+function modalBackdropClose(event, id) {
+    if (event.target.id !== id) return;
+    if (id === 'projectTypeModalBackdrop') closeProjectTypeModal();
+    if (id === 'materialSelectorBackdrop') closeMaterialSelector();
+}
+
+async function openProjectTypeModal() {
+    try {
+        projectCreateOptions = await api('/api/projects/create-options', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({init_data:tg.initData})
+        });
+        const box = document.getElementById('projectTypeChoices');
+        box.innerHTML = '';
+        (projectCreateOptions.project_types || []).forEach(type => {
+            const button = document.createElement('button');
+            button.className = 'button secondary';
+            button.style.marginBottom = '8px';
+            button.textContent = type.name;
+            button.onclick = () => chooseProjectType(type.code);
+            box.appendChild(button);
+        });
+        document.getElementById('projectTypeModalBackdrop').classList.remove('hidden');
+    } catch(e) { demo(e.message); }
+}
+
+function closeProjectTypeModal() {
+    document.getElementById('projectTypeModalBackdrop').classList.add('hidden');
+}
+
+function chooseProjectType(code) {
+    closeProjectTypeModal();
+    if (code === 'project_2') {
+        demo('Настройка типа «Проект 2» будет добавлена позже.');
+        return;
+    }
+    if (code === 'task_composition') openTaskCompositionForm();
+}
+
+function openTaskCompositionForm() {
+    ['mentorsPage','projectsPage','materialsPage','profilePage'].forEach(id => document.getElementById(id).classList.add('hidden'));
+    document.getElementById('projectCreatePage').classList.remove('hidden');
+    document.querySelectorAll('.nav-button').forEach(x => x.classList.remove('active'));
+
+    activeTaskClasses = [6,7,8,9,10,11];
+    taskClassValues = {6:0,7:0,8:0,9:0,10:0,11:0};
+    commonTaskValues = {};
+    editorSlotsState = [[]];
+    selectedMaterialIds = [];
+    selectedMaterialMap = new Map();
+    pendingProjectFiles = [];
+
+    const select = document.getElementById('projectNameSelect');
+    select.innerHTML = '';
+    (projectCreateOptions?.task_composition_names || []).forEach(item => {
+        const option = document.createElement('option');
+        option.value = item.name;
+        option.textContent = item.name;
+        select.appendChild(option);
+    });
+    const custom = document.createElement('option');
+    custom.value = '__custom__';
+    custom.textContent = 'Другое — написать самостоятельно';
+    select.appendChild(custom);
+    projectNameChanged();
+
+    ['taskPrice','editorPay','testerCount','testerPay'].forEach(id => document.getElementById(id).value = '0');
+    ['submissionDeadline','testingEndDeadline','testingVersionDeadline','prototypesDeadline','themeText','customPlatform','questionsMin','questionsMax','additionalText'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('platformSelect').value = 'очно';
+    document.getElementById('difficultySelect').value = '';
+    document.getElementById('textLengthSelect').value = 'medium';
+    document.getElementById('createProjectError').innerText = '';
+    document.getElementById('projectDeviceFiles').value = '';
+    platformChanged();
+    renderTaskRows();
+    renderEditorSlots();
+    renderSelectedAttachments();
+    recalculateProjectBudget();
+    window.scrollTo(0,0);
+}
+
+function cancelProjectCreation() { switchTab('projects'); }
+
+function projectNameChanged() {
+    const custom = document.getElementById('projectNameSelect').value === '__custom__';
+    document.getElementById('customProjectNameField').classList.toggle('hidden', !custom);
+}
+
+function currentProjectName() {
+    const selected = document.getElementById('projectNameSelect').value;
+    return selected === '__custom__' ? document.getElementById('customProjectName').value.trim() : selected;
+}
+
+function removeTaskClass(classNumber) {
+    if (activeTaskClasses.length <= 1) return demo('В проекте должен остаться хотя бы один класс.');
+    activeTaskClasses = activeTaskClasses.filter(x => x !== classNumber);
+    delete taskClassValues[classNumber];
+    Object.keys(commonTaskValues).forEach(key => {
+        const [a,b] = key.split('-').map(Number);
+        if (a === classNumber || b === classNumber) delete commonTaskValues[key];
+    });
+    editorSlotsState = editorSlotsState.map(classes => classes.filter(x => x !== classNumber));
+    renderTaskRows();
+    renderEditorSlots();
+    recalculateProjectBudget();
+}
+
+function renderTaskRows() {
+    const box = document.getElementById('taskClassRows');
+    box.innerHTML = '';
+    activeTaskClasses.forEach((classNumber, index) => {
+        const row = document.createElement('div');
+        row.className = 'task-row';
+        row.innerHTML = `
+            <button class="remove-class" onclick="removeTaskClass(${classNumber})">✕</button>
+            <strong>${classNumber} класс</strong>
+            <input type="number" min="0" max="100" value="${taskClassValues[classNumber] ?? 0}" oninput="taskClassValueChanged(${classNumber}, this.value)">
+            <span>задач</span>
+        `;
+        box.appendChild(row);
+
+        if (index < activeTaskClasses.length - 1) {
+            const next = activeTaskClasses[index + 1];
+            const key = `${classNumber}-${next}`;
+            const common = document.createElement('div');
+            common.className = 'common-row';
+            common.innerHTML = `<span>└ ] общие между ${classNumber} и ${next} кл.</span><input type="number" min="0" max="100" value="${commonTaskValues[key] ?? 0}" oninput="commonTaskChanged('${key}', this.value)"><span>задач</span>`;
+            box.appendChild(common);
+        }
+    });
+}
+
+function taskClassValueChanged(classNumber, value) {
+    taskClassValues[classNumber] = Math.max(0, Math.min(100, Number(value) || 0));
+    recalculateProjectBudget();
+}
+
+function commonTaskChanged(key, value) {
+    commonTaskValues[key] = Math.max(0, Math.min(100, Number(value) || 0));
+    recalculateProjectBudget();
+}
+
+function getTotalTasksFrontend() {
+    const raw = activeTaskClasses.reduce((sum, cls) => sum + (Number(taskClassValues[cls]) || 0), 0);
+    let common = 0;
+    for (let i=0; i<activeTaskClasses.length-1; i++) {
+        const key = `${activeTaskClasses[i]}-${activeTaskClasses[i+1]}`;
+        common += Number(commonTaskValues[key]) || 0;
+    }
+    return Math.max(0, raw - common);
+}
+
+function addEditorSlot() {
+    const allowed = activeTaskClasses.filter(x => x >= 7 && x <= 11);
+    const used = new Set(editorSlotsState.flat());
+    if (!allowed.some(x => !used.has(x))) return demo('Свободных классов для нового редактора больше нет.');
+    editorSlotsState.push([]);
+    renderEditorSlots();
+    recalculateProjectBudget();
+}
+
+function removeEditorSlot(index) {
+    editorSlotsState.splice(index,1);
+    if (!editorSlotsState.length) editorSlotsState.push([]);
+    renderEditorSlots();
+    recalculateProjectBudget();
+}
+
+function toggleEditorClass(slotIndex, classNumber, checked) {
+    let values = new Set(editorSlotsState[slotIndex] || []);
+    if (checked) values.add(classNumber); else values.delete(classNumber);
+    editorSlotsState[slotIndex] = Array.from(values).sort((a,b)=>a-b);
+    renderEditorSlots();
+    recalculateProjectBudget();
+}
+
+function renderEditorSlots() {
+    const box = document.getElementById('editorSlots');
+    box.innerHTML = '';
+    const allowed = activeTaskClasses.filter(x => x >= 7 && x <= 11);
+
+    editorSlotsState.forEach((classes, index) => {
+        const usedElsewhere = new Set(editorSlotsState.flatMap((item, i) => i === index ? [] : item));
+        const slot = document.createElement('div');
+        slot.className = 'editor-slot';
+        const head = document.createElement('div');
+        head.className = 'editor-slot-head';
+        head.innerHTML = `<span>Редактор ${index+1}</span>`;
+        if (editorSlotsState.length > 1) {
+            const del = document.createElement('button');
+            del.className = 'remove-class'; del.textContent = '✕'; del.onclick = () => removeEditorSlot(index);
+            head.appendChild(del);
+        }
+        slot.appendChild(head);
+        const opts = document.createElement('div');
+        opts.className = 'editor-classes';
+        allowed.forEach(cls => {
+            const disabled = usedElsewhere.has(cls);
+            const label = document.createElement('label');
+            label.className = 'editor-class-option' + (disabled ? ' disabled' : '');
+            const input = document.createElement('input');
+            input.type = 'checkbox'; input.checked = classes.includes(cls); input.disabled = disabled;
+            input.onchange = () => toggleEditorClass(index, cls, input.checked);
+            label.append(input, document.createTextNode(` ${cls} класс`));
+            opts.appendChild(label);
+        });
+        slot.appendChild(opts);
+        box.appendChild(slot);
+    });
+
+    const used = new Set(editorSlotsState.flat());
+    document.getElementById('addEditorButton').classList.toggle('hidden', !allowed.some(x => !used.has(x)));
+}
+
+function recalculateProjectBudget() {
+    const totalTasks = getTotalTasksFrontend();
+    document.getElementById('totalTasksValue').textContent = String(totalTasks);
+    const taskPrice = Number(document.getElementById('taskPrice').value) || 0;
+    const editorPay = Number(document.getElementById('editorPay').value) || 0;
+    const editorCount = editorSlotsState.filter(x => x.length).length;
+    const testerCount = Number(document.getElementById('testerCount').value) || 0;
+    const testerPay = Number(document.getElementById('testerPay').value) || 0;
+    const author = totalTasks * taskPrice;
+    const editors = editorCount * editorPay;
+    const testing = testerCount * testerPay;
+    const lines = [`${totalTasks} задач × ${taskPrice} = ${author}`];
+    for (let i=0; i<editorCount; i++) lines.push(`Редактор ${i+1} = ${editorPay}`);
+    lines.push(`Тестирование × ${testerCount} = ${testing}`);
+    document.getElementById('budgetBreakdown').textContent = lines.join('\n');
+    document.getElementById('budgetTotal').textContent = String(author + editors + testing);
+}
+
+function platformChanged() {
+    document.getElementById('customPlatformField').classList.toggle('hidden', document.getElementById('platformSelect').value !== '__custom__');
+}
+
+function projectDeviceFilesChanged() {
+    pendingProjectFiles = Array.from(document.getElementById('projectDeviceFiles').files || []);
+    renderSelectedAttachments();
+}
+
+function renderSelectedAttachments() {
+    const parts = [];
+    if (pendingProjectFiles.length) parts.push('С устройства: ' + pendingProjectFiles.map(x => x.name).join(', '));
+    if (selectedMaterialIds.length) parts.push('Из материалов АНОД: ' + selectedMaterialIds.map(id => selectedMaterialMap.get(id)?.name || `#${id}`).join(', '));
+    document.getElementById('selectedAttachments').textContent = parts.join('\n');
+}
+
+async function openMaterialSelector() {
+    try {
+        const files = await api('/api/materials/files/all', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({init_data:tg.initData})
+        });
+        const box = document.getElementById('materialSelectorList');
+        box.innerHTML = '';
+        selectedMaterialMap = new Map(files.map(item => [item.id, item]));
+        if (!files.length) box.innerHTML = '<div class="muted">В материалах пока нет файлов.</div>';
+        files.forEach(file => {
+            const label = document.createElement('label');
+            label.className = 'selector-item';
+            label.innerHTML = `<input type="checkbox" value="${file.id}" ${selectedMaterialIds.includes(file.id) ? 'checked' : ''}><div><strong>${escapeHtml(file.name)}</strong><div class="muted">${escapeHtml(file.path)}</div></div>`;
+            box.appendChild(label);
+        });
+        document.getElementById('materialSelectorBackdrop').classList.remove('hidden');
+    } catch(e) { demo(e.message); }
+}
+
+function closeMaterialSelector() { document.getElementById('materialSelectorBackdrop').classList.add('hidden'); }
+function applyMaterialSelection() {
+    selectedMaterialIds = Array.from(document.querySelectorAll('#materialSelectorList input:checked')).map(x => Number(x.value));
+    closeMaterialSelector(); renderSelectedAttachments();
+}
+
+async function submitTaskCompositionProject() {
+    const error = document.getElementById('createProjectError'); error.innerText = '';
+    const button = document.getElementById('submitProjectButton');
+    button.disabled = true;
+    try {
+        const project_name = currentProjectName();
+        if (!project_name) throw new Error('Укажите название проекта.');
+        const common_tasks = [];
+        for (let i=0; i<activeTaskClasses.length-1; i++) {
+            const a = activeTaskClasses[i], b = activeTaskClasses[i+1], key = `${a}-${b}`;
+            common_tasks.push({from_class:a,to_class:b,count:Number(commonTaskValues[key])||0});
+        }
+        const task_class_counts = {};
+        activeTaskClasses.forEach(cls => task_class_counts[cls] = Number(taskClassValues[cls]) || 0);
+        const editor_slots = editorSlotsState.filter(x => x.length).map(classes => ({classes}));
+        const platformChoice = document.getElementById('platformSelect').value;
+        const platform = platformChoice === '__custom__' ? document.getElementById('customPlatform').value.trim() : platformChoice;
+        if (!platform) throw new Error('Укажите платформу проведения.');
+        const theme_text = document.getElementById('themeText').value.trim();
+        if (!theme_text) throw new Error('Заполните тематику олимпиады.');
+        const difficulty = document.getElementById('difficultySelect').value;
+        if (!difficulty) throw new Error('Выберите уровень сложности.');
+        const submission_deadline = parseProjectDate(document.getElementById('submissionDeadline').value);
+        const testing_end_deadline = parseProjectDate(document.getElementById('testingEndDeadline').value);
+        const testing_version_deadline = parseProjectDate(document.getElementById('testingVersionDeadline').value);
+        const prototypes_deadline = parseProjectDate(document.getElementById('prototypesDeadline').value);
+        if (testing_end_deadline <= testing_version_deadline) throw new Error('Срок конца тестирования должен быть позже срока подготовки версии для тестирования.');
+
+        const payload = {
+            init_data:tg.initData, project_name, task_class_counts, common_tasks,
+            task_price:Number(document.getElementById('taskPrice').value)||0,
+            editor_slots,
+            editor_pay_each:Number(document.getElementById('editorPay').value)||0,
+            tester_count:Number(document.getElementById('testerCount').value)||0,
+            tester_pay_each:Number(document.getElementById('testerPay').value)||0,
+            submission_deadline, testing_end_deadline, testing_version_deadline, prototypes_deadline,
+            theme_text, platform, difficulty,
+            questions_min:Number(document.getElementById('questionsMin').value),
+            questions_max:Number(document.getElementById('questionsMax').value),
+            text_length:document.getElementById('textLengthSelect').value,
+            additional_text:document.getElementById('additionalText').value.trim() || null,
+            material_ids:selectedMaterialIds
+        };
+        if (!payload.questions_min || !payload.questions_max) throw new Error('Укажите диапазон количества вопросов.');
+
+        const project = await api('/api/projects/task-composition', {
+            method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)
+        });
+
+        for (const file of pendingProjectFiles) {
+            const form = new FormData();
+            form.append('init_data', tg.initData);
+            form.append('file', file);
+            await api(`/api/projects/${project.id}/attachments/upload`, {method:'POST', body:form});
+        }
+
+        demo('Проект создан.');
+        switchTab('projects');
+    } catch(e) { error.innerText = e.message; }
+    finally { button.disabled = false; }
+}
+
+// =========================================================
+// ЭТАП 7: МАТЕРИАЛЫ АНОД
+// =========================================================
+async function loadMaterialsRoot() {
+    const data = await api('/api/materials/root', {
+        method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({init_data:tg.initData})
+    });
+    currentMaterialsFolderId = null; currentMaterialsParentId = null; materialBreadcrumbStack = []; materialEditMode = false;
+    renderMaterialRoot(data);
+}
+
+function renderMaterialRoot(data) {
+    const list = document.getElementById('materialsList'); list.innerHTML = '';
+    document.getElementById('materialsBreadcrumb').innerHTML = '<span class="muted">Материалы АНОД</span>';
+    (data.folders || []).forEach(folder => list.appendChild(buildFolderEntry(folder)));
+    document.getElementById('materialsEmpty').classList.toggle('hidden', (data.folders || []).length > 0);
+    document.getElementById('materialManageButtons').classList.add('hidden');
+}
+
+function buildFolderEntry(folder) {
+    const card = document.createElement('div'); card.className = 'card material-entry clickable';
+    card.innerHTML = `<div style="font-size:25px">📁</div><div class="material-entry-main"><strong>${escapeHtml(folder.name)}</strong></div>`;
+    card.onclick = () => openMaterialFolder(folder.id);
+    if (materialEditMode && currentMaterialsFolderId) {
+        const actions = document.createElement('div'); actions.className = 'material-entry-actions';
+        const rename = document.createElement('button'); rename.className='small-button'; rename.textContent='✎'; rename.onclick = ev => {ev.stopPropagation(); renameFolderPrompt(folder);};
+        const del = document.createElement('button'); del.className='red-x'; del.textContent='✕'; del.onclick = ev => {ev.stopPropagation(); deleteFolderPrompt(folder);};
+        actions.append(rename, del); card.appendChild(actions);
+    }
+    return card;
+}
+
+function buildFileEntry(file) {
+    const card = document.createElement('div'); card.className = 'card material-entry';
+    const main = document.createElement('div'); main.className='material-entry-main'; main.innerHTML=`<strong>📄 ${escapeHtml(file.name)}</strong>`; card.appendChild(main);
+    const get = document.createElement('button'); get.className='small-button'; get.textContent='Получить'; get.onclick=()=>sendMaterial(file.id); card.appendChild(get);
+    if (materialEditMode) {
+        const rename=document.createElement('button'); rename.className='small-button'; rename.textContent='✎'; rename.onclick=()=>renameFilePrompt(file);
+        const del=document.createElement('button'); del.className='red-x'; del.textContent='✕'; del.onclick=()=>deleteFilePrompt(file);
+        card.append(rename,del);
+    }
+    return card;
+}
+
+async function openMaterialFolder(folderId) {
+    try {
+        const data = await api(`/api/materials/folder/${folderId}`, {
+            method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({init_data:tg.initData})
+        });
+        currentMaterialsFolderId = data.folder.id; currentMaterialsParentId = data.folder.parent_id;
+        if (!materialBreadcrumbStack.some(x => x.id === data.folder.id)) materialBreadcrumbStack.push({id:data.folder.id,name:data.folder.name});
+        renderMaterialFolder(data);
+    } catch(e) { demo(e.message); }
+}
+
+function renderMaterialFolder(data) {
+    const bread = document.getElementById('materialsBreadcrumb'); bread.innerHTML='';
+    const root=document.createElement('button'); root.className='crumb'; root.textContent='Материалы АНОД'; root.onclick=()=>loadMaterialsRoot(); bread.appendChild(root);
+    materialBreadcrumbStack.forEach((item,index)=>{
+        const b=document.createElement('button'); b.className='crumb'; b.textContent=item.name; b.onclick=()=>{materialBreadcrumbStack=materialBreadcrumbStack.slice(0,index+1); openMaterialFolder(item.id);}; bread.appendChild(b);
+    });
+    const list=document.getElementById('materialsList'); list.innerHTML='';
+    (data.folders||[]).forEach(folder=>list.appendChild(buildFolderEntry(folder)));
+    (data.files||[]).forEach(file=>list.appendChild(buildFileEntry(file)));
+    const total=(data.folders||[]).length+(data.files||[]).length;
+    document.getElementById('materialsEmpty').classList.toggle('hidden', total>0);
+    document.getElementById('materialManageButtons').classList.toggle('hidden', !data.can_edit);
+    document.getElementById('materialEditToggle').textContent = materialEditMode ? 'Готово' : 'Редактировать';
+}
+
+async function refreshCurrentMaterialFolder() {
+    if (currentMaterialsFolderId) await openMaterialFolder(currentMaterialsFolderId); else await loadMaterialsRoot();
+}
+
+function toggleMaterialEditMode() { materialEditMode=!materialEditMode; refreshCurrentMaterialFolder(); }
+async function createFolderPrompt() {
+    if (!currentMaterialsFolderId) return;
+    const name=prompt('Название новой папки:'); if (!name) return;
+    try { await api('/api/materials/folders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData,parent_id:currentMaterialsFolderId,name})}); await refreshCurrentMaterialFolder(); } catch(e){demo(e.message);}
+}
+async function renameFolderPrompt(folder) {
+    const name=prompt('Новое название папки:',folder.name); if (!name||name===folder.name) return;
+    try { await api(`/api/materials/folders/${folder.id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData,name})}); await refreshCurrentMaterialFolder(); } catch(e){demo(e.message);}
+}
+async function deleteFolderPrompt(folder) {
+    if (!confirm(`Удалить папку «${folder.name}» и всё её содержимое?`)) return;
+    try { await api(`/api/materials/folders/${folder.id}`,{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData})}); await refreshCurrentMaterialFolder(); } catch(e){demo(e.message);}
+}
+async function uploadMaterialFile() {
+    const input=document.getElementById('materialFileInput'); const file=input.files?.[0]; if (!file||!currentMaterialsFolderId) return;
+    const form=new FormData(); form.append('init_data',tg.initData); form.append('folder_id',String(currentMaterialsFolderId)); form.append('file',file);
+    try { await api('/api/materials/upload',{method:'POST',body:form}); input.value=''; await refreshCurrentMaterialFolder(); } catch(e){demo(e.message);}
+}
+async function renameFilePrompt(file) {
+    const name=prompt('Новое название файла:',file.name); if (!name||name===file.name) return;
+    try { await api(`/api/materials/files/${file.id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData,name})}); await refreshCurrentMaterialFolder(); } catch(e){demo(e.message);}
+}
+async function deleteFilePrompt(file) {
+    if (!confirm(`Удалить файл «${file.name}»?`)) return;
+    try { await api(`/api/materials/files/${file.id}`,{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData})}); await refreshCurrentMaterialFolder(); } catch(e){demo(e.message);}
+}
+async function sendMaterial(id) {
+    try { await api(`/api/materials/files/${id}/send`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData})}); demo('Файл отправлен вам в сообщения бота.'); } catch(e){demo(e.message);}
+}
+
 
 function demo(text) { tg.showAlert ? tg.showAlert(text) : alert(text); }
 
