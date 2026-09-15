@@ -197,6 +197,11 @@
         .attach-button.device { background:rgba(51,144,236,.12); color:var(--tg-theme-link-color,#2476b9); }
         .attach-button.library { background:rgba(70,160,90,.12); color:#2d7d3f; }
         .selected-attachments { margin-top:10px; font-size:13px; line-height:1.5; }
+        .selected-attachment-group { margin-top:8px; }
+        .selected-attachment-group-title { font-weight:700; margin-bottom:5px; color:var(--tg-theme-hint-color,#666); }
+        .selected-attachment-row { display:flex; align-items:center; gap:8px; padding:7px 9px; margin-top:5px; border-radius:10px; background:rgba(120,120,120,.07); color:var(--tg-theme-text-color,#111); }
+        .selected-attachment-name { flex:1; min-width:0; overflow-wrap:anywhere; }
+        .attachment-remove { flex:0 0 auto; border:0; width:28px; height:28px; border-radius:8px; background:rgba(210,40,40,.12); color:#c62828; font-weight:800; cursor:pointer; }
         .breadcrumb { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; }
         .crumb { border:0; background:rgba(120,120,120,.10); border-radius:9px; padding:7px 9px; cursor:pointer; color:var(--tg-theme-text-color,#111); }
         .material-entry { display:flex; align-items:center; gap:10px; }
@@ -275,7 +280,7 @@
             <div id="taskClassRows"></div>
             <div class="total-line">Всего: <strong id="totalTasksValue">0</strong> задач</div>
             <div class="field inline-money">
-                <label>Оплата задачи</label>
+                <label>Оплата за задачу</label>
                 <input id="taskPrice" type="number" min="0" inputmode="numeric" value="0" oninput="recalculateProjectBudget()">
                 <span>рублей</span>
             </div>
@@ -1698,7 +1703,7 @@ async function saveAdminRoles() {
 
 
 // =========================================================
-// ЭТАП 7: ПРОЕКТЫ
+// ЭТАП 8: ПРОЕКТЫ — правки интерфейса
 // =========================================================
 let taskClassValues = {6:0,7:0,8:0,9:0,10:0,11:0};
 let commonTaskValues = {};
@@ -1914,7 +1919,7 @@ function renderTaskRows() {
         row.innerHTML = `
             <button class="remove-class" onclick="removeTaskClass(${classNumber})">✕</button>
             <strong>${classNumber} класс</strong>
-            <input type="number" min="0" max="100" value="${taskClassValues[classNumber] ?? 0}" oninput="taskClassValueChanged(${classNumber}, this.value)">
+            <input type="number" min="0" max="100" placeholder="0" value="${Number(taskClassValues[classNumber]) || ''}" oninput="taskClassValueChanged(${classNumber}, this.value)">
             <span>задач</span>
         `;
         box.appendChild(row);
@@ -1924,7 +1929,7 @@ function renderTaskRows() {
             const key = `${classNumber}-${next}`;
             const common = document.createElement('div');
             common.className = 'common-row';
-            common.innerHTML = `<span>└ ] общие между ${classNumber} и ${next} кл.</span><input type="number" min="0" max="100" value="${commonTaskValues[key] ?? 0}" oninput="commonTaskChanged('${key}', this.value)"><span>задач</span>`;
+            common.innerHTML = `<span>общие между ${classNumber} и ${next} кл.</span><input type="number" min="0" max="100" placeholder="0" value="${Number(commonTaskValues[key]) || ''}" oninput="commonTaskChanged('${key}', this.value)"><span>задач</span>`;
             box.appendChild(common);
         }
     });
@@ -1951,7 +1956,7 @@ function getTotalTasksFrontend() {
 }
 
 function addEditorSlot() {
-    const allowed = activeTaskClasses.filter(x => x >= 7 && x <= 11);
+    const allowed = activeTaskClasses.filter(x => x >= 6 && x <= 11);
     const used = new Set(editorSlotsState.flat());
     if (!allowed.some(x => !used.has(x))) return demo('Свободных классов для нового редактора больше нет.');
     editorSlotsState.push([]);
@@ -1977,7 +1982,7 @@ function toggleEditorClass(slotIndex, classNumber, checked) {
 function renderEditorSlots() {
     const box = document.getElementById('editorSlots');
     box.innerHTML = '';
-    const allowed = activeTaskClasses.filter(x => x >= 7 && x <= 11);
+    const allowed = activeTaskClasses.filter(x => x >= 6 && x <= 11);
 
     editorSlotsState.forEach((classes, index) => {
         const usedElsewhere = new Set(editorSlotsState.flatMap((item, i) => i === index ? [] : item));
@@ -2035,15 +2040,83 @@ function platformChanged() {
 }
 
 function projectDeviceFilesChanged() {
-    pendingProjectFiles = Array.from(document.getElementById('projectDeviceFiles').files || []);
+    const input = document.getElementById('projectDeviceFiles');
+    const added = Array.from(input.files || []);
+    for (const file of added) {
+        const duplicate = pendingProjectFiles.some(item =>
+            item.name === file.name && item.size === file.size && item.lastModified === file.lastModified
+        );
+        if (!duplicate) pendingProjectFiles.push(file);
+    }
+    // Сбрасываем input, чтобы тот же файл можно было выбрать повторно после удаления крестиком.
+    input.value = '';
+    renderSelectedAttachments();
+}
+
+function removePendingProjectFile(index) {
+    pendingProjectFiles.splice(index, 1);
+    renderSelectedAttachments();
+}
+
+function removeSelectedMaterial(materialId) {
+    selectedMaterialIds = selectedMaterialIds.filter(id => id !== materialId);
     renderSelectedAttachments();
 }
 
 function renderSelectedAttachments() {
-    const parts = [];
-    if (pendingProjectFiles.length) parts.push('С устройства: ' + pendingProjectFiles.map(x => x.name).join(', '));
-    if (selectedMaterialIds.length) parts.push('Из материалов АНОД: ' + selectedMaterialIds.map(id => selectedMaterialMap.get(id)?.name || `#${id}`).join(', '));
-    document.getElementById('selectedAttachments').textContent = parts.join('\n');
+    const box = document.getElementById('selectedAttachments');
+    box.innerHTML = '';
+
+    if (!pendingProjectFiles.length && !selectedMaterialIds.length) {
+        box.textContent = 'Файлы к проекту пока не добавлены.';
+        return;
+    }
+
+    const appendGroup = (title, rows) => {
+        if (!rows.length) return;
+        const group = document.createElement('div');
+        group.className = 'selected-attachment-group';
+        const groupTitle = document.createElement('div');
+        groupTitle.className = 'selected-attachment-group-title';
+        groupTitle.textContent = title;
+        group.appendChild(groupTitle);
+        rows.forEach(row => group.appendChild(row));
+        box.appendChild(group);
+    };
+
+    const deviceRows = pendingProjectFiles.map((file, index) => {
+        const row = document.createElement('div');
+        row.className = 'selected-attachment-row';
+        const name = document.createElement('div');
+        name.className = 'selected-attachment-name';
+        name.textContent = file.name;
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.className = 'attachment-remove';
+        remove.textContent = '✕';
+        remove.title = 'Убрать файл из проекта';
+        remove.onclick = () => removePendingProjectFile(index);
+        row.append(name, remove);
+        return row;
+    });
+    appendGroup('С устройства:', deviceRows);
+
+    const materialRows = selectedMaterialIds.map(materialId => {
+        const row = document.createElement('div');
+        row.className = 'selected-attachment-row';
+        const name = document.createElement('div');
+        name.className = 'selected-attachment-name';
+        name.textContent = selectedMaterialMap.get(materialId)?.name || `Материал #${materialId}`;
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.className = 'attachment-remove';
+        remove.textContent = '✕';
+        remove.title = 'Убрать материал из проекта';
+        remove.onclick = () => removeSelectedMaterial(materialId);
+        row.append(name, remove);
+        return row;
+    });
+    appendGroup('Из материалов АНОД:', materialRows);
 }
 
 async function openMaterialSelector() {
@@ -2135,7 +2208,7 @@ async function submitTaskCompositionProject() {
 }
 
 // =========================================================
-// ЭТАП 7: МАТЕРИАЛЫ АНОД
+// ЭТАП 8: МАТЕРИАЛЫ АНОД
 // =========================================================
 async function loadMaterialsRoot() {
     const data = await api('/api/materials/root', {
