@@ -215,6 +215,57 @@
         .red-x { border:0; background:#d32f2f; color:#fff; border-radius:9px; width:32px; height:32px; cursor:pointer; }
         .material-selector-list { max-height:45vh; overflow:auto; }
         .selector-item { display:flex; gap:8px; padding:9px; border-bottom:1px solid rgba(120,120,120,.15); }
+
+        /* ЭТАП 9: рабочее пространство проектов */
+        .idea-bank-button { width:100%; margin:8px 0 18px; background:#eef4ff; color:#224b8f; border:1px solid #c9dafc; border-radius:14px; padding:13px 14px; font-weight:800; font-size:15px; cursor:pointer; }
+        .project-status-line { margin:5px 0; font-size:13px; font-weight:650; }
+        .project-status-line.attention { color:#a66b00; }
+        .project-status-line.ready { color:#25834a; }
+        .project-deadline-line { color:#6d7480; font-size:13px; margin:7px 0 10px; }
+        .project-open-button { width:100%; margin-top:10px; border:0; border-radius:13px; padding:13px; background:#2f6fed; color:#fff; font-weight:800; cursor:pointer; }
+        .tester-wait { width:100%; border:0; border-radius:13px; padding:13px; background:#edf0f4; color:#7a8089; font-weight:800; }
+        .tester-action { width:100%; margin-top:8px; border:0; border-radius:13px; padding:13px; font-weight:800; cursor:pointer; background:#e8f2ff; color:#2459a6; }
+        .workflow-title-row { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+        .workspace-section { margin-top:14px; }
+        .workspace-section-head { display:flex; align-items:center; gap:7px; font-weight:800; font-size:17px; margin-bottom:10px; }
+        .tiny-icon-button { border:0; background:transparent; cursor:pointer; font-size:17px; padding:2px 5px; }
+        .participant-line { margin:8px 0; line-height:1.45; }
+        .person-link { color:#2f6fed; text-decoration:none; font-weight:700; cursor:pointer; }
+        .deadline-row { display:flex; justify-content:space-between; gap:12px; padding:7px 0; border-bottom:1px solid #edf0f3; }
+        .deadline-row:last-child { border-bottom:0; }
+        .info-dot { display:inline-flex; align-items:center; justify-content:center; width:19px; height:19px; border-radius:50%; border:1px solid #8b929c; font-size:12px; cursor:pointer; margin-left:4px; }
+        .description-row { margin:7px 0; line-height:1.45; }
+        .workspace-file-row { display:flex; align-items:center; gap:8px; padding:8px 0; border-bottom:1px solid #edf0f3; }
+        .workspace-file-name { flex:1; cursor:pointer; color:#2f6fed; font-weight:650; }
+        .danger-x { border:0; background:#fff0f0; color:#c73535; border-radius:9px; width:32px; height:32px; cursor:pointer; font-weight:900; }
+        .soft-green-button { width:100%; border:0; border-radius:13px; padding:12px; background:#dff4e6; color:#216b3b; font-weight:800; cursor:pointer; margin:8px 0; }
+        .workflow-table-wrap { overflow:auto; border:1px solid #e4e7ec; border-radius:12px; }
+        .workflow-table { width:100%; border-collapse:collapse; min-width:650px; font-size:13px; }
+        .workflow-table th, .workflow-table td { padding:9px 8px; border-bottom:1px solid #edf0f3; text-align:left; vertical-align:middle; }
+        .workflow-table th { background:#f6f7f9; white-space:nowrap; }
+        .workflow-table tr.needs-attention td { background:#fff8d8; }
+        .workflow-table tr.ready-row td { background:#eff9f1; }
+        .table-action { border:0; background:#edf3ff; color:#285da9; border-radius:8px; padding:7px 9px; cursor:pointer; font-weight:700; }
+        .table-action.green { background:#e3f5e8; color:#247343; }
+        .table-action.danger { background:#fff0f0; color:#bf3434; }
+        .hint-banner { background:#f6f7f9; color:#656c76; padding:10px 12px; border-radius:10px; font-size:13px; margin:8px 0 12px; }
+        .collapse-button { width:100%; display:flex; justify-content:space-between; align-items:center; border:1px solid #dfe4ea; background:#fff; border-radius:12px; padding:12px; font-weight:800; cursor:pointer; margin-top:10px; }
+        .workflow-modal-wide { width:min(94vw, 720px); max-height:88vh; overflow:auto; }
+        .comment-thread { max-height:260px; overflow:auto; background:#f7f8fa; border-radius:10px; padding:10px; margin:10px 0; }
+        .comment-item { padding:8px 0; border-bottom:1px solid #e8eaee; }
+        .comment-item:last-child { border-bottom:0; }
+        .message-time { color:#8b929c; font-size:11px; }
+        .toggle-row { display:flex; gap:10px; margin:12px 0; }
+        .toggle-option { flex:1; border:1px solid #d8dde5; border-radius:11px; padding:10px; cursor:pointer; }
+        .toggle-option input { margin-right:6px; }
+        .global-bank-section { margin-top:18px; }
+        .telegram-profile-link { display:inline-block; margin-top:4px; color:#2f6fed; font-size:14px; text-decoration:none; }
+        .testing-result { padding:10px 0; border-bottom:1px solid #edf0f3; }
+        .testing-result:last-child { border-bottom:0; }
+        .inline-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+        .mini-secondary { border:0; border-radius:9px; padding:8px 10px; background:#eef1f5; cursor:pointer; font-weight:700; }
+        .workspace-note { color:#6d7480; font-size:12px; }
+
     </style>
 </head>
 <body>
@@ -251,6 +302,7 @@
             <div class="title" style="margin-bottom:0">Проекты</div>
             <button id="createProjectButton" class="plus-button compact hidden" onclick="openProjectTypeModal()">＋ Создать проект</button>
         </div>
+        <button id="globalIdeaBankButton" class="idea-bank-button hidden" onclick="openGlobalIdeaBank()">Банк идей для задач</button>
         <div class="section-title">Мои проекты</div>
         <div id="myProjectsList"></div>
         <div id="myProjectsEmpty" class="card muted">Пока нет проектов.</div>
@@ -398,6 +450,22 @@
         <button id="submitProjectButton" class="button" onclick="submitTaskCompositionProject()">Создать проект</button>
     </section>
 
+
+    <section id="ideaBankPage" class="page hidden">
+        <button class="back" onclick="switchTab('projects')">← К проектам</button>
+        <div class="title">Банк идей для задач</div>
+        <button class="soft-green-button" onclick="openGlobalIdeaForm()">＋ Добавить идею для задачи</button>
+        <div id="globalIdeaBankContent"></div>
+    </section>
+
+    <section id="projectWorkspacePage" class="page hidden">
+        <button class="back" onclick="closeProjectWorkspace()">← К проектам</button>
+        <div class="workflow-title-row">
+            <div id="workspaceProjectTitle" class="title" style="margin-bottom:0"></div>
+        </div>
+        <div id="workspaceContent"></div>
+    </section>
+
     <section id="materialsPage" class="page hidden">
         <div class="title">Материалы АНОД</div>
         <div id="materialsBreadcrumb" class="breadcrumb"></div>
@@ -415,6 +483,7 @@
         <div class="profile-header">
             <div id="profileAvatar" class="avatar">ИИ</div>
             <div id="profileName" class="full-name"></div>
+            <a id="profileTelegramLink" class="telegram-profile-link" href="#">Написать в Telegram</a>
             <div id="profileBirth" class="profile-line"></div>
             <div id="profileAnod" class="profile-line"></div>
             <div id="profileEducation" class="education-public"></div>
@@ -666,6 +735,16 @@
     </div>
 </div>
 
+
+<div id="workflowModalBackdrop" class="modal-backdrop hidden" onclick="workflowBackdropClick(event)">
+    <div id="workflowModalBox" class="modal workflow-modal-wide" onclick="event.stopPropagation()">
+        <div id="workflowModalTitle" class="modal-title"></div>
+        <div id="workflowModalBody"></div>
+        <div id="workflowModalError" class="error"></div>
+        <div id="workflowModalActions" class="modal-actions"></div>
+    </div>
+</div>
+
 <script>
 const tg = window.Telegram.WebApp;
 tg.ready();
@@ -700,6 +779,9 @@ let currentMaterialsFolderId = null;
 let currentMaterialsParentId = null;
 let materialEditMode = false;
 let materialBreadcrumbStack = [];
+let currentWorkspace = null;
+let currentWorkspaceProjectId = null;
+let workflowModalSave = null;
 
 
 function initials(name) {
@@ -780,7 +862,7 @@ function showApp() {
 }
 
 function switchTab(tab) {
-    ['mentorsPage','projectsPage','materialsPage','profilePage','projectCreatePage'].forEach(id => document.getElementById(id).classList.add('hidden'));
+    ['mentorsPage','projectsPage','materialsPage','profilePage','projectCreatePage','ideaBankPage','projectWorkspacePage'].forEach(id => document.getElementById(id).classList.add('hidden'));
     const pages = {mentors:'mentorsPage',projects:'projectsPage',materials:'materialsPage'};
     document.getElementById(pages[tab]).classList.remove('hidden');
     document.querySelectorAll('.nav-button').forEach(x => x.classList.remove('active'));
@@ -917,6 +999,7 @@ async function openRegisteredProfile(telegramId) {
         currentProfileRoleCodes = data.role_codes || [];
         openProfile({
             telegram_id:data.telegram_id,
+            telegram_username:data.telegram_username,
             name:data.full_name,
             birth:data.birth_date ? formatDateISO(data.birth_date) : null,
             age:data.age,
@@ -1011,9 +1094,19 @@ function renderPublicProjectParticipations(items) {
 }
 
 function openProfile(p) {
-    ['mentorsPage','projectsPage','materialsPage','projectCreatePage'].forEach(id => document.getElementById(id).classList.add('hidden'));
+    ['mentorsPage','projectsPage','materialsPage','projectCreatePage','ideaBankPage','projectWorkspacePage'].forEach(id => document.getElementById(id).classList.add('hidden'));
     document.getElementById('profilePage').classList.remove('hidden');
     document.getElementById('profileName').innerText = p.name;
+    const telegramLink = document.getElementById('profileTelegramLink');
+    telegramLink.onclick = (event) => {
+        event.preventDefault();
+        if (p.telegram_username) {
+            tg.openTelegramLink(`https://t.me/${String(p.telegram_username).replace(/^@/, '')}`);
+        } else if (p.telegram_id) {
+            window.location.href = `tg://user?id=${p.telegram_id}`;
+        }
+    };
+    telegramLink.classList.toggle('hidden', !p.telegram_id);
     setAvatar('profileAvatar', p.name, p.photo_url);
     document.getElementById('profileBirth').innerText = p.birth ? `${p.birth}${p.age !== null && p.age !== undefined ? ` (${p.age} лет)` : ''}` : 'Дата рождения не указана';
     document.getElementById('profileAnod').innerText = p.anodYears !== null && p.anodYears !== undefined ? `(${p.anodYears} лет в АНОДе)` : '(Дата вступления в АНОД пока не указана)';
@@ -1714,6 +1807,7 @@ async function refreshProjects() {
         body:JSON.stringify({init_data:tg.initData})
     });
     document.getElementById('createProjectButton').classList.toggle('hidden', !data.can_create_project);
+    document.getElementById('globalIdeaBankButton').classList.toggle('hidden', !data.can_idea_bank);
     renderProjectCards('myProjectsList', 'myProjectsEmpty', data.my_projects || []);
     renderProjectCards('currentProjectsList', 'currentProjectsEmpty', data.current_projects || []);
 }
@@ -1732,7 +1826,10 @@ function buildProjectCard(project) {
 
     const title = document.createElement('div');
     title.className = 'project-card-title';
-    title.textContent = project.title;
+    const hasJoined = (project.my_project_roles || []).length > 0 || project.can_manage;
+    title.textContent = hasJoined && project.submission_deadline
+        ? `${project.title} (${project.submission_deadline})`
+        : project.title;
     card.appendChild(title);
 
     if (project.can_manage) {
@@ -1742,7 +1839,7 @@ function buildProjectCard(project) {
         bell.className = 'icon-button';
         bell.textContent = '🔔';
         bell.title = 'Уведомления';
-        bell.onclick = () => demo('На следующем этапе здесь будет создание уведомлений по проекту.');
+        bell.onclick = () => demo('Кнопка подготовлена. Создание уведомлений подключим отдельным этапом.');
         const del = document.createElement('button');
         del.className = 'icon-button delete';
         del.textContent = '✕';
@@ -1758,24 +1855,67 @@ function buildProjectCard(project) {
     theme.textContent = project.theme_text || '';
     card.appendChild(theme);
 
-    const heading = document.createElement('div');
-    heading.className = 'section-title';
-    heading.style.margin = '14px 0 6px';
-    heading.textContent = 'Принять участие:';
-    card.appendChild(heading);
+    if (hasJoined) {
+        (project.status_lines || []).forEach(item => {
+            const line = document.createElement('div');
+            line.className = `project-status-line ${item.kind || ''}`;
+            line.textContent = item.text;
+            card.appendChild(line);
+        });
 
-    const buttons = project.vacancy_buttons || [];
-    if (!buttons.length) {
-        const noRoles = document.createElement('div');
-        noRoles.className = 'muted';
-        noRoles.textContent = 'Для ваших потенциальных ролей сейчас нет доступных кнопок.';
-        card.appendChild(noRoles);
+        if ((project.my_project_roles || []).includes('editor') || project.can_manage) {
+            if (project.nearest_deadline) {
+                const d = document.createElement('div');
+                d.className = 'project-deadline-line';
+                d.textContent = `Ближайший дедлайн: ${project.nearest_deadline.date} (${project.nearest_deadline.days_text})`;
+                card.appendChild(d);
+            }
+        }
+
+        if (project.is_tester && !project.has_workspace_access && !project.can_manage) {
+            const testing = document.createElement('div');
+            testing.className = 'project-deadline-line';
+            const dayText = project.testing.days_to_start === 0
+                ? 'сегодня'
+                : project.testing.days_to_start > 0
+                    ? `${project.testing.days_to_start} ${pluralDays(project.testing.days_to_start)} до начала`
+                    : 'тестирование уже началось';
+            testing.innerHTML = `<strong>Даты тестирования:</strong><br>${escapeHtml(project.testing.start)} — ${escapeHtml(project.testing.end)} (${escapeHtml(dayText)})`;
+            card.appendChild(testing);
+            if (!project.testing.package_available) {
+                const wait = document.createElement('button');
+                wait.className = 'tester-wait'; wait.disabled = true; wait.textContent = 'Ожидайте комплекта...';
+                card.appendChild(wait);
+            } else {
+                const get = document.createElement('button');
+                get.className = 'tester-action'; get.textContent = 'Получить комплект';
+                get.onclick = () => getTestingPackage(project.id);
+                const upload = document.createElement('button');
+                upload.className = 'tester-action'; upload.textContent = 'Загрузить протестированный комплект';
+                upload.onclick = () => openTestingSubmissionModal(project.id);
+                card.append(get, upload);
+            }
+        } else if (project.has_workspace_access || project.can_manage) {
+            const open = document.createElement('button');
+            open.className = 'project-open-button';
+            open.textContent = 'К проекту';
+            open.onclick = () => openProjectWorkspace(project.id);
+            card.appendChild(open);
+        }
     }
 
+    const buttons = project.vacancy_buttons || [];
+    if (buttons.length) {
+        const heading = document.createElement('div');
+        heading.className = 'section-title';
+        heading.style.margin = '14px 0 6px';
+        heading.textContent = 'Принять участие:';
+        card.appendChild(heading);
+    }
     buttons.forEach(vacancy => {
         const button = document.createElement('button');
         button.className = 'vacancy-card';
-        button.onclick = () => demo(`Отклик на роль «${vacancy.title}» подключим следующим этапом.`);
+        button.onclick = () => joinProjectRole(project, vacancy);
         button.innerHTML = `
             <div class="vacancy-title">${escapeHtml(vacancy.title)}</div>
             <div class="vacancy-primary">${escapeHtml(vacancy.primary_text || '')}</div>
@@ -1785,8 +1925,49 @@ function buildProjectCard(project) {
         card.appendChild(button);
     });
 
+    if (!hasJoined && !buttons.length) {
+        const noRoles = document.createElement('div');
+        noRoles.className = 'muted';
+        noRoles.style.marginTop = '10px';
+        noRoles.textContent = 'Для ваших потенциальных ролей сейчас нет доступных кнопок.';
+        card.appendChild(noRoles);
+    }
     return card;
 }
+
+function pluralDays(count) {
+    const n = Math.abs(count) % 100, d = n % 10;
+    if (n >= 11 && n <= 14) return 'дней';
+    if (d === 1) return 'день';
+    if (d >= 2 && d <= 4) return 'дня';
+    return 'дней';
+}
+
+async function joinProjectRole(project, vacancy) {
+    if (vacancy.role === 'editor') {
+        const slots = vacancy.editor_slots || [];
+        if (!slots.length) return demo('Свободных редакторских позиций уже нет.');
+        if (slots.length === 1) return submitJoinProject(project.id, 'editor', slots[0].slot);
+        let html = '<div class="workspace-note" style="margin-bottom:10px">Выберите редакторскую позицию. После подтверждения вы сразу станете участником проекта.</div>';
+        html += slots.map(slot => `<button class="button secondary" style="margin-bottom:8px" onclick="submitJoinProject(${project.id}, 'editor', ${slot.slot}); closeWorkflowModal();">${escapeHtml(slot.label)}</button>`).join('');
+        showWorkflowModal('Выберите позицию редактора', html, []);
+        return;
+    }
+    if (!confirm(`Принять участие в проекте как «${vacancy.title}»?`)) return;
+    await submitJoinProject(project.id, vacancy.role, null);
+}
+
+async function submitJoinProject(projectId, role, editorSlotIndex) {
+    try {
+        await api(`/api/projects/${projectId}/join`, {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({init_data:tg.initData, role, editor_slot_index:editorSlotIndex})
+        });
+        await refreshProjects();
+        demo('Вы добавлены в проект.');
+    } catch(e) { demo(e.message); }
+}
+
 
 function escapeHtml(text) {
     return String(text ?? '').replace(/[&<>'"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));
@@ -2311,6 +2492,326 @@ async function deleteFilePrompt(file) {
 async function sendMaterial(id) {
     try { await api(`/api/materials/files/${id}/send`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData})}); demo('Файл отправлен вам в сообщения бота.'); } catch(e){demo(e.message);}
 }
+
+
+// =========================================================
+// ЭТАП 9: РАБОЧЕЕ ПРОСТРАНСТВО, ИДЕИ, ЗАДАЧИ, ТЕСТИРОВАНИЕ
+// =========================================================
+let workspaceFileEditMode = false;
+
+function showWorkflowModal(title, html, actions = []) {
+    document.getElementById('workflowModalTitle').textContent = title;
+    document.getElementById('workflowModalBody').innerHTML = html;
+    document.getElementById('workflowModalError').innerText = '';
+    const box = document.getElementById('workflowModalActions');
+    box.innerHTML = '';
+    actions.forEach(action => {
+        const button = document.createElement('button');
+        button.className = action.className || 'button';
+        button.textContent = action.label;
+        button.onclick = action.onClick;
+        box.appendChild(button);
+    });
+    document.getElementById('workflowModalBackdrop').classList.remove('hidden');
+}
+
+function closeWorkflowModal() {
+    document.getElementById('workflowModalBackdrop').classList.add('hidden');
+    document.getElementById('workflowModalBody').innerHTML = '';
+    document.getElementById('workflowModalActions').innerHTML = '';
+}
+
+function workflowBackdropClick(event) {
+    if (event.target.id === 'workflowModalBackdrop') closeWorkflowModal();
+}
+
+function setWorkflowError(text) {
+    document.getElementById('workflowModalError').innerText = text || '';
+}
+
+function personHtml(person) {
+    if (!person) return '<span class="muted">не назначен</span>';
+    return `<a href="#" class="person-link" onclick="event.preventDefault(); closeWorkflowModal(); openRegisteredProfile(${Number(person.telegram_id)})">${escapeHtml(person.name)}</a>`;
+}
+
+function chemistryOptions(selected = 'physical') {
+    const items = [
+        ['physical','Физическая химия'],
+        ['inorganic','Неорганическая химия'],
+        ['organic','Органическая химия'],
+    ];
+    return items.map(([value,label]) => `<option value="${value}" ${value===selected?'selected':''}>${label}</option>`).join('');
+}
+
+async function openGlobalIdeaBank() {
+    ['mentorsPage','projectsPage','materialsPage','profilePage','projectCreatePage','projectWorkspacePage'].forEach(id => document.getElementById(id).classList.add('hidden'));
+    document.getElementById('ideaBankPage').classList.remove('hidden');
+    previousTab = 'projects';
+    window.scrollTo(0,0);
+    await refreshGlobalIdeaBank();
+}
+
+async function refreshGlobalIdeaBank() {
+    const content = document.getElementById('globalIdeaBankContent');
+    content.innerHTML = '<div class="card muted">Загружаем идеи...</div>';
+    try {
+        const data = await api('/api/ideas/global/list', {
+            method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({init_data:tg.initData})
+        });
+        let html = '<div class="section-title">Ваши идеи:</div>';
+        html += renderGlobalIdeasTable(data.own_ideas || [], false);
+        if (data.can_see_all) {
+            html += '<div class="section-title global-bank-section">Все идеи:</div>';
+            html += renderGlobalIdeasTable(data.all_ideas || [], false);
+        }
+        content.innerHTML = html;
+    } catch(e) { content.innerHTML = `<div class="card error">${escapeHtml(e.message)}</div>`; }
+}
+
+function renderGlobalIdeasTable(items, forProject = false) {
+    if (!items.length) return '<div class="card muted">Пока нет идей.</div>';
+    const rows = items.map(idea => `
+        <tr>
+            <td>${escapeHtml(idea.section_short)}</td>
+            <td>${escapeHtml(idea.proposed_class)}</td>
+            <td><button class="table-action" onclick="${forProject ? `openGlobalIdeaPreview(${idea.id})` : `openGlobalIdeaPreview(${idea.id})`}">${escapeHtml(idea.topic)}</button></td>
+            <td>${idea.creator ? personHtml(idea.creator) : ''}</td>
+            <td>${idea.is_open ? '✓' : ''}</td>
+            <td>${escapeHtml(idea.intended_olympiad || 'Любая')}</td>
+            ${forProject ? `<td><button class="table-action green" onclick="moveGlobalIdeaToProject(${idea.id})">Взять в олимпиаду</button></td>` : ''}
+        </tr>`).join('');
+    return `<div class="workflow-table-wrap"><table class="workflow-table">
+        <thead><tr><th>Раздел</th><th>Класс</th><th>Тема</th><th>Имя</th><th>Свободна</th><th>Олимпиада</th>${forProject?'<th></th>':''}</tr></thead>
+        <tbody>${rows}</tbody></table></div>`;
+}
+
+async function openGlobalIdeaForm() {
+    try {
+        const options = await api('/api/ideas/global/options', {
+            method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({init_data:tg.initData})
+        });
+        const olympiads = ['Любая', ...(options.olympiads || [])];
+        const html = `
+            <div class="field"><label>Тема (коротко)</label><input id="wfIdeaTopic" maxlength="220"></div>
+            <div class="field"><label>Раздел химии</label><select id="wfIdeaSection">${chemistryOptions()}</select></div>
+            <div class="field"><label>Предполагаемый класс</label><input id="wfIdeaClass" placeholder="9-11 или 10" maxlength="40"></div>
+            <div class="field"><label>Описание</label><textarea id="wfIdeaDescription" class="big-textarea" placeholder="Опишите идею подробней и возможные пункты вопроса"></textarea></div>
+            <div class="field"><label>Предполагаемая олимпиада</label><select id="wfIdeaOlympiad">${olympiads.map(x=>`<option>${escapeHtml(x)}</option>`).join('')}</select></div>
+            <div class="toggle-row">
+                <label class="toggle-option"><input type="radio" name="wfIdeaOpen" value="0" checked>Идея будет реализована мной</label>
+                <label class="toggle-option"><input type="radio" name="wfIdeaOpen" value="1">Доступна всем для реализации</label>
+            </div>`;
+        showWorkflowModal('Добавить идею для задачи', html, [
+            {label:'Отмена', className:'button secondary', onClick:closeWorkflowModal},
+            {label:'Добавить', onClick:saveGlobalIdea},
+        ]);
+    } catch(e) { demo(e.message); }
+}
+
+async function saveGlobalIdea() {
+    try {
+        const payload = {
+            init_data:tg.initData,
+            topic:document.getElementById('wfIdeaTopic').value.trim(),
+            chemistry_section:document.getElementById('wfIdeaSection').value,
+            proposed_class:document.getElementById('wfIdeaClass').value.trim(),
+            description:document.getElementById('wfIdeaDescription').value.trim(),
+            intended_olympiad:document.getElementById('wfIdeaOlympiad').value,
+            is_open:document.querySelector('input[name="wfIdeaOpen"]:checked').value === '1',
+        };
+        await api('/api/ideas/global', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
+        closeWorkflowModal();
+        await refreshGlobalIdeaBank();
+    } catch(e) { setWorkflowError(e.message); }
+}
+
+async function openGlobalIdeaPreview(id) {
+    let idea = null;
+    if (currentWorkspace && currentWorkspace._globalIdeas) idea = currentWorkspace._globalIdeas.find(x=>x.id===id);
+    if (!idea) {
+        try {
+            const data = await api('/api/ideas/global/list', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData})});
+            idea = [...(data.own_ideas||[]), ...(data.all_ideas||[])].find(x=>x.id===id);
+        } catch(_) {}
+    }
+    if (!idea) return;
+    showWorkflowModal(idea.topic, `
+        <div class="description-row"><strong>Раздел:</strong> ${escapeHtml(idea.section_label)}</div>
+        <div class="description-row"><strong>Класс:</strong> ${escapeHtml(idea.proposed_class)}</div>
+        <div class="description-row"><strong>Описание:</strong><br>${escapeHtml(idea.description).replace(/\n/g,'<br>')}</div>
+        <div class="description-row"><strong>Идея:</strong> ${idea.creator ? personHtml(idea.creator) : ''}</div>
+        <div class="description-row"><strong>Олимпиада:</strong> ${escapeHtml(idea.intended_olympiad)}</div>
+    `,[{label:'Закрыть',className:'button secondary',onClick:closeWorkflowModal}]);
+}
+
+async function openProjectWorkspace(projectId) {
+    ['mentorsPage','projectsPage','materialsPage','profilePage','projectCreatePage','ideaBankPage'].forEach(id => document.getElementById(id).classList.add('hidden'));
+    document.getElementById('projectWorkspacePage').classList.remove('hidden');
+    currentWorkspaceProjectId = projectId;
+    workspaceFileEditMode = false;
+    await refreshProjectWorkspace();
+    window.scrollTo(0,0);
+}
+
+function closeProjectWorkspace() {
+    currentWorkspace = null;
+    currentWorkspaceProjectId = null;
+    switchTab('projects');
+}
+
+async function refreshProjectWorkspace() {
+    const box = document.getElementById('workspaceContent');
+    box.innerHTML = '<div class="card muted">Загружаем рабочую страницу...</div>';
+    try {
+        currentWorkspace = await api(`/api/projects/${currentWorkspaceProjectId}/workspace`, {
+            method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({init_data:tg.initData})
+        });
+        document.getElementById('workspaceProjectTitle').textContent = currentWorkspace.project.title;
+        renderProjectWorkspace();
+    } catch(e) { box.innerHTML = `<div class="card error">${escapeHtml(e.message)}</div>`; }
+}
+
+function renderProjectWorkspace() {
+    const w = currentWorkspace;
+    const box = document.getElementById('workspaceContent');
+    box.innerHTML = '';
+    box.appendChild(renderParticipantsSection(w));
+    box.appendChild(renderDeadlinesSection(w));
+    box.appendChild(renderDescriptionSection(w));
+    box.appendChild(renderWorkspaceFilesSection(w));
+    box.appendChild(renderIdeasSection(w));
+    box.appendChild(renderTasksSection(w));
+    if (w.testing.can_publish) box.appendChild(renderTestingSection(w));
+}
+
+function sectionCard(title, editable, editHandler) {
+    const card = document.createElement('div'); card.className='card workspace-section';
+    const head=document.createElement('div'); head.className='workspace-section-head';
+    const text=document.createElement('span'); text.textContent=title; head.appendChild(text);
+    if (editable) { const b=document.createElement('button'); b.className='tiny-icon-button'; b.textContent='✎'; b.onclick=editHandler; head.appendChild(b); }
+    card.appendChild(head); return card;
+}
+
+function renderParticipantsSection(w) {
+    const card = document.createElement('details'); card.className='card workspace-section'; card.open=true;
+    const summary=document.createElement('summary'); summary.className='workspace-section-head'; summary.textContent='Участники проекта'; card.appendChild(summary);
+    const p=w.participants;
+    const manager=document.createElement('div'); manager.className='participant-line'; manager.innerHTML=`<strong>Менеджер проекта:</strong> ${personHtml(p.manager)}`; card.appendChild(manager);
+    const edHead=document.createElement('div'); edHead.className='participant-line'; edHead.innerHTML=`<strong>Редактор(-ы)${p.show_limits ? ` (ровно ${p.editors.length})` : ''}:</strong>`; card.appendChild(edHead);
+    (p.editors||[]).forEach(ed=>{ const d=document.createElement('div'); d.className='participant-line'; d.style.paddingLeft='12px'; d.innerHTML=`Редактор ${ed.slot} (${escapeHtml(ed.classes_label)}): ${personHtml(ed.person)}`; card.appendChild(d); });
+    const authorHead=document.createElement('div'); authorHead.className='participant-line';
+    authorHead.innerHTML=`<strong>Авторы${p.show_limits ? ` (до ${p.max_authors})` : ''}:</strong>`;
+    if (p.can_edit_max_authors) { const b=document.createElement('button'); b.className='tiny-icon-button'; b.textContent='✎'; b.onclick=editMaxAuthors; authorHead.appendChild(b); }
+    card.appendChild(authorHead);
+    if (!(p.authors||[]).length) { const d=document.createElement('div'); d.className='muted'; d.style.paddingLeft='12px'; d.textContent='Пока нет авторов.'; card.appendChild(d); }
+    (p.authors||[]).forEach(a=>{ const d=document.createElement('div'); d.className='participant-line'; d.style.paddingLeft='12px'; d.innerHTML=personHtml(a); card.appendChild(d); });
+    return card;
+}
+
+function editMaxAuthors() {
+    const p=currentWorkspace.participants;
+    showWorkflowModal('Максимальное число авторов', `<div class="field"><label>Авторов максимум</label><input id="wfMaxAuthors" type="number" min="${p.authors.length}" max="${currentWorkspace.layout.length}" value="${p.max_authors}"></div><div class="workspace-note">Число не может быть меньше уже вступивших авторов и больше общего числа задач.</div>`, [
+        {label:'Отмена',className:'button secondary',onClick:closeWorkflowModal},
+        {label:'Сохранить',onClick:saveMaxAuthors}
+    ]);
+}
+async function saveMaxAuthors() {
+    try { await api(`/api/projects/${currentWorkspaceProjectId}/max-authors`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData,max_authors:Number(document.getElementById('wfMaxAuthors').value)})}); closeWorkflowModal(); await refreshProjectWorkspace(); } catch(e){setWorkflowError(e.message);}
+}
+
+function renderDeadlinesSection(w) {
+    const card=sectionCard('Дедлайны',w.can_edit_deadlines,openDeadlineEditor);
+    w.deadlines.forEach(item=>{
+        const row=document.createElement('div'); row.className='deadline-row';
+        const left=document.createElement('div'); left.innerHTML=`<strong>${escapeHtml(item.label)}:</strong>${item.code==='submission' ? ` <span class="info-dot" title="Информация">i</span>` : ''}`;
+        if (item.code==='submission') left.querySelector('.info-dot').onclick=()=>demo(item.info);
+        const val=document.createElement('div'); val.textContent=item.date; row.append(left,val); card.appendChild(row);
+    });
+    return card;
+}
+
+function openDeadlineEditor() {
+    const w=currentWorkspace; const byCode=Object.fromEntries(w.deadlines.map(x=>[x.code,x]));
+    const f=(code,id)=>`<div class="field"><label>${escapeHtml(byCode[code].label)}${code!=='submission'?' *':''}</label><input id="${id}" type="text" inputmode="numeric" maxlength="10" value="${escapeHtml(byCode[code].date)}" ${byCode[code].editable?'':'disabled'} oninput="formatDateInput(this)"></div>`;
+    showWorkflowModal('Дедлайны', f('submission','wfSubmission')+f('testing_end','wfTestingEnd')+f('testing_version','wfTestingVersion')+f('prototypes','wfPrototypes')+'<div class="workspace-note">* может заполнить и менять редактор комплекта. Срок сдачи редактор менять не может.</div>',[
+        {label:'Отмена',className:'button secondary',onClick:closeWorkflowModal},{label:'Сохранить',onClick:saveDeadlines}
+    ]);
+}
+async function saveDeadlines() {
+    try {
+        const byCode=Object.fromEntries(currentWorkspace.deadlines.map(x=>[x.code,x]));
+        const payload={init_data:tg.initData,
+            testing_end_deadline:parseProjectDate(document.getElementById('wfTestingEnd').value),
+            testing_version_deadline:parseProjectDate(document.getElementById('wfTestingVersion').value),
+            prototypes_deadline:parseProjectDate(document.getElementById('wfPrototypes').value)};
+        if (byCode.submission.editable) payload.submission_deadline=parseProjectDate(document.getElementById('wfSubmission').value);
+        if (payload.testing_end_deadline <= payload.testing_version_deadline) throw new Error('Срок конца тестирования должен быть позже срока подготовки версии для тестирования.');
+        await api(`/api/projects/${currentWorkspaceProjectId}/deadlines`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+        closeWorkflowModal(); await refreshProjectWorkspace();
+    } catch(e){setWorkflowError(e.message);}
+}
+
+function renderDescriptionSection(w) {
+    const d=w.description; const card=sectionCard('Описание:',d.can_edit,openDescriptionEditor);
+    const rows=[['Тематика олимпиады',d.theme_text],['Платформа проведения',d.platform],['Уровень сложности',d.difficulty],['Кол-во вопросов в задаче',`от ${d.questions_min} до ${d.questions_max}`],['Длина текста в задаче',d.text_length_label],['Дополнительно об олимпиаде',d.additional_text||'—']];
+    rows.forEach(([label,value])=>{const x=document.createElement('div');x.className='description-row';x.innerHTML=`<strong>${escapeHtml(label)}:</strong> ${escapeHtml(value)}`;card.appendChild(x);}); return card;
+}
+function openDescriptionEditor(){const d=currentWorkspace.description;showWorkflowModal('Описание',`
+<div class="field"><label>Тематика олимпиады</label><textarea id="wfTheme" class="big-textarea">${escapeHtml(d.theme_text)}</textarea></div>
+<div class="field"><label>Платформа проведения</label><input id="wfPlatform" value="${escapeHtml(d.platform)}"></div>
+<div class="field"><label>Уровень сложности</label><input id="wfDifficulty" value="${escapeHtml(d.difficulty)}"></div>
+<div class="field"><label>Кол-во вопросов в задаче</label><div class="range-row"><span>от</span><input id="wfQMin" type="number" min="1" max="100" value="${d.questions_min}"><span>до</span><input id="wfQMax" type="number" min="1" max="100" value="${d.questions_max}"></div></div>
+<div class="field"><label>Длина текста задачи</label><select id="wfTextLength"><option value="short" ${d.text_length==='short'?'selected':''}>короткая</option><option value="medium" ${d.text_length==='medium'?'selected':''}>средняя (стандартная)</option><option value="long" ${d.text_length==='long'?'selected':''}>длинная</option></select></div>
+<div class="field"><label>Дополнительно об олимпиаде</label><textarea id="wfAdditional" class="big-textarea">${escapeHtml(d.additional_text||'')}</textarea></div>`,[{label:'Отмена',className:'button secondary',onClick:closeWorkflowModal},{label:'Сохранить',onClick:saveDescription}]);}
+async function saveDescription(){try{const payload={init_data:tg.initData,theme_text:document.getElementById('wfTheme').value.trim(),platform:document.getElementById('wfPlatform').value.trim(),difficulty:document.getElementById('wfDifficulty').value.trim(),questions_min:Number(document.getElementById('wfQMin').value),questions_max:Number(document.getElementById('wfQMax').value),text_length:document.getElementById('wfTextLength').value,additional_text:document.getElementById('wfAdditional').value.trim()||null};await api(`/api/projects/${currentWorkspaceProjectId}/description`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});closeWorkflowModal();await refreshProjectWorkspace();}catch(e){setWorkflowError(e.message);}}
+
+function renderWorkspaceFilesSection(w){const card=sectionCard('Файлы:',w.can_edit_files,()=>{workspaceFileEditMode=!workspaceFileEditMode;renderProjectWorkspace();});if(!(w.attachments||[]).length){const e=document.createElement('div');e.className='muted';e.textContent='Файлы пока не прикреплены.';card.appendChild(e);} (w.attachments||[]).forEach(file=>{const r=document.createElement('div');r.className='workspace-file-row';const n=document.createElement('div');n.className='workspace-file-name';n.textContent='📄 '+file.name;n.onclick=()=>sendProjectAttachment(file.id);r.appendChild(n);if(workspaceFileEditMode&&w.can_edit_files){const x=document.createElement('button');x.className='danger-x';x.textContent='✕';x.onclick=()=>deleteWorkspaceAttachment(file);r.appendChild(x);}card.appendChild(r);});if(workspaceFileEditMode&&w.can_edit_files){const actions=document.createElement('div');actions.className='inline-actions';actions.innerHTML=`<label class="mini-secondary">Добавить файл с устройства<input id="wfProjectFileInput" type="file" multiple hidden></label><button class="mini-secondary" onclick="uploadWorkspaceFiles()">Загрузить выбранные</button><button class="mini-secondary" onclick="openWorkspaceMaterialPicker()">Добавить файл из материалов АНОД</button>`;card.appendChild(actions);}return card;}
+async function sendProjectAttachment(id){try{await api(`/api/projects/${currentWorkspaceProjectId}/attachments/${id}/send`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData})});demo('Файл отправлен вам в сообщения бота.');}catch(e){demo(e.message);}}
+async function deleteWorkspaceAttachment(file){if(!confirm(`Удалить файл «${file.name}» из проекта?`))return;try{await api(`/api/projects/${currentWorkspaceProjectId}/attachments/${file.id}`,{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData})});await refreshProjectWorkspace();}catch(e){demo(e.message);}}
+async function uploadWorkspaceFiles(){const input=document.getElementById('wfProjectFileInput');const files=Array.from(input?.files||[]);if(!files.length)return demo('Сначала выберите файл.');try{for(const file of files){const form=new FormData();form.append('init_data',tg.initData);form.append('file',file);await api(`/api/projects/${currentWorkspaceProjectId}/attachments/upload`,{method:'POST',body:form});}await refreshProjectWorkspace();}catch(e){demo(e.message);}}
+async function openWorkspaceMaterialPicker(){try{const files=await api('/api/materials/files/all',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData})});const html=(files.length?files.map(f=>`<label class="selector-item"><input type="checkbox" class="wfMaterialPick" value="${f.id}"><div><strong>${escapeHtml(f.name)}</strong><div class="muted">${escapeHtml(f.path)}</div></div></label>`).join(''):'<div class="muted">Файлов в материалах пока нет.</div>');showWorkflowModal('Выбрать из материалов АНОД',html,[{label:'Отмена',className:'button secondary',onClick:closeWorkflowModal},{label:'Добавить',onClick:attachWorkspaceMaterials}]);}catch(e){demo(e.message);}}
+async function attachWorkspaceMaterials(){try{const ids=Array.from(document.querySelectorAll('.wfMaterialPick:checked')).map(x=>Number(x.value));for(const id of ids){await api(`/api/projects/${currentWorkspaceProjectId}/attachments/from-material`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData,material_id:id})});}closeWorkflowModal();await refreshProjectWorkspace();}catch(e){setWorkflowError(e.message);}}
+
+function renderIdeasSection(w){const card=sectionCard('Банк идей',false,null);const add=document.createElement('button');add.className='soft-green-button';add.textContent='Добавить идею для задачи';add.onclick=openProjectIdeaForm;card.appendChild(add);const hint=document.createElement('div');hint.className='hint-banner';hint.textContent='Учитывайте все идеи задач проекта, чтобы Ваша была уникальна';card.appendChild(hint);const table=document.createElement('div');table.innerHTML=renderProjectIdeasTable(w.ideas||[]);card.appendChild(table);const global=document.createElement('details');global.style.marginTop='12px';const summary=document.createElement('summary');summary.className='collapse-button';summary.textContent='Общий банк идей для задач';global.appendChild(summary);const content=document.createElement('div');content.style.marginTop='10px';content.innerHTML='<div class="muted">Откройте раздел, чтобы загрузить идеи.</div>';let loaded=false;global.ontoggle=async()=>{if(global.open&&!loaded){loaded=true;await loadProjectGlobalIdeas(content);}};global.appendChild(content);card.appendChild(global);return card;}
+function renderProjectIdeasTable(items){if(!items.length)return '<div class="muted">Идей проекта пока нет.</div>';const canReview=currentWorkspace.project.can_review;const authorRole=(currentWorkspace.project.my_roles||[]).includes('author');return `<div class="workflow-table-wrap"><table class="workflow-table"><thead><tr><th>Раздел</th><th>Класс</th><th>Тема</th><th>Имя</th><th>В задачу</th><th></th></tr></thead><tbody>${items.map(idea=>{const yellow=(canReview&&idea.waiting_for==='editor')||(!canReview&&idea.is_mine&&idea.waiting_for==='author');let name=idea.assignee?personHtml(idea.assignee):(idea.is_open&&authorRole?`<button class="table-action green" onclick="takeProjectIdea(${idea.id})">Взять</button>`:'—');let approve=canReview?(idea.approved?'☑':`<button class="table-action green" onclick="approveIdea(${idea.id})">□</button>`):(idea.approved?'☑':'');let remove=canReview?`<button class="danger-x" onclick="returnIdeaGlobal(${idea.id})">✕</button>`:'';return `<tr class="${yellow?'needs-attention':''}"><td>${escapeHtml(idea.section_short)}</td><td>${escapeHtml(idea.proposed_class)}</td><td><button class="table-action" onclick="openProjectIdeaDetail(${idea.id})">${escapeHtml(idea.topic)}</button></td><td>${name}</td><td>${approve}</td><td>${remove}</td></tr>`;}).join('')}</tbody></table></div>`;}
+function openProjectIdeaForm(){showWorkflowModal('Добавить идею для задачи',`<div class="field"><label>Тема (коротко)</label><input id="wfIdeaTopic" maxlength="220"></div><div class="field"><label>Раздел химии</label><select id="wfIdeaSection">${chemistryOptions()}</select></div><div class="field"><label>Предполагаемый класс</label><input id="wfIdeaClass" placeholder="9-11 или 10"></div><div class="field"><label>Описание</label><textarea id="wfIdeaDescription" class="big-textarea" placeholder="Опишите идею подробней и возможные пункты вопроса"></textarea></div><div class="toggle-row"><label class="toggle-option"><input type="radio" name="wfIdeaOpen" value="0" checked>Идея будет реализована мной</label><label class="toggle-option"><input type="radio" name="wfIdeaOpen" value="1">Доступна всем для реализации</label></div>`,[{label:'Отмена',className:'button secondary',onClick:closeWorkflowModal},{label:'Добавить',onClick:saveProjectIdea}]);}
+async function saveProjectIdea(){try{const payload={init_data:tg.initData,topic:document.getElementById('wfIdeaTopic').value.trim(),chemistry_section:document.getElementById('wfIdeaSection').value,proposed_class:document.getElementById('wfIdeaClass').value.trim(),description:document.getElementById('wfIdeaDescription').value.trim(),is_open:document.querySelector('input[name="wfIdeaOpen"]:checked').value==='1',intended_olympiad:currentWorkspace.project.title};await api(`/api/projects/${currentWorkspaceProjectId}/ideas`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});closeWorkflowModal();await refreshProjectWorkspace();}catch(e){setWorkflowError(e.message);}}
+function findIdea(id){return (currentWorkspace?.ideas||[]).find(x=>x.id===id);}
+function openProjectIdeaDetail(id){const idea=findIdea(id);if(!idea)return;const canReview=currentWorkspace.project.can_review;const canEdit=idea.is_mine||canReview;const comments=(idea.comments||[]).map(c=>`<div class="comment-item"><strong>${c.author?escapeHtml(c.author.name):'Пользователь'}</strong><div>${escapeHtml(c.text).replace(/\n/g,'<br>')}</div><div class="message-time">${escapeHtml(c.created_at)}</div></div>`).join('')||'<div class="muted">Комментариев пока нет.</div>';showWorkflowModal(idea.topic,`<div class="description-row"><strong>Описание:</strong><br>${escapeHtml(idea.description).replace(/\n/g,'<br>')}</div><div class="description-row"><strong>Идея:</strong> ${personHtml(idea.creator)}</div><div class="comment-thread">${comments}</div>${canEdit?'<div class="field"><label>Комментарий</label><textarea id="wfIdeaComment"></textarea></div>':''}`,canEdit?[{label:'Редактировать идею',className:'button secondary',onClick:()=>openIdeaEditForm(id)},{label:'Комментировать',onClick:()=>commentIdea(id)}]:[{label:'Закрыть',className:'button secondary',onClick:closeWorkflowModal}]);}
+function openIdeaEditForm(id){const idea=findIdea(id);if(!idea)return;showWorkflowModal('Редактировать идею',`<div class="field"><label>Тема</label><input id="wfEditIdeaTopic" value="${escapeHtml(idea.topic)}"></div><div class="field"><label>Раздел химии</label><select id="wfEditIdeaSection">${chemistryOptions(idea.section)}</select></div><div class="field"><label>Предполагаемый класс</label><input id="wfEditIdeaClass" value="${escapeHtml(idea.proposed_class)}"></div><div class="field"><label>Описание</label><textarea id="wfEditIdeaDescription" class="big-textarea">${escapeHtml(idea.description)}</textarea></div>`,[{label:'Отмена',className:'button secondary',onClick:closeWorkflowModal},{label:'Сохранить',onClick:()=>saveIdeaEdit(id)}]);}
+async function saveIdeaEdit(id){try{await api(`/api/ideas/${id}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData,topic:document.getElementById('wfEditIdeaTopic').value.trim(),chemistry_section:document.getElementById('wfEditIdeaSection').value,proposed_class:document.getElementById('wfEditIdeaClass').value.trim(),description:document.getElementById('wfEditIdeaDescription').value.trim()})});closeWorkflowModal();await refreshProjectWorkspace();}catch(e){setWorkflowError(e.message);}}
+async function commentIdea(id){try{const comment=document.getElementById('wfIdeaComment').value.trim();if(!comment)throw new Error('Напишите комментарий.');await api(`/api/ideas/${id}/comments`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData,comment})});closeWorkflowModal();await refreshProjectWorkspace();}catch(e){setWorkflowError(e.message);}}
+async function takeProjectIdea(id){if(!confirm('Взять эту идею в работу?'))return;try{await api(`/api/ideas/${id}/take`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData})});await refreshProjectWorkspace();}catch(e){demo(e.message);}}
+async function approveIdea(id){if(!confirm('Вы действительно хотите перенести эту идею в задачу?'))return;try{await api(`/api/ideas/${id}/approve`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData})});await refreshProjectWorkspace();}catch(e){demo(e.message);}}
+async function returnIdeaGlobal(id){if(!confirm('Вернуть эту идею в общий банк идей?'))return;try{await api(`/api/ideas/${id}/return-global`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData})});await refreshProjectWorkspace();}catch(e){demo(e.message);}}
+async function loadProjectGlobalIdeas(container){try{const rows=await api(`/api/projects/${currentWorkspaceProjectId}/global-ideas`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData})});currentWorkspace._globalIdeas=rows;container.innerHTML=renderGlobalIdeasTable(rows,true);}catch(e){container.innerHTML=`<div class="error">${escapeHtml(e.message)}</div>`;}}
+async function moveGlobalIdeaToProject(id){try{await api(`/api/ideas/${id}/move-to-project`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData,project_id:currentWorkspaceProjectId})});closeWorkflowModal();await refreshProjectWorkspace();}catch(e){demo(e.message);}}
+
+function renderTasksSection(w){const card=sectionCard('Список задач',false,null);const add=document.createElement('button');add.className='soft-green-button';add.textContent='Добавить задачу';add.onclick=openTaskForm;card.appendChild(add);const layout=document.createElement('button');layout.className='mini-secondary';layout.style.marginBottom='10px';layout.textContent='В расставленном виде';layout.onclick=openTaskLayout;card.appendChild(layout);const tasks=w.tasks||[];if(!tasks.length){const e=document.createElement('div');e.className='muted';e.textContent='Задач пока нет.';card.appendChild(e);return card;}const canReview=w.project.can_review;const wrap=document.createElement('div');wrap.className='workflow-table-wrap';wrap.innerHTML=`<table class="workflow-table"><thead><tr><th>Word-файлы</th><th>Раздел</th><th>Класс</th><th>Тема</th><th>Составитель</th><th>Архив</th><th>Готова</th></tr></thead><tbody>${tasks.map(t=>{const yellow=(canReview&&t.waiting_for==='editor')||(!canReview&&t.is_mine&&t.waiting_for==='author');const ready=t.is_ready;const work=t.can_work?`<button class="table-action" onclick="openTaskWork(${t.id})">⬆</button>`:'—';const topic=`<button class="table-action" onclick="${t.can_work?`openTaskWork(${t.id})`:`openTaskReadOnly(${t.id})`}">${escapeHtml(t.topic)}</button>`;const archive=t.can_work?`<button class="table-action" onclick="openTaskArchive(${t.id})">Архив</button>`:'—';const readyCell=canReview?`<input type="checkbox" ${ready?'checked':''} onchange="setTaskReady(${t.id}, this.checked)">`:(ready?'✓':'');return `<tr class="${yellow?'needs-attention':ready?'ready-row':''}"><td>${work}</td><td>${escapeHtml(t.section_short)}</td><td>${escapeHtml(t.proposed_class)}</td><td>${topic}</td><td>${t.assignee?personHtml(t.assignee):'—'}</td><td>${archive}</td><td>${readyCell}</td></tr>`;}).join('')}</tbody></table>`;card.appendChild(wrap);return card;}
+function openTaskForm(){const canReview=currentWorkspace.project.can_review;const authorOptions=(currentWorkspace.participants.authors||[]).map(a=>`<option value="${a.telegram_id}">${escapeHtml(a.name)}</option>`).join('');showWorkflowModal('Добавить задачу',`<div class="field"><label>Тема (коротко)</label><input id="wfTaskTopic"></div><div class="field"><label>Раздел химии</label><select id="wfTaskSection">${chemistryOptions()}</select></div><div class="field"><label>Предполагаемый класс</label><input id="wfTaskClass" placeholder="9-11 или 10"></div><div class="field"><label>Описание</label><textarea id="wfTaskDescription" class="big-textarea"></textarea></div>${canReview?`<div class="field"><label>Составитель</label><select id="wfTaskAssignee"><option value="">Выберите автора</option>${authorOptions}</select></div>`:''}<div class="field"><label>Прикрепить файл (желательно Word)</label><input id="wfTaskFiles" type="file" multiple accept=".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,*/*"></div>`,[{label:'Отмена',className:'button secondary',onClick:closeWorkflowModal},{label:'Добавить задачу',onClick:saveTask}]);}
+async function saveTask(){try{const canReview=currentWorkspace.project.can_review;const payload={init_data:tg.initData,topic:document.getElementById('wfTaskTopic').value.trim(),chemistry_section:document.getElementById('wfTaskSection').value,proposed_class:document.getElementById('wfTaskClass').value.trim(),description:document.getElementById('wfTaskDescription').value.trim(),assignee_telegram_id:canReview&&document.getElementById('wfTaskAssignee').value?Number(document.getElementById('wfTaskAssignee').value):null};const result=await api(`/api/projects/${currentWorkspaceProjectId}/tasks`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const files=Array.from(document.getElementById('wfTaskFiles').files||[]);if(files.length){const form=new FormData();form.append('init_data',tg.initData);form.append('comment','Первая версия задачи');files.forEach(f=>form.append('files',f));await api(`/api/tasks/${result.id}/messages`,{method:'POST',body:form});}closeWorkflowModal();await refreshProjectWorkspace();}catch(e){setWorkflowError(e.message);}}
+function findTask(id){return (currentWorkspace?.tasks||[]).find(x=>x.id===id);}
+function openTaskReadOnly(id){const t=findTask(id);if(!t)return;showWorkflowModal(t.topic,`<div class="description-row"><strong>Раздел:</strong> ${escapeHtml(t.section_label)}</div><div class="description-row"><strong>Класс:</strong> ${escapeHtml(t.proposed_class)}</div><div class="description-row"><strong>Описание:</strong><br>${escapeHtml(t.description).replace(/\n/g,'<br>')}</div><div class="description-row"><strong>Составитель:</strong> ${t.assignee?personHtml(t.assignee):'—'}</div><div class="workspace-note">Чужие файлы задачи автору недоступны.</div>`,[{label:'Закрыть',className:'button secondary',onClick:closeWorkflowModal}]);}
+function openTaskWork(id){const t=findTask(id);if(!t||!t.can_work)return;const latest=t.latest_message;let latestHtml='<div class="muted">Версий ещё нет.</div>';if(latest){latestHtml=`<div class="description-row"><strong>Последняя отправка:</strong> ${latest.sender?escapeHtml(latest.sender.name):''}</div><div class="description-row">${escapeHtml(latest.comment||'').replace(/\n/g,'<br>')}</div><div>${(latest.files||[]).map(f=>`📄 ${escapeHtml(f.name)}`).join('<br>')}</div>${(latest.files||[]).length?`<button class="mini-secondary" style="margin-top:8px" onclick="getTaskMessageFiles(${t.id},${latest.id})">Получить файлы</button>`:''}`;}showWorkflowModal(t.topic,`<div class="description-row"><strong>Описание:</strong><br>${escapeHtml(t.description).replace(/\n/g,'<br>')}</div>${latestHtml}<div class="field" style="margin-top:14px"><label>Комментарий</label><textarea id="wfTaskComment"></textarea></div><div class="field"><label>Прикрепите файл(ы)</label><input id="wfTaskReplyFiles" type="file" multiple></div>`,[{label:'Редактировать описание',className:'button secondary',onClick:()=>openTaskEditForm(id)},{label:'Отправить',onClick:()=>sendTaskReply(id)}]);}
+async function getTaskMessageFiles(taskId,messageId){try{await api(`/api/tasks/${taskId}/messages/${messageId}/send`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData})});demo('Файлы отправлены вам в Telegram.');}catch(e){demo(e.message);}}
+async function sendTaskReply(id){try{const comment=document.getElementById('wfTaskComment').value.trim();const files=Array.from(document.getElementById('wfTaskReplyFiles').files||[]);const form=new FormData();form.append('init_data',tg.initData);form.append('comment',comment);files.forEach(f=>form.append('files',f));await api(`/api/tasks/${id}/messages`,{method:'POST',body:form});closeWorkflowModal();await refreshProjectWorkspace();}catch(e){setWorkflowError(e.message);}}
+function openTaskEditForm(id){const t=findTask(id);if(!t)return;showWorkflowModal('Редактировать задачу',`<div class="field"><label>Тема</label><input id="wfEditTaskTopic" value="${escapeHtml(t.topic)}"></div><div class="field"><label>Раздел</label><select id="wfEditTaskSection">${chemistryOptions(t.section)}</select></div><div class="field"><label>Класс</label><input id="wfEditTaskClass" value="${escapeHtml(t.proposed_class)}"></div><div class="field"><label>Описание</label><textarea id="wfEditTaskDescription" class="big-textarea">${escapeHtml(t.description)}</textarea></div>`,[{label:'Отмена',className:'button secondary',onClick:closeWorkflowModal},{label:'Сохранить',onClick:()=>saveTaskEdit(id)}]);}
+async function saveTaskEdit(id){try{await api(`/api/tasks/${id}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData,topic:document.getElementById('wfEditTaskTopic').value.trim(),chemistry_section:document.getElementById('wfEditTaskSection').value,proposed_class:document.getElementById('wfEditTaskClass').value.trim(),description:document.getElementById('wfEditTaskDescription').value.trim()})});closeWorkflowModal();await refreshProjectWorkspace();}catch(e){setWorkflowError(e.message);}}
+async function openTaskArchive(id){try{const rows=await api(`/api/tasks/${id}/archive`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData})});const html=rows.length?rows.map(m=>`<div class="comment-item"><strong>${m.author?escapeHtml(m.author.name):'Пользователь'}</strong><div>${escapeHtml(m.comment||'').replace(/\n/g,'<br>')}</div><div>${(m.files||[]).map(f=>`📄 ${escapeHtml(f.name)}`).join('<br>')}</div>${(m.files||[]).length?`<button class="mini-secondary" onclick="getTaskMessageFiles(${id},${m.id})">Получить файлы</button>`:''}<div class="message-time">${escapeHtml(m.created_at)}</div></div>`).join(''):'<div class="muted">Архив пока пуст.</div>';showWorkflowModal('Архив задачи',`<div class="comment-thread" style="max-height:55vh">${html}</div>`,[{label:'Закрыть',className:'button secondary',onClick:closeWorkflowModal}]);}catch(e){demo(e.message);}}
+async function setTaskReady(id,value){try{await api(`/api/tasks/${id}/ready`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData,is_ready:value})});await refreshProjectWorkspace();}catch(e){demo(e.message);await refreshProjectWorkspace();}}
+
+function openTaskLayout(){const rows=currentWorkspace.layout||[];const canReview=currentWorkspace.project.can_review;const html=`<div class="workflow-table-wrap"><table class="workflow-table"><thead><tr><th>№</th><th>Класс</th><th>Раздел</th><th>Тема</th><th>Составитель</th><th></th></tr></thead><tbody>${rows.map(slot=>{const task=slot.task;const topic=task?`<button class="table-action" onclick="${task.is_mine?`closeWorkflowModal(); openTaskWork(${slot.task_id})`:'void(0)'}">${escapeHtml(task.topic)}</button>`:(canReview?`<button class="table-action green" onclick="chooseLayoutTask(${slot.id})">Выбрать задачу</button>`:'');return `<tr><td>${slot.position}</td><td>${escapeHtml(slot.class_label)}</td><td>${task?escapeHtml(task.section_short):''}</td><td>${topic}</td><td>${task&&task.assignee?personHtml(task.assignee):''}</td><td>${canReview&&slot.task_id?`<button class="danger-x" onclick="clearLayoutSlot(${slot.id})">✕</button>`:''}</td></tr>`;}).join('')}</tbody></table></div>`;showWorkflowModal('В расставленном виде',html,[{label:'Закрыть',className:'button secondary',onClick:closeWorkflowModal}]);}
+function chooseLayoutTask(slotId){const tasks=currentWorkspace.tasks||[];const html=tasks.length?tasks.map(t=>`<button class="button secondary" style="margin-bottom:7px" onclick="assignLayoutTask(${slotId},${t.id})">${escapeHtml(t.topic)} — ${t.assignee?escapeHtml(t.assignee.name):'без автора'}</button>`).join(''):'<div class="muted">Задач пока нет.</div>';showWorkflowModal('Выберите задачу',html,[{label:'Отмена',className:'button secondary',onClick:openTaskLayout}]);}
+async function assignLayoutTask(slotId,taskId){try{await api(`/api/layout/${slotId}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData,task_id:taskId})});closeWorkflowModal();await refreshProjectWorkspace();openTaskLayout();}catch(e){demo(e.message);}}
+async function clearLayoutSlot(slotId){if(!confirm('Убрать задачу с этой позиции? Сама задача не удалится.'))return;try{await api(`/api/layout/${slotId}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData,task_id:null})});closeWorkflowModal();await refreshProjectWorkspace();openTaskLayout();}catch(e){demo(e.message);}}
+
+function renderTestingSection(w){const card=sectionCard('Тестирование:',false,null);const b=document.createElement('button');b.className='soft-green-button';b.textContent='Прикрепить комплект на тестирование';b.onclick=openTestingPackageModal;card.appendChild(b);if(w.testing.latest_package_comment){const c=document.createElement('div');c.className='workspace-note';c.textContent='Комментарий к последнему комплекту: '+w.testing.latest_package_comment;card.appendChild(c);}const results=w.testing.results||[];if(!results.length){const e=document.createElement('div');e.className='muted';e.textContent='Тестировщики пока не вступили в проект.';card.appendChild(e);}results.forEach(r=>{const d=document.createElement('div');d.className='testing-result';d.innerHTML=`<div>${personHtml(r.tester)}</div><div class="workspace-note">${r.submitted?'✓ Результат отправлен':'Ожидается результат'}</div>${r.comment?`<div>${escapeHtml(r.comment)}</div>`:''}${r.submitted?`<button class="mini-secondary" onclick="getTestingSubmission(${r.submission_id})">Получить файлы</button>`:''}`;card.appendChild(d);});return card;}
+function openTestingPackageModal(){showWorkflowModal('Прикрепить комплект на тестирование',`<div class="field"><label>Комментарий</label><textarea id="wfTestingComment"></textarea></div><div class="field"><label>Файлы</label><input id="wfTestingFiles" type="file" multiple></div>`,[{label:'Отмена',className:'button secondary',onClick:closeWorkflowModal},{label:'Отправить тестировщикам',onClick:publishTestingPackage}]);}
+async function publishTestingPackage(){try{const files=Array.from(document.getElementById('wfTestingFiles').files||[]);const form=new FormData();form.append('init_data',tg.initData);form.append('comment',document.getElementById('wfTestingComment').value.trim());files.forEach(f=>form.append('files',f));await api(`/api/projects/${currentWorkspaceProjectId}/testing/package`,{method:'POST',body:form});closeWorkflowModal();await refreshProjectWorkspace();demo('Комплект прикреплён. У тестировщиков появилась кнопка «Получить комплект».');}catch(e){setWorkflowError(e.message);}}
+async function getTestingPackage(projectId){try{await api(`/api/projects/${projectId}/testing/package/send`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData})});demo('Комплект отправлен вам в сообщения бота.');}catch(e){demo(e.message);}}
+function openTestingSubmissionModal(projectId){showWorkflowModal('Загрузить протестированный комплект',`<div class="field"><label>Комментарий</label><textarea id="wfTestSubmissionComment"></textarea></div><div class="field"><label>Прикрепите файл(ы)</label><input id="wfTestSubmissionFiles" type="file" multiple></div>`,[{label:'Отмена',className:'button secondary',onClick:closeWorkflowModal},{label:'Отправить',onClick:()=>submitTestedPackage(projectId)}]);}
+async function submitTestedPackage(projectId){try{const files=Array.from(document.getElementById('wfTestSubmissionFiles').files||[]);const form=new FormData();form.append('init_data',tg.initData);form.append('comment',document.getElementById('wfTestSubmissionComment').value.trim());files.forEach(f=>form.append('files',f));await api(`/api/projects/${projectId}/testing/submission`,{method:'POST',body:form});closeWorkflowModal();demo('Протестированный комплект отправлен редактору.');await refreshProjects();}catch(e){setWorkflowError(e.message);}}
+async function getTestingSubmission(id){try{await api(`/api/testing/submissions/${id}/send`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData})});demo('Файлы тестировщика отправлены вам в Telegram.');}catch(e){demo(e.message);}}
 
 
 function demo(text) { tg.showAlert ? tg.showAlert(text) : alert(text); }
