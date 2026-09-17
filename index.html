@@ -304,9 +304,11 @@
         .survey-multiselect { max-height:220px; overflow:auto; border:1px solid #e4e6ea; border-radius:10px; padding:8px; }
         .survey-result-table { min-width:700px; }
         .notification-line { display:flex; align-items:center; gap:8px; padding:10px 0; }
+        .notification-time-card { border:1px solid #e2e7ed; border-radius:12px; padding:10px 12px; margin:8px 0 12px; background:#fafbfc; }
+        .time-mini-input { width:72px !important; min-width:72px; padding:8px 9px !important; text-align:center; display:inline-block; }
 
 
-        /* ЭТАП 12 */
+        /* ЭТАП 13 */
         .material-file-icon-button { flex:0 0 30px; width:30px; height:30px; border:0; background:transparent; padding:0; cursor:pointer; font-size:20px; user-select:none; -webkit-user-select:none; }
         .material-file-name { user-select:none; -webkit-user-select:none; }
         .filename-popup { position:fixed; z-index:10050; width:min(82vw,430px); max-height:45vh; overflow:auto; background:var(--tg-theme-bg-color,#fff); color:var(--tg-theme-text-color,#111); border:1px solid #dfe3e8; box-shadow:0 8px 28px #0003; border-radius:14px; padding:42px 14px 14px; overflow-wrap:anywhere; }
@@ -3109,7 +3111,7 @@ async function confirmCompleteProject(projectId){try{const value=Number(document
 
 
 // =========================================================
-// ЭТАП 12: ОПРОСЫ, УВЕДОМЛЕНИЯ, ПРЕМИИ И UI
+// ЭТАП 13: ОПРОСЫ, УВЕДОМЛЕНИЯ, АГРЕГАЦИЯ И АРХИВЫ
 // =========================================================
 let surveyDashboardCache=null, surveyCreateQuestions=[];
 async function refreshSurveyButtonState(){
@@ -3120,12 +3122,55 @@ async function refreshSurveyButtonState(){
     else {b.classList.remove('survey-pending-pink');b.classList.add('hidden');}
 }
 function showOnlyPage(id){['mentorsPage','projectsPage','materialsPage','profilePage','projectCreatePage','ideaBankPage','projectWorkspacePage','notificationSettingsPage','surveysPage'].forEach(x=>document.getElementById(x)?.classList.add('hidden'));document.getElementById(id).classList.remove('hidden');window.scrollTo(0,0);}
-async function openNotificationSettings(){showOnlyPage('notificationSettingsPage');const box=document.getElementById('notificationSettingsContent');box.innerHTML='Загрузка...';try{const d=await api('/api/notifications/preferences',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData})});let html='<div class="section-title" style="margin-top:0">Получать уведомления о новых проектах составления задач</div>';const opts=[['author','task_author','Как автор'],['editor','task_editor','Как редактор'],['tester','task_tester','Как тестировщик']];for(const [a,key,label] of opts)if(d.available[a])html+=`<label class="notification-line"><input id="notify_${key}" type="checkbox" ${d.values[key]?'checked':''}> ${label}</label>`;html+=`<div class="section-title">Завершение проектов</div><label class="notification-line"><input id="notify_project_completed" type="checkbox" ${d.values.project_completed?'checked':''}> Получать уведомление при завершении проекта</label>`;html+='<button class="button" onclick="saveNotificationSettings()">Сохранить</button>';box.innerHTML=html;}catch(e){box.innerHTML=`<div class="error">${escapeHtml(e.message)}</div>`;}}
-async function saveNotificationSettings(){try{const val=id=>!!document.getElementById(id)?.checked;await api('/api/notifications/preferences',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData,task_author:val('notify_task_author'),task_editor:val('notify_task_editor'),task_tester:val('notify_task_tester'),project_completed:val('notify_project_completed')})});demo('Настройки уведомлений сохранены.');}catch(e){demo(e.message);}}
+function timeDigitsInput(el){let d=(el.value||'').replace(/\D/g,'').slice(0,4);if(d.length>2)d=d.slice(0,2)+':'+d.slice(2);el.value=d;}
+function notificationModeChanged(){const mode=document.querySelector('input[name="notify_delivery_mode"]:checked')?.value||'immediate';document.getElementById('notifyIntervalWrap')?.classList.toggle('hidden',mode!=='interval');document.getElementById('notifyDailyWrap')?.classList.toggle('hidden',mode!=='daily');}
+async function openNotificationSettings(){
+    showOnlyPage('notificationSettingsPage');
+    const box=document.getElementById('notificationSettingsContent');box.innerHTML='Загрузка...';
+    try{
+        const d=await api('/api/notifications/preferences',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData})});
+        let html='<div class="section-title" style="margin-top:0">Получать уведомления о новых проектах составления задач</div>';
+        const opts=[['author','task_author','Как автор'],['editor','task_editor','Как редактор'],['tester','task_tester','Как тестировщик']];
+        for(const [a,key,label] of opts)if(d.available[a])html+=`<label class="notification-line"><input id="notify_${key}" type="checkbox" ${d.values[key]?'checked':''}> ${label}</label>`;
+        html+=`<div class="section-title">Завершение проектов</div><label class="notification-line"><input id="notify_project_completed" type="checkbox" ${d.values.project_completed?'checked':''}> Получать уведомление при завершении проекта</label>`;
+        html+=`<div class="section-title">Временные настройки</div>
+        <div class="notification-time-card">
+          <label class="notification-line"><input id="notify_quiet_enabled" type="checkbox" ${d.values.quiet_enabled?'checked':''}> Ночной режим с
+            <input id="notify_quiet_start" class="time-mini-input" inputmode="numeric" maxlength="5" placeholder="23:00" value="${escapeHtml(d.values.quiet_start||'23:00')}" oninput="timeDigitsInput(this)"> до
+            <input id="notify_quiet_end" class="time-mini-input" inputmode="numeric" maxlength="5" placeholder="10:00" value="${escapeHtml(d.values.quiet_end||'10:00')}" oninput="timeDigitsInput(this)">
+          </label><div class="muted" style="margin-left:26px">не будут приходить сообщения от бота</div>
+        </div>`;
+        const mode=d.values.work_delivery_mode||'immediate';
+        html+=`<div class="notification-time-card">
+          <label class="notification-line"><input type="radio" name="notify_delivery_mode" value="immediate" ${mode==='immediate'?'checked':''} onchange="notificationModeChanged()"> Присылать сообщения по мере поступления обновлений в работе по моим проектам</label>
+          <label class="notification-line"><input type="radio" name="notify_delivery_mode" value="interval" ${mode==='interval'?'checked':''} onchange="notificationModeChanged()"> Присылать сообщения об обновлении работы по моим проектам каждый</label>
+          <div id="notifyIntervalWrap" class="${mode==='interval'?'':'hidden'}" style="margin:4px 0 8px 28px"><select id="notify_interval_hours" style="width:auto"><option value="0.5" ${Number(d.values.work_interval_hours)===0.5?'selected':''}>0,5</option><option value="1" ${Number(d.values.work_interval_hours)===1?'selected':''}>1</option><option value="2" ${Number(d.values.work_interval_hours)===2?'selected':''}>2</option><option value="3" ${Number(d.values.work_interval_hours)===3?'selected':''}>3</option><option value="4" ${Number(d.values.work_interval_hours)===4?'selected':''}>4</option></select> час(-а)</div>
+          <label class="notification-line"><input type="radio" name="notify_delivery_mode" value="daily" ${mode==='daily'?'checked':''} onchange="notificationModeChanged()"> Присылать сообщения об обновлении работы в моих проектах один раз в день в</label>
+          <div id="notifyDailyWrap" class="${mode==='daily'?'':'hidden'}" style="margin:4px 0 0 28px"><input id="notify_daily_time" class="time-mini-input" inputmode="numeric" maxlength="5" placeholder="10:00" value="${escapeHtml(d.values.work_daily_time||'10:00')}" oninput="timeDigitsInput(this)"></div>
+        </div>`;
+        html+='<button class="button" onclick="saveNotificationSettings()">Сохранить</button>';
+        box.innerHTML=html;
+    }catch(e){box.innerHTML=`<div class="error">${escapeHtml(e.message)}</div>`;}
+}
+async function saveNotificationSettings(){
+    try{
+        const val=id=>!!document.getElementById(id)?.checked;
+        const mode=document.querySelector('input[name="notify_delivery_mode"]:checked')?.value||'immediate';
+        await api('/api/notifications/preferences',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+            init_data:tg.initData,
+            task_author:val('notify_task_author'),task_editor:val('notify_task_editor'),task_tester:val('notify_task_tester'),project_completed:val('notify_project_completed'),
+            quiet_enabled:val('notify_quiet_enabled'),quiet_start:document.getElementById('notify_quiet_start')?.value||'23:00',quiet_end:document.getElementById('notify_quiet_end')?.value||'10:00',
+            work_delivery_mode:mode,work_interval_hours:Number(document.getElementById('notify_interval_hours')?.value||1),work_daily_time:document.getElementById('notify_daily_time')?.value||'10:00'
+        })});
+        demo('Настройки уведомлений сохранены.');
+    }catch(e){demo(e.message);}
+}
 
 async function openSurveysPage(){showOnlyPage('surveysPage');await renderSurveysDashboard();}
 async function renderSurveysDashboard(){const d=await api('/api/surveys/dashboard',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData})});surveyDashboardCache=d;document.getElementById('surveyAdminControls').classList.toggle('hidden',!d.can_manage);document.getElementById('surveysActiveSection').classList.toggle('hidden',!d.can_manage);document.getElementById('surveysCompletedSection').classList.toggle('hidden',!d.can_manage);document.getElementById('surveysPendingSection').classList.toggle('hidden',d.can_manage&&!(d.pending||[]).length);renderSurveyRows('surveysActiveList',d.active||[],true,false);renderSurveyRows('surveysPendingList',d.pending||[],false,false);renderSurveyRows('surveysCompletedList',d.completed||[],true,true);}
 function renderSurveyRows(id,rows,manage,completed){const box=document.getElementById(id);box.innerHTML='';if(!rows.length){box.innerHTML='<div class="card muted">Пока пусто.</div>';return;}rows.forEach(r=>{const div=document.createElement('div');div.className='survey-row';div.innerHTML=`<div class="survey-row-title">${escapeHtml(r.title)} ${manage?`<span class="muted">(${r.done}/${r.total})</span>`:''}</div>`;const actions=document.createElement('div');actions.className='survey-actions';if(!r.already_done&&!completed){const b=document.createElement('button');b.className='small-button';b.textContent='Пройти';b.onclick=()=>openSurveyTake(r.id);actions.appendChild(b);}if(manage&&!completed){const b=document.createElement('button');b.className='small-button';b.textContent='Завершить';b.onclick=()=>finishSurvey(r.id);actions.appendChild(b);}if(manage&&completed){const v=document.createElement('button');v.className='small-button';v.textContent='Ответы';v.onclick=()=>viewSurveyResults(r.id);const x=document.createElement('button');x.className='small-button';x.textContent='Excel';x.onclick=()=>downloadSurveyExcel(r.id);actions.append(v,x);}div.appendChild(actions);box.appendChild(div);});}
+function newSurveyQuestion(){return {description:'',type:'text',options:[],photos:[]};}
+function addSurveyQuestion(){syncSurveyBuilder();surveyCreateQuestions.push(newSurveyQuestion());renderSurveyQuestionBuilder();setTimeout(()=>{const all=document.querySelectorAll('.survey-question');all[all.length-1]?.scrollIntoView({behavior:'smooth',block:'center'});},0);}
 async function openSurveyCreate(){try{const o=await api('/api/surveys/options',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData})});surveyCreateQuestions=[newSurveyQuestion()];const roles=o.roles.map(r=>`<label class="selector-item"><input class="surveyRolePick" type="checkbox" value="${r.code}" onchange="document.getElementById('surveyAllRoles').checked=false">${escapeHtml(r.label)}</label>`).join('');const projs=o.projects.map(p=>`<label class="selector-item"><input class="surveyProjectPick" type="checkbox" value="${p.id}" onchange="document.getElementById('surveyAllProjects').checked=false">${escapeHtml(p.title)} — ${escapeHtml(p.academic_year)}</label>`).join('');showWorkflowModal('Создать опрос',`<div class="field"><label>Название</label><input id="surveyTitle"></div><div class="field"><label>Описание</label><textarea id="surveyDescription" class="big-textarea" placeholder="Описание опроса"></textarea></div><div class="section-title">Участники опроса:</div><div class="field"><label>По ролям</label><details class="survey-picker"><summary>Выбрать роли</summary><div class="survey-multiselect"><label class="selector-item"><input id="surveyAllRoles" type="checkbox" checked onchange="toggleSurveyAll('role')">Все</label>${roles}</div></details></div><div class="field"><label>По проекту</label><details class="survey-picker"><summary>Выбрать проекты</summary><div class="survey-multiselect"><label class="selector-item"><input id="surveyAllProjects" type="checkbox" checked onchange="toggleSurveyAll('project')">Все</label>${projs||'<div class="muted">Проектов пока нет.</div>'}</div></details></div><div id="surveyQuestionBuilder"></div><button class="plus-button" onclick="addSurveyQuestion()">＋</button>`,[{label:'Отмена',className:'button secondary',onClick:closeWorkflowModal},{label:'Создать опрос',onClick:createSurveySubmit}]);renderSurveyQuestionBuilder();}catch(e){demo(e.message);}}
 function toggleSurveyAll(kind){const all=document.getElementById(kind==='role'?'surveyAllRoles':'surveyAllProjects');if(all?.checked)document.querySelectorAll(kind==='role'?'.surveyRolePick':'.surveyProjectPick').forEach(x=>x.checked=false);}
 function renderSurveyQuestionBuilder(){const box=document.getElementById('surveyQuestionBuilder');if(!box)return;box.innerHTML=surveyCreateQuestions.map((q,i)=>`<div class="survey-question" data-q="${i}"><div class="section-title" style="margin-top:0">Вопрос ${i+1}</div><div class="field"><label>Описание</label><textarea class="big-textarea sq-desc">${escapeHtml(q.description)}</textarea></div><div class="field"><label>Тип вопроса</label><select class="sq-type" onchange="surveyTypeChanged(${i},this.value)"><option value="text" ${q.type==='text'?'selected':''}>Текстовый ответ</option><option value="number" ${q.type==='number'?'selected':''}>Числовой ответ</option><option value="single" ${q.type==='single'?'selected':''}>Один из списка</option><option value="multiple" ${q.type==='multiple'?'selected':''}>Многие из списка</option></select></div>${['single','multiple'].includes(q.type)?`<div>${q.options.map((x,j)=>`<div class="survey-option-row"><input class="sq-opt" data-oi="${j}" value="${escapeHtml(x)}"><button class="red-x" onclick="removeSurveyOption(${i},${j})">✕</button></div>`).join('')}<button class="small-button" onclick="addSurveyOption(${i})">＋ вариант</button></div>`:''}<div class="field"><label>Прикрепить фото к вопросу</label><input type="file" accept="image/*" multiple onchange="surveyPhotosChanged(${i},this.files)"></div><div class="muted">Прикреплено фото: ${q.photos.length}</div></div>`).join('');}
