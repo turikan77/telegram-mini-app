@@ -251,6 +251,7 @@
         .workspace-file-name { flex:1; cursor:pointer; color:#2f6fed; font-weight:650; }
         .danger-x { border:0; background:#fff0f0; color:#c73535; border-radius:9px; width:32px; height:32px; cursor:pointer; font-weight:900; }
         .soft-green-button { width:100%; border:0; border-radius:13px; padding:12px; background:#dff4e6; color:#216b3b; font-weight:800; cursor:pointer; margin:8px 0; }
+        .soft-blue-button { width:100%; border:0; border-radius:13px; padding:12px; background:#dbeafe; color:#1d4ed8; font-weight:800; cursor:pointer; margin:8px 0; }
         .workflow-table-wrap { overflow:auto; border:1px solid #e4e7ec; border-radius:12px; }
         .workflow-table { width:100%; border-collapse:collapse; min-width:650px; font-size:13px; }
         .workflow-table th, .workflow-table td { padding:9px 8px; border-bottom:1px solid #edf0f3; text-align:left; vertical-align:middle; }
@@ -1950,9 +1951,11 @@ function buildProjectCard(project) {
     const title = document.createElement('div');
     title.className = 'project-card-title';
     const hasJoined = (project.my_project_roles || []).length > 0 || project.can_manage;
-    title.textContent = project.manager_view
-        ? project.title
-        : (hasJoined && project.submission_deadline ? `${project.title} (${project.submission_deadline})` : project.title);
+    const roleLabels = {author:'Автор', editor:'Редактор', tester:'Тестировщик', manager:'Менеджер'};
+    let cardRole = project.card_role;
+    if (!roleLabels[cardRole] && project.manager_view) cardRole = 'manager';
+    if (!roleLabels[cardRole] && (project.my_project_roles || []).length === 1) cardRole = project.my_project_roles[0];
+    title.textContent = roleLabels[cardRole] ? `${project.title} (${roleLabels[cardRole]})` : project.title;
     card.appendChild(title);
 
     if ((project.can_notify && project.card_role !== 'vacancies') || project.can_manage) {
@@ -3173,7 +3176,7 @@ const OLD_DEFAULT_IDEAS_INSTRUCTION=`- Учитывайте все идеи за
 - Полное описание задачи появляется при нажатии темы.
 - Посмотрите задачи прошлых лет, чтобы Ваша идея не дублировалась.
 - Жёлтым выделяется идея с оставленным комментарием редактора.`;
-const DEFAULT_IDEAS_INSTRUCTION=`- Здесь можно добавлять и редактировать задачи
+const PREVIOUS_DEFAULT_IDEAS_INSTRUCTION=`- Здесь можно добавлять и редактировать задачи
 - Полное описание задачи появляется при нажатии темы
 - Редактор может прокомментировать Вашу идею, после чего
 она будет окрашена в жёлтый цвет и необходимо её отредактировать
@@ -3182,10 +3185,17 @@ const DEFAULT_IDEAS_INSTRUCTION=`- Здесь можно добавлять и �
 и смогут использоваться Вами в будущем
 - Учитывайте все идеи задачи проекта, чтобы Ваша была уникальна
 - Посмотрите задачи прошлых лет, чтобы Ваша идея не дублировалась`;
+const DEFAULT_IDEAS_INSTRUCTION=`- Здесь можно добавлять и редактировать задачи
+- Полное описание задачи появляется при нажатии темы
+- Редактор может прокомментировать Вашу идею, после чего она будет окрашена в жёлтый цвет и необходимо её отредактировать
+- После одобрения темы она попадёт в раздел "Список задач"
+- Избыточные идеи будут перенаправлены в банк идей для задач и смогут использоваться Вами в будущем
+- Учитывайте все идеи задачи проекта, чтобы Ваша была уникальна
+- Посмотрите задачи прошлых лет, чтобы Ваша идея не дублировалась`;
 const DEFAULT_TASKS_INSTRUCTION='- Посмотрите ВСЕ прикреплённые файлы, там требования и рекомендации';
 function workspaceInstructionValue(section){
     const raw=((currentWorkspace&&currentWorkspace.instructions)||{})[section]||'';
-    if(section==='ideas'&&(!raw.trim()||raw.trim()===OLD_DEFAULT_IDEAS_INSTRUCTION.trim()))return DEFAULT_IDEAS_INSTRUCTION;
+    if(section==='ideas'&&(!raw.trim()||raw.trim()===OLD_DEFAULT_IDEAS_INSTRUCTION.trim()||raw.trim()===PREVIOUS_DEFAULT_IDEAS_INSTRUCTION.trim()))return DEFAULT_IDEAS_INSTRUCTION;
     if(section==='tasks'&&!raw.trim())return DEFAULT_TASKS_INSTRUCTION;
     return raw;
 }
@@ -3231,7 +3241,7 @@ async function moveGlobalIdeaToProject(id){try{await api(`/api/ideas/${id}/move-
 function renderTasksSection(w){
     const card=collapsibleSectionCard(`Список задач (готово ${(w.progress&&w.progress.ready_tasks)||0}/${(w.progress&&w.progress.total_tasks)||0} задач)`,false,null,false);
     if(w.project.can_review){const add=document.createElement('button');add.className='soft-green-button';add.textContent='Добавить задачу';add.onclick=openTaskForm;card.appendChild(add);}
-    const layout=document.createElement('button');layout.className='mini-secondary';layout.style.marginBottom='10px';layout.textContent='Таблица с распределением задач';layout.onclick=openTaskLayout;card.appendChild(layout);
+    const layout=document.createElement('button');layout.className='soft-blue-button';layout.textContent='Таблица с распределением задач';layout.onclick=openTaskLayout;card.appendChild(layout);
     const instruction=workspaceInstructionValue('tasks');
     if(instruction || (w.instructions||{}).can_edit){card.appendChild(renderInstructionBox('tasks',instruction,!!(w.instructions||{}).can_edit));}
     const tasks=w.tasks||[];if(!tasks.length){const e=document.createElement('div');e.className='muted';e.textContent='Задач пока нет.';card.appendChild(e);return card;}
