@@ -213,8 +213,16 @@
         .manage-file { background:#dff3df; color:#2d7d3f; }
         .manage-edit { background:#ead7a6; color:#6b5314; }
         .red-x { border:0; background:#d32f2f; color:#fff; border-radius:9px; width:32px; height:32px; cursor:pointer; }
-        .material-selector-list { max-height:45vh; overflow:auto; }
+        .material-selector-list { max-height:45vh; overflow:auto; overflow-x:hidden; }
         .selector-item { display:flex; gap:8px; padding:9px; border-bottom:1px solid rgba(120,120,120,.15); }
+        .material-picker-toolbar { display:flex; align-items:center; gap:8px; margin:0 0 10px; }
+        .material-picker-breadcrumb { display:flex; flex-wrap:wrap; align-items:center; gap:4px; margin:0 0 10px; font-size:13px; }
+        .material-picker-crumb { border:0; background:transparent; color:var(--tg-theme-link-color,#2481cc); padding:2px 3px; cursor:pointer; font:inherit; }
+        .material-picker-separator { color:var(--tg-theme-hint-color,#999); }
+        .material-picker-folder { width:100%; border:0; background:transparent; color:var(--tg-theme-text-color,#111); text-align:left; align-items:center; cursor:pointer; }
+        .material-picker-file { align-items:center; min-width:0; }
+        .material-picker-file-name { min-width:0; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .material-picker-selected-note { margin-left:auto; color:var(--tg-theme-hint-color,#777); font-size:12px; white-space:nowrap; }
 
         /* ЭТАП 9: рабочее пространство проектов */
         .idea-bank-button { width:100%; margin:8px 0 18px; background:#eef4ff; color:#224b8f; border:1px solid #c9dafc; border-radius:14px; padding:13px 14px; font-weight:800; font-size:15px; cursor:pointer; }
@@ -502,11 +510,19 @@
                 <textarea id="additionalText" class="big-textarea"></textarea>
             </div>
 
+            <div class="section-title" style="margin-top:18px">Файлы для редактора:</div>
             <div class="attachment-buttons">
-                <label class="attach-button device">Прикрепить файлы с устройства<input id="projectDeviceFiles" type="file" multiple hidden onchange="projectDeviceFilesChanged()"></label>
-                <button class="attach-button library" onclick="openMaterialSelector()">Выбрать из материалов АНОД</button>
+                <label class="attach-button device">Прикрепить файлы с устройства<input id="projectEditorDeviceFiles" type="file" multiple hidden onchange="projectDeviceFilesChanged('editor_only')"></label>
+                <button class="attach-button library" onclick="openMaterialSelector('editor_only')">Выбрать из материалов АНОД</button>
             </div>
-            <div id="selectedAttachments" class="selected-attachments muted"></div>
+            <div id="selectedEditorAttachments" class="selected-attachments muted"></div>
+
+            <div class="section-title" style="margin-top:18px">Файлы для автора и редактора:</div>
+            <div class="attachment-buttons">
+                <label class="attach-button device">Прикрепить файлы с устройства<input id="projectAuthorDeviceFiles" type="file" multiple hidden onchange="projectDeviceFilesChanged('author_and_editor')"></label>
+                <button class="attach-button library" onclick="openMaterialSelector('author_and_editor')">Выбрать из материалов АНОД</button>
+            </div>
+            <div id="selectedAuthorAttachments" class="selected-attachments muted"></div>
         </div>
 
         <div id="createProjectError" class="error"></div>
@@ -805,10 +821,12 @@
 <div id="materialSelectorBackdrop" class="modal-backdrop hidden" onclick="modalBackdropClose(event, 'materialSelectorBackdrop')">
     <div class="modal" onclick="event.stopPropagation()">
         <div class="modal-title">Выбрать из материалов АНОД</div>
+        <div id="materialSelectorBreadcrumb" class="material-picker-breadcrumb"></div>
+        <div id="materialSelectorToolbar" class="material-picker-toolbar"></div>
         <div id="materialSelectorList" class="material-selector-list"></div>
         <div class="modal-actions">
             <button class="button secondary" onclick="closeMaterialSelector()">Отмена</button>
-            <button class="button" onclick="applyMaterialSelection()">Выбрать</button>
+            <button id="materialSelectorApplyButton" class="button" onclick="applyMaterialSelection()">Выбрать (0)</button>
         </div>
     </div>
 </div>
@@ -850,9 +868,15 @@ let previousTab = 'mentors';
 let projectCreateOptions = null;
 let activeTaskClasses = [6,7,8,9,10,11];
 let editorSlotsState = [];
-let selectedMaterialIds = [];
+let selectedMaterialIds = []; // автор + редактор (совместимость со старой логикой)
 let selectedMaterialMap = new Map();
-let pendingProjectFiles = [];
+let selectedEditorMaterialIds = [];
+let selectedEditorMaterialMap = new Map();
+let projectMaterialPickerSelected = new Map();
+let projectMaterialPickerCrumbs = [];
+let projectMaterialPickerAudience = 'author_and_editor';
+let pendingProjectFiles = []; // автор + редактор
+let pendingEditorProjectFiles = [];
 let currentMaterialsFolderId = null;
 let currentMaterialsParentId = null;
 let materialEditMode = false;
@@ -1927,20 +1951,25 @@ function buildProjectCard(project) {
         : (hasJoined && project.submission_deadline ? `${project.title} (${project.submission_deadline})` : project.title);
     card.appendChild(title);
 
-    if (project.can_manage) {
+    if ((project.can_notify && project.card_role !== 'vacancies') || project.can_manage) {
         const actions = document.createElement('div');
         actions.className = 'project-card-actions';
-        const bell = document.createElement('button');
-        bell.className = 'icon-button';
-        bell.textContent = '🔔';
-        bell.title = 'Уведомления';
-        bell.onclick = () => demo('Кнопка подготовлена. Создание уведомлений подключим отдельным этапом.');
-        const del = document.createElement('button');
-        del.className = 'icon-button delete';
-        del.textContent = '✕';
-        del.title = 'Удалить проект';
-        del.onclick = () => deleteCurrentProject(project.id, project.title);
-        actions.append(bell, del);
+        if (project.can_notify && project.card_role !== 'vacancies') {
+            const bell = document.createElement('button');
+            bell.className = 'icon-button';
+            bell.textContent = project.notifications_enabled === false ? '🔕' : '🔔';
+            bell.title = project.notifications_enabled === false ? 'Включить уведомления проекта' : 'Отключить уведомления проекта';
+            bell.onclick = () => toggleProjectNotifications(project);
+            actions.appendChild(bell);
+        }
+        if (project.can_manage) {
+            const del = document.createElement('button');
+            del.className = 'icon-button delete';
+            del.textContent = '✕';
+            del.title = 'Удалить проект';
+            del.onclick = () => deleteCurrentProject(project.id, project.title);
+            actions.appendChild(del);
+        }
         card.appendChild(actions);
     }
 
@@ -2082,6 +2111,21 @@ function pluralDays(count) {
     return 'дней';
 }
 
+async function toggleProjectNotifications(project) {
+    const next = project.notifications_enabled === false;
+    if (!next) {
+        const ok = confirm(`Вы действительно хотите выключить уведомления от проекта «${project.title}»?`);
+        if (!ok) return;
+    }
+    try {
+        await api(`/api/projects/${project.id}/notifications`, {
+            method:'PUT', headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({init_data:tg.initData, enabled:next})
+        });
+        await refreshProjects();
+    } catch(e) { demo(e.message); }
+}
+
 async function joinProjectRole(project, vacancy) {
     if (vacancy.role === 'editor') {
         const slots = vacancy.editor_slots || [];
@@ -2173,7 +2217,10 @@ function openTaskCompositionForm() {
     editorSlotsState = [[]];
     selectedMaterialIds = [];
     selectedMaterialMap = new Map();
+    selectedEditorMaterialIds = [];
+    selectedEditorMaterialMap = new Map();
     pendingProjectFiles = [];
+    pendingEditorProjectFiles = [];
 
     const select = document.getElementById('projectNameSelect');
     select.innerHTML = '';
@@ -2359,110 +2406,221 @@ function platformChanged() {
     document.getElementById('customPlatformField').classList.toggle('hidden', document.getElementById('platformSelect').value !== '__custom__');
 }
 
-function projectDeviceFilesChanged() {
-    const input = document.getElementById('projectDeviceFiles');
-    const added = Array.from(input.files || []);
+function projectDeviceFilesChanged(audience='author_and_editor') {
+    const inputId = audience === 'editor_only' ? 'projectEditorDeviceFiles' : 'projectAuthorDeviceFiles';
+    const input = document.getElementById(inputId);
+    const added = Array.from(input?.files || []);
+    const target = audience === 'editor_only' ? pendingEditorProjectFiles : pendingProjectFiles;
     for (const file of added) {
-        const duplicate = pendingProjectFiles.some(item =>
+        const duplicate = target.some(item =>
             item.name === file.name && item.size === file.size && item.lastModified === file.lastModified
         );
-        if (!duplicate) pendingProjectFiles.push(file);
+        if (!duplicate) target.push(file);
     }
-    // Сбрасываем input, чтобы тот же файл можно было выбрать повторно после удаления крестиком.
-    input.value = '';
+    if (input) input.value = '';
     renderSelectedAttachments();
 }
 
-function removePendingProjectFile(index) {
-    pendingProjectFiles.splice(index, 1);
+function removePendingProjectFile(index, audience='author_and_editor') {
+    const target = audience === 'editor_only' ? pendingEditorProjectFiles : pendingProjectFiles;
+    target.splice(index, 1);
     renderSelectedAttachments();
 }
 
-function removeSelectedMaterial(materialId) {
-    selectedMaterialIds = selectedMaterialIds.filter(id => id !== materialId);
+function removeSelectedMaterial(materialId, audience='author_and_editor') {
+    if (audience === 'editor_only') {
+        selectedEditorMaterialIds = selectedEditorMaterialIds.filter(id => id !== materialId);
+        selectedEditorMaterialMap.delete(materialId);
+    } else {
+        selectedMaterialIds = selectedMaterialIds.filter(id => id !== materialId);
+        selectedMaterialMap.delete(materialId);
+    }
     renderSelectedAttachments();
+}
+
+function renderSelectedAttachmentBox(boxId, pendingFiles, materialIds, materialMap, audience) {
+    const box = document.getElementById(boxId);
+    if (!box) return;
+    box.innerHTML = '';
+    if (!pendingFiles.length && !materialIds.length) {
+        box.textContent = 'Файлы пока не добавлены.';
+        return;
+    }
+    const rows = [];
+    pendingFiles.forEach((file, index) => {
+        const row = document.createElement('div'); row.className='selected-attachment-row';
+        const name = document.createElement('div'); name.className='selected-attachment-name'; name.textContent=file.name;
+        const remove = document.createElement('button'); remove.type='button'; remove.className='attachment-remove'; remove.textContent='✕';
+        remove.onclick=()=>removePendingProjectFile(index,audience); row.append(name,remove); rows.push(row);
+    });
+    materialIds.forEach(materialId => {
+        const row = document.createElement('div'); row.className='selected-attachment-row';
+        const name = document.createElement('div'); name.className='selected-attachment-name'; name.textContent=materialMap.get(materialId)?.name || `Материал #${materialId}`;
+        const remove = document.createElement('button'); remove.type='button'; remove.className='attachment-remove'; remove.textContent='✕';
+        remove.onclick=()=>removeSelectedMaterial(materialId,audience); row.append(name,remove); rows.push(row);
+    });
+    rows.forEach(row=>box.appendChild(row));
 }
 
 function renderSelectedAttachments() {
-    const box = document.getElementById('selectedAttachments');
-    box.innerHTML = '';
+    renderSelectedAttachmentBox('selectedEditorAttachments', pendingEditorProjectFiles, selectedEditorMaterialIds, selectedEditorMaterialMap, 'editor_only');
+    renderSelectedAttachmentBox('selectedAuthorAttachments', pendingProjectFiles, selectedMaterialIds, selectedMaterialMap, 'author_and_editor');
+}
 
-    if (!pendingProjectFiles.length && !selectedMaterialIds.length) {
-        box.textContent = 'Файлы к проекту пока не добавлены.';
-        return;
+async function openMaterialSelector(audience='author_and_editor') {
+    projectMaterialPickerAudience = audience;
+    projectMaterialPickerSelected = new Map();
+    const ids = audience === 'editor_only' ? selectedEditorMaterialIds : selectedMaterialIds;
+    const map = audience === 'editor_only' ? selectedEditorMaterialMap : selectedMaterialMap;
+    for (const materialId of ids) {
+        const existing = map.get(materialId) || {id: materialId, name: `Материал #${materialId}`};
+        projectMaterialPickerSelected.set(Number(materialId), existing);
+    }
+    projectMaterialPickerCrumbs = [];
+    document.getElementById('materialSelectorBackdrop').classList.remove('hidden');
+    await openProjectMaterialSelectorFolder(null, []);
+}
+
+async function openProjectMaterialSelectorFolder(folderId, crumbs) {
+    try {
+        const request = {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({init_data:tg.initData})};
+        const data = folderId
+            ? await api(`/api/materials/folder/${folderId}`, request)
+            : await api('/api/materials/root', request);
+
+        projectMaterialPickerCrumbs = Array.isArray(crumbs) ? crumbs : [];
+        renderProjectMaterialPicker(data || {}, folderId, projectMaterialPickerCrumbs);
+        document.getElementById('materialSelectorBackdrop').classList.remove('hidden');
+    } catch(e) {
+        demo(e.message);
+    }
+}
+
+function renderProjectMaterialPicker(data, folderId, crumbs) {
+    const breadcrumb = document.getElementById('materialSelectorBreadcrumb');
+    const toolbar = document.getElementById('materialSelectorToolbar');
+    const list = document.getElementById('materialSelectorList');
+    breadcrumb.innerHTML = '';
+    toolbar.innerHTML = '';
+    list.innerHTML = '';
+
+    const addSeparator = () => {
+        const sep = document.createElement('span');
+        sep.className = 'material-picker-separator';
+        sep.textContent = '›';
+        breadcrumb.appendChild(sep);
+    };
+    const rootCrumb = document.createElement('button');
+    rootCrumb.type = 'button';
+    rootCrumb.className = 'material-picker-crumb';
+    rootCrumb.textContent = 'Материалы АНОД';
+    rootCrumb.onclick = () => openProjectMaterialSelectorFolder(null, []);
+    breadcrumb.appendChild(rootCrumb);
+
+    crumbs.forEach((crumb, index) => {
+        addSeparator();
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'material-picker-crumb';
+        button.textContent = crumb.name;
+        button.onclick = () => openProjectMaterialSelectorFolder(crumb.id, crumbs.slice(0, index + 1));
+        breadcrumb.appendChild(button);
+    });
+
+    if (crumbs.length) {
+        const back = document.createElement('button');
+        back.type = 'button';
+        back.className = 'mini-secondary';
+        back.textContent = '← Назад';
+        back.onclick = () => {
+            if (crumbs.length === 1) return openProjectMaterialSelectorFolder(null, []);
+            const parentCrumb = crumbs[crumbs.length - 2];
+            return openProjectMaterialSelectorFolder(parentCrumb.id, crumbs.slice(0, -1));
+        };
+        toolbar.appendChild(back);
     }
 
-    const appendGroup = (title, rows) => {
-        if (!rows.length) return;
-        const group = document.createElement('div');
-        group.className = 'selected-attachment-group';
-        const groupTitle = document.createElement('div');
-        groupTitle.className = 'selected-attachment-group-title';
-        groupTitle.textContent = title;
-        group.appendChild(groupTitle);
-        rows.forEach(row => group.appendChild(row));
-        box.appendChild(group);
-    };
+    const note = document.createElement('div');
+    note.className = 'material-picker-selected-note';
+    note.id = 'materialPickerSelectedNote';
+    toolbar.appendChild(note);
+    updateProjectMaterialPickerCount();
 
-    const deviceRows = pendingProjectFiles.map((file, index) => {
-        const row = document.createElement('div');
-        row.className = 'selected-attachment-row';
+    const folders = data.folders || [];
+    const files = data.files || [];
+
+    folders.forEach(folder => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'selector-item material-picker-folder';
+        const icon = document.createElement('span');
+        icon.textContent = '📁';
+        const name = document.createElement('strong');
+        name.textContent = folder.name;
+        button.append(icon, name);
+        button.onclick = () => openProjectMaterialSelectorFolder(folder.id, [...crumbs, {id:folder.id, name:folder.name}]);
+        list.appendChild(button);
+    });
+
+    files.forEach(file => {
+        const label = document.createElement('label');
+        label.className = 'selector-item material-picker-file';
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = projectMaterialPickerSelected.has(Number(file.id));
+        checkbox.onchange = () => toggleProjectMaterialSelection(file, checkbox.checked);
+        const icon = document.createElement('span');
+        icon.textContent = '📄';
         const name = document.createElement('div');
-        name.className = 'selected-attachment-name';
+        name.className = 'material-picker-file-name';
         name.textContent = file.name;
-        const remove = document.createElement('button');
-        remove.type = 'button';
-        remove.className = 'attachment-remove';
-        remove.textContent = '✕';
-        remove.title = 'Убрать файл из проекта';
-        remove.onclick = () => removePendingProjectFile(index);
-        row.append(name, remove);
-        return row;
+        name.title = file.name;
+        label.append(checkbox, icon, name);
+        list.appendChild(label);
     });
-    appendGroup('С устройства:', deviceRows);
 
-    const materialRows = selectedMaterialIds.map(materialId => {
-        const row = document.createElement('div');
-        row.className = 'selected-attachment-row';
-        const name = document.createElement('div');
-        name.className = 'selected-attachment-name';
-        name.textContent = selectedMaterialMap.get(materialId)?.name || `Материал #${materialId}`;
-        const remove = document.createElement('button');
-        remove.type = 'button';
-        remove.className = 'attachment-remove';
-        remove.textContent = '✕';
-        remove.title = 'Убрать материал из проекта';
-        remove.onclick = () => removeSelectedMaterial(materialId);
-        row.append(name, remove);
-        return row;
-    });
-    appendGroup('Из материалов АНОД:', materialRows);
+    if (!folders.length && !files.length) {
+        const empty = document.createElement('div');
+        empty.className = 'muted';
+        empty.style.padding = '10px 4px';
+        empty.textContent = 'В этой папке пока нет материалов.';
+        list.appendChild(empty);
+    }
 }
 
-async function openMaterialSelector() {
-    try {
-        const files = await api('/api/materials/files/all', {
-            method:'POST', headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({init_data:tg.initData})
-        });
-        const box = document.getElementById('materialSelectorList');
-        box.innerHTML = '';
-        selectedMaterialMap = new Map(files.map(item => [item.id, item]));
-        if (!files.length) box.innerHTML = '<div class="muted">В материалах пока нет файлов.</div>';
-        files.forEach(file => {
-            const label = document.createElement('label');
-            label.className = 'selector-item';
-            label.innerHTML = `<input type="checkbox" value="${file.id}" ${selectedMaterialIds.includes(file.id) ? 'checked' : ''}><div><strong>${escapeHtml(file.name)}</strong><div class="muted">${escapeHtml(file.path)}</div></div>`;
-            box.appendChild(label);
-        });
-        document.getElementById('materialSelectorBackdrop').classList.remove('hidden');
-    } catch(e) { demo(e.message); }
+function toggleProjectMaterialSelection(file, checked) {
+    const id = Number(file.id);
+    if (checked) {
+        projectMaterialPickerSelected.set(id, {id, name:file.name, path:file.path || ''});
+    } else {
+        projectMaterialPickerSelected.delete(id);
+    }
+    updateProjectMaterialPickerCount();
 }
 
-function closeMaterialSelector() { document.getElementById('materialSelectorBackdrop').classList.add('hidden'); }
+function updateProjectMaterialPickerCount() {
+    const count = projectMaterialPickerSelected.size;
+    const note = document.getElementById('materialPickerSelectedNote');
+    if (note) note.textContent = count ? `Выбрано: ${count}` : 'Файлы не выбраны';
+    const button = document.getElementById('materialSelectorApplyButton');
+    if (button) button.textContent = `Выбрать (${count})`;
+}
+
+function closeMaterialSelector() {
+    document.getElementById('materialSelectorBackdrop').classList.add('hidden');
+    projectMaterialPickerCrumbs = [];
+}
+
 function applyMaterialSelection() {
-    selectedMaterialIds = Array.from(document.querySelectorAll('#materialSelectorList input:checked')).map(x => Number(x.value));
-    closeMaterialSelector(); renderSelectedAttachments();
+    if (projectMaterialPickerAudience === 'editor_only') {
+        selectedEditorMaterialIds = Array.from(projectMaterialPickerSelected.keys());
+        selectedEditorMaterialMap = new Map(projectMaterialPickerSelected);
+    } else {
+        selectedMaterialIds = Array.from(projectMaterialPickerSelected.keys());
+        selectedMaterialMap = new Map(projectMaterialPickerSelected);
+    }
+    closeMaterialSelector();
+    renderSelectedAttachments();
 }
 
 async function submitTaskCompositionProject() {
@@ -2506,7 +2664,8 @@ async function submitTaskCompositionProject() {
             questions_max:Number(document.getElementById('questionsMax').value),
             text_length:document.getElementById('textLengthSelect').value,
             additional_text:document.getElementById('additionalText').value.trim() || null,
-            material_ids:selectedMaterialIds
+            editor_material_ids:selectedEditorMaterialIds,
+            author_material_ids:selectedMaterialIds
         };
         if (!payload.questions_min || !payload.questions_max) throw new Error('Укажите диапазон количества вопросов.');
 
@@ -2514,9 +2673,17 @@ async function submitTaskCompositionProject() {
             method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)
         });
 
+        for (const file of pendingEditorProjectFiles) {
+            const form = new FormData();
+            form.append('init_data', tg.initData);
+            form.append('audience', 'editor_only');
+            form.append('file', file);
+            await api(`/api/projects/${project.id}/attachments/upload`, {method:'POST', body:form});
+        }
         for (const file of pendingProjectFiles) {
             const form = new FormData();
             form.append('init_data', tg.initData);
+            form.append('audience', 'author_and_editor');
             form.append('file', file);
             await api(`/api/projects/${project.id}/attachments/upload`, {method:'POST', body:form});
         }
@@ -2755,6 +2922,7 @@ async function openGlobalIdeaForm() {
             <div class="field"><label>Предполагаемый класс</label><input id="wfIdeaClass" placeholder="9-11 или 10" maxlength="40"></div>
             <div class="field"><label>Описание</label><textarea id="wfIdeaDescription" class="big-textarea" placeholder="Опишите идею подробней и возможные пункты вопроса"></textarea></div>
             <div class="field"><label>Предполагаемая олимпиада</label><select id="wfIdeaOlympiad">${olympiads.map(x=>`<option>${escapeHtml(x)}</option>`).join('')}</select></div>
+            <div class="field"><label>Прикрепить файл(ы)</label><input id="wfGlobalIdeaFiles" type="file" multiple></div>
             <div class="toggle-row">
                 <label class="toggle-option"><input type="radio" name="wfIdeaOpen" value="0" checked>Идея будет реализована мной</label>
                 <label class="toggle-option"><input type="radio" name="wfIdeaOpen" value="1">Доступна всем для реализации</label>
@@ -2777,7 +2945,9 @@ async function saveGlobalIdea() {
             intended_olympiad:document.getElementById('wfIdeaOlympiad').value,
             is_open:document.querySelector('input[name="wfIdeaOpen"]:checked').value === '1',
         };
-        await api('/api/ideas/global', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
+        const files=Array.from(document.getElementById('wfGlobalIdeaFiles')?.files||[]);
+        const result=await api('/api/ideas/global', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
+        await uploadIdeaFiles(result.id,files);
         closeWorkflowModal();
         await refreshGlobalIdeaBank();
     } catch(e) { setWorkflowError(e.message); }
@@ -2799,6 +2969,7 @@ async function openGlobalIdeaPreview(id) {
         <div class="description-row"><strong>Описание:</strong><br>${escapeHtml(idea.description).replace(/\n/g,'<br>')}</div>
         <div class="description-row"><strong>Идея:</strong> ${idea.creator ? personHtml(idea.creator) : ''}</div>
         <div class="description-row"><strong>Олимпиада:</strong> ${escapeHtml(idea.intended_olympiad)}</div>
+        ${ideaFilesHtml(idea)}
     `,[{label:'Закрыть',className:'button secondary',onClick:closeWorkflowModal}]);
 }
 
@@ -2840,7 +3011,8 @@ function renderProjectWorkspace() {
     box.appendChild(renderIdeasSection(w));
     box.appendChild(renderTasksSection(w));
     if (w.testing.can_publish) box.appendChild(renderTestingSection(w));
-    box.appendChild(renderDeliverySection(w));
+    // Автор не видит раздел отправки готового/промежуточного комплекта.
+    if (w.project.can_review || w.project.can_manage) box.appendChild(renderDeliverySection(w));
 }
 
 function sectionCard(title, editable, editHandler) {
@@ -2876,24 +3048,24 @@ function renderParticipantsSection(w) {
     const manager=document.createElement('div'); manager.className='participant-line'; manager.innerHTML=`<strong>Менеджер проекта:</strong> ${personHtml(p.manager)}`; card.appendChild(manager);
     const edHead=document.createElement('div'); edHead.className='participant-line'; edHead.innerHTML=`<strong>Редактор(-ы)${p.show_limits ? ` (ровно ${p.editors.length})` : ''}:</strong>`; card.appendChild(edHead);
     (p.editors||[]).forEach(ed=>{ const d=document.createElement('div'); d.className='participant-line'; d.style.paddingLeft='12px'; d.innerHTML=`Редактор ${ed.slot} (${escapeHtml(ed.classes_label)}): ${personHtml(ed.person)}`; card.appendChild(d); });
-    const authorHead=document.createElement('div'); authorHead.className='participant-line';
-    authorHead.innerHTML=`<strong>Авторы${p.show_limits ? ` (до ${p.max_authors})` : ''}:</strong>`;
-    if (p.can_edit_max_authors) { const b=document.createElement('button'); b.className='tiny-icon-button'; b.textContent='✎'; b.onclick=editMaxAuthors; authorHead.appendChild(b); }
-    card.appendChild(authorHead);
+    const authorHead=document.createElement('div'); authorHead.className='participant-line'; authorHead.innerHTML='<strong>Авторы:</strong>'; card.appendChild(authorHead);
     if (!(p.authors||[]).length) { const d=document.createElement('div'); d.className='muted'; d.style.paddingLeft='12px'; d.textContent='Пока нет авторов.'; card.appendChild(d); }
     (p.authors||[]).forEach(a=>{ const d=document.createElement('div'); d.className='participant-line'; d.style.paddingLeft='12px'; d.innerHTML=personHtml(a); card.appendChild(d); });
+    if (p.can_close_author_recruitment) {
+        const close=document.createElement('button'); close.className='mini-secondary'; close.style.marginTop='10px'; close.textContent='Закрыть набор'; close.onclick=closeAuthorRecruitment; card.appendChild(close);
+    } else if (p.author_recruitment_open === false && p.show_limits) {
+        const d=document.createElement('div'); d.className='muted'; d.style.marginTop='8px'; d.textContent='Набор авторов закрыт.'; card.appendChild(d);
+    }
     return card;
 }
 
-function editMaxAuthors() {
-    const p=currentWorkspace.participants;
-    showWorkflowModal('Максимальное число авторов', `<div class="field"><label>Авторов максимум</label><input id="wfMaxAuthors" type="number" min="${p.authors.length}" max="${currentWorkspace.layout.length}" value="${p.max_authors}"></div><div class="workspace-note">Число не может быть меньше уже вступивших авторов и больше общего числа задач.</div>`, [
-        {label:'Отмена',className:'button secondary',onClick:closeWorkflowModal},
-        {label:'Сохранить',onClick:saveMaxAuthors}
-    ]);
-}
-async function saveMaxAuthors() {
-    try { await api(`/api/projects/${currentWorkspaceProjectId}/max-authors`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData,max_authors:Number(document.getElementById('wfMaxAuthors').value)})}); closeWorkflowModal(); await refreshProjectWorkspace(); } catch(e){setWorkflowError(e.message);}
+async function closeAuthorRecruitment(){
+    if(!confirm('Закрыть набор авторов? После этого кнопка вступления как автор исчезнет у всех пользователей.')) return;
+    try{
+        await api(`/api/projects/${currentWorkspaceProjectId}/authors/close`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData})});
+        await refreshProjectWorkspace();
+        await refreshProjects();
+    }catch(e){demo(e.message);}
 }
 
 function renderDeadlinesSection(w) {
@@ -2942,12 +3114,38 @@ function openDescriptionEditor(){const d=currentWorkspace.description;showWorkfl
 <div class="field"><label>Дополнительно об олимпиаде</label><textarea id="wfAdditional" class="big-textarea">${escapeHtml(d.additional_text||'')}</textarea></div>`,[{label:'Отмена',className:'button secondary',onClick:closeWorkflowModal},{label:'Сохранить',onClick:saveDescription}]);}
 async function saveDescription(){try{const payload={init_data:tg.initData,theme_text:document.getElementById('wfTheme').value.trim(),platform:document.getElementById('wfPlatform').value.trim(),difficulty:document.getElementById('wfDifficulty').value.trim(),questions_min:Number(document.getElementById('wfQMin').value),questions_max:Number(document.getElementById('wfQMax').value),text_length:document.getElementById('wfTextLength').value,additional_text:document.getElementById('wfAdditional').value.trim()||null};await api(`/api/projects/${currentWorkspaceProjectId}/description`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});closeWorkflowModal();await refreshProjectWorkspace();}catch(e){setWorkflowError(e.message);}}
 
-function renderWorkspaceFilesSection(w){const card=collapsibleSectionCard('Файлы:',w.can_edit_files,()=>{workspaceFileEditMode=!workspaceFileEditMode;renderProjectWorkspace();},false);if(!(w.attachments||[]).length){const e=document.createElement('div');e.className='muted';e.textContent='Файлы пока не прикреплены.';card.appendChild(e);} (w.attachments||[]).forEach(file=>{const r=document.createElement('div');r.className='workspace-file-row';const n=document.createElement('div');n.className='workspace-file-name';n.textContent='📄 '+file.name;n.onclick=()=>sendProjectAttachment(file.id);r.appendChild(n);if(workspaceFileEditMode&&w.can_edit_files){const x=document.createElement('button');x.className='danger-x';x.textContent='✕';x.onclick=()=>deleteWorkspaceAttachment(file);r.appendChild(x);}card.appendChild(r);});if(workspaceFileEditMode&&w.can_edit_files){const actions=document.createElement('div');actions.className='inline-actions';actions.innerHTML=`<label class="mini-secondary">Добавить файл с устройства<input id="wfProjectFileInput" type="file" multiple hidden></label><button class="mini-secondary" onclick="uploadWorkspaceFiles()">Загрузить выбранные</button><button class="mini-secondary" onclick="openWorkspaceMaterialPicker()">Добавить файл из материалов АНОД</button>`;card.appendChild(actions);}return card;}
+function renderWorkspaceFilesSection(w){
+    const card=collapsibleSectionCard('Файлы:',w.can_edit_files,()=>{workspaceFileEditMode=!workspaceFileEditMode;renderProjectWorkspace();},false);
+    const files=w.attachments||[];
+    const appendFile=(file)=>{
+        const r=document.createElement('div');r.className='workspace-file-row';
+        const n=document.createElement('div');n.className='workspace-file-name';n.textContent='📄  '+file.name;n.onclick=()=>sendProjectAttachment(file.id);r.appendChild(n);
+        if(workspaceFileEditMode&&w.can_edit_files){const x=document.createElement('button');x.className='danger-x';x.textContent='✕';x.onclick=()=>deleteWorkspaceAttachment(file);r.appendChild(x);}card.appendChild(r);
+    };
+    if(!files.length){const e=document.createElement('div');e.className='muted';e.textContent='Файлы пока не прикреплены.';card.appendChild(e);}
+    if(w.can_edit_files){
+        const editorFiles=files.filter(f=>f.audience==='editor_only');
+        const authorFiles=files.filter(f=>f.audience!=='editor_only');
+        const h1=document.createElement('div');h1.className='section-title';h1.style.margin='8px 0 4px';h1.textContent='Редактору:';card.appendChild(h1);
+        if(!editorFiles.length){const e=document.createElement('div');e.className='muted';e.textContent='Нет файлов только для редактора.';card.appendChild(e);}else editorFiles.forEach(appendFile);
+        const h2=document.createElement('div');h2.className='section-title';h2.style.margin='12px 0 4px';h2.textContent='Автору:';card.appendChild(h2);
+        if(!authorFiles.length){const e=document.createElement('div');e.className='muted';e.textContent='Нет файлов для автора и редактора.';card.appendChild(e);}else authorFiles.forEach(appendFile);
+    } else {
+        files.forEach(appendFile);
+    }
+    if(workspaceFileEditMode&&w.can_edit_files){
+        const actions=document.createElement('div');actions.style.marginTop='12px';
+        actions.innerHTML=`<div class="field"><label>Кому доступен новый файл</label><select id="wfFileAudience"><option value="author_and_editor">Автору и редактору</option><option value="editor_only">Только редактору</option></select></div><div class="inline-actions"><label class="mini-secondary">Добавить файл с устройства<input id="wfProjectFileInput" type="file" multiple hidden></label><button class="mini-secondary" onclick="uploadWorkspaceFiles()">Загрузить выбранные</button><button class="mini-secondary" onclick="openWorkspaceMaterialPicker()">Добавить файл из материалов АНОД</button></div>`;
+        card.appendChild(actions);
+    }
+    return card;
+}
 async function sendProjectAttachment(id){try{await api(`/api/projects/${currentWorkspaceProjectId}/attachments/${id}/send`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData})});demo('Файл отправлен вам в сообщения бота.');}catch(e){demo(e.message);}}
 async function deleteWorkspaceAttachment(file){if(!confirm(`Удалить файл «${file.name}» из проекта?`))return;try{await api(`/api/projects/${currentWorkspaceProjectId}/attachments/${file.id}`,{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData})});await refreshProjectWorkspace();}catch(e){demo(e.message);}}
-async function uploadWorkspaceFiles(){const input=document.getElementById('wfProjectFileInput');const files=Array.from(input?.files||[]);if(!files.length)return demo('Сначала выберите файл.');try{for(const file of files){const form=new FormData();form.append('init_data',tg.initData);form.append('file',file);await api(`/api/projects/${currentWorkspaceProjectId}/attachments/upload`,{method:'POST',body:form});}await refreshProjectWorkspace();}catch(e){demo(e.message);}}
+async function uploadWorkspaceFiles(){const input=document.getElementById('wfProjectFileInput');const files=Array.from(input?.files||[]);if(!files.length)return demo('Сначала выберите файл.');const audience=document.getElementById('wfFileAudience')?.value||'author_and_editor';try{for(const file of files){const form=new FormData();form.append('init_data',tg.initData);form.append('audience',audience);form.append('file',file);await api(`/api/projects/${currentWorkspaceProjectId}/attachments/upload`,{method:'POST',body:form});}await refreshProjectWorkspace();}catch(e){demo(e.message);}}
 let workspacePickerSelected=new Map();
-async function openWorkspaceMaterialPicker(){workspacePickerSelected=new Map();await openWorkspaceMaterialPickerFolder(null,[]);}
+let workspacePickerAudience='author_and_editor';
+async function openWorkspaceMaterialPicker(){workspacePickerSelected=new Map();workspacePickerAudience=document.getElementById('wfFileAudience')?.value||'author_and_editor';await openWorkspaceMaterialPickerFolder(null,[]);}
 async function openWorkspaceMaterialPickerFolder(folderId,crumbs){
     try{
         const data=folderId?await api(`/api/materials/folder/${folderId}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData})}):await api('/api/materials/root',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData})});
@@ -2962,16 +3160,38 @@ async function openWorkspaceMaterialPickerFolder(folderId,crumbs){
     }catch(e){demo(e.message);}
 }
 function toggleWorkspacePickerMaterial(id,name,checked){if(checked)workspacePickerSelected.set(id,name);else workspacePickerSelected.delete(id);}
-async function attachWorkspaceSelectedMaterials(){try{for(const [id] of workspacePickerSelected){await api(`/api/projects/${currentWorkspaceProjectId}/attachments/from-material`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData,material_id:id})});}closeWorkflowModal();await refreshProjectWorkspace();}catch(e){setWorkflowError(e.message);}}
+async function attachWorkspaceSelectedMaterials(){try{for(const [id] of workspacePickerSelected){await api(`/api/projects/${currentWorkspaceProjectId}/attachments/from-material`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData,material_id:id,audience:workspacePickerAudience})});}closeWorkflowModal();await refreshProjectWorkspace();}catch(e){setWorkflowError(e.message);}}
 
-async function attachWorkspaceMaterials(){try{const ids=Array.from(document.querySelectorAll('.wfMaterialPick:checked')).map(x=>Number(x.value));for(const id of ids){await api(`/api/projects/${currentWorkspaceProjectId}/attachments/from-material`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData,material_id:id})});}closeWorkflowModal();await refreshProjectWorkspace();}catch(e){setWorkflowError(e.message);}}
+function renderInstructionBox(section,text,canEdit){
+    const wrap=document.createElement('div');wrap.className='hint-banner';wrap.style.position='relative';
+    const body=document.createElement('div');body.innerHTML=escapeHtml(text||'').replace(/\n/g,'<br>');wrap.appendChild(body);
+    if(canEdit){const b=document.createElement('button');b.className='tiny-icon-button';b.textContent='✎';b.style.position='absolute';b.style.right='8px';b.style.top='8px';b.onclick=()=>openWorkspaceInstructionEditor(section);wrap.appendChild(b);}
+    return wrap;
+}
+function openWorkspaceInstructionEditor(section){
+    const value=(currentWorkspace.instructions||{})[section]||'';
+    showWorkflowModal(section==='ideas'?'Текст над списком идей':'Комментарий к списку задач',`<div class="field"><label>Текст</label><textarea id="wfInstructionText" class="big-textarea">${escapeHtml(value)}</textarea></div>`,[{label:'Отмена',className:'button secondary',onClick:closeWorkflowModal},{label:'Сохранить',onClick:()=>saveWorkspaceInstruction(section)}]);
+}
+async function saveWorkspaceInstruction(section){try{await api(`/api/projects/${currentWorkspaceProjectId}/workspace-instruction`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData,section,text:document.getElementById('wfInstructionText').value})});closeWorkflowModal();await refreshProjectWorkspace();}catch(e){setWorkflowError(e.message);}}
 
-function renderIdeasSection(w){const card=collapsibleSectionCard(`Список идей для задач (${(w.progress&&w.progress.ready_ideas)||0}/${(w.progress&&w.progress.total_tasks)||0} идей)`,false,null,false);const add=document.createElement('button');add.className='soft-green-button';add.textContent='Добавить идею для задачи';add.onclick=openProjectIdeaForm;card.appendChild(add);const hint=document.createElement('div');hint.className='hint-banner';hint.innerHTML='Учитывайте все идеи задач проекта, чтобы Ваша была уникальна<div class="two-line-hint">Полное описание задачи появляется при нажатии темы</div>';card.appendChild(hint);const table=document.createElement('div');table.innerHTML=renderProjectIdeasTable(w.ideas||[]);card.appendChild(table);const global=document.createElement('details');global.style.marginTop='12px';const summary=document.createElement('summary');summary.className='collapse-button';summary.textContent='Общий банк идей для задач';global.appendChild(summary);const content=document.createElement('div');content.style.marginTop='10px';content.innerHTML='<div class="muted">Откройте раздел, чтобы загрузить идеи.</div>';let loaded=false;global.ontoggle=async()=>{if(global.open&&!loaded){loaded=true;await loadProjectGlobalIdeas(content);}};global.appendChild(content);card.appendChild(global);return card;}
+function renderIdeasSection(w){
+    const card=collapsibleSectionCard(`Список идей для задач (${(w.progress&&w.progress.ready_ideas)||0}/${(w.progress&&w.progress.total_tasks)||0} идей)`,false,null,false);
+    const deadline=document.createElement('div');deadline.className='project-deadline-line';deadline.innerHTML=`<strong>Срок подготовки прототипов задач:</strong> ${escapeHtml(w.prototypes_deadline||'')}`;card.appendChild(deadline);
+    const add=document.createElement('button');add.className='soft-green-button';add.textContent='Добавить идею для задачи';add.onclick=openProjectIdeaForm;card.appendChild(add);
+    card.appendChild(renderInstructionBox('ideas',(w.instructions||{}).ideas||'',!!(w.instructions||{}).can_edit));
+    const table=document.createElement('div');table.innerHTML=renderProjectIdeasTable(w.ideas||[]);card.appendChild(table);
+    const global=document.createElement('details');global.style.marginTop='12px';const summary=document.createElement('summary');summary.className='collapse-button';summary.textContent='Общий банк идей для задач';global.appendChild(summary);
+    const content=document.createElement('div');content.style.marginTop='10px';content.innerHTML='<div class="muted">Откройте раздел, чтобы загрузить идеи.</div>';let loaded=false;global.ontoggle=async()=>{if(global.open&&!loaded){loaded=true;await loadProjectGlobalIdeas(content);}};global.appendChild(content);card.appendChild(global);return card;
+}
 function renderProjectIdeasTable(items){if(!items.length)return '<div class="muted">Идей проекта пока нет.</div>';const canReview=currentWorkspace.project.can_review;const authorRole=(currentWorkspace.project.my_roles||[]).includes('author');return `<div class="workflow-table-wrap"><table class="workflow-table"><thead><tr><th>Раздел</th><th>Класс</th><th>Тема</th><th>Имя</th><th>Готова</th><th></th></tr></thead><tbody>${items.map(idea=>{const yellow=(canReview&&idea.waiting_for==='editor')||(!canReview&&idea.is_mine&&idea.waiting_for==='author');let name=idea.assignee?personHtml(idea.assignee):(idea.is_open&&authorRole?`<button class="table-action green" onclick="takeProjectIdea(${idea.id})">Взять</button>`:'—');let approve=canReview?(idea.approved?'☑':`<button class="table-action green" onclick="approveIdea(${idea.id})">□</button>`):(idea.approved?'☑':'');let remove=canReview?`<button class="danger-x" onclick="returnIdeaGlobal(${idea.id})">✕</button>`:'';return `<tr class="${yellow?'needs-attention':''}"><td>${escapeHtml(idea.section_short)}</td><td>${escapeHtml(idea.proposed_class)}</td><td><button class="table-action" onclick="openProjectIdeaDetail(${idea.id})">${escapeHtml(idea.topic)}</button></td><td>${name}</td><td>${approve}</td><td>${remove}</td></tr>`;}).join('')}</tbody></table></div>`;}
-function openProjectIdeaForm(){showWorkflowModal('Добавить идею для задачи',`<div class="field"><label>Тема (коротко)</label><input id="wfIdeaTopic" maxlength="220"></div><div class="field"><label>Раздел химии</label><select id="wfIdeaSection">${chemistryOptions()}</select></div><div class="field"><label>Предполагаемый класс</label><input id="wfIdeaClass" placeholder="9-11 или 10"></div><div class="field"><label>Описание</label><textarea id="wfIdeaDescription" class="big-textarea" placeholder="Опишите идею подробней и возможные пункты вопроса"></textarea></div><div class="toggle-row"><label class="toggle-option"><input type="radio" name="wfIdeaOpen" value="0" checked>Идея будет реализована мной</label><label class="toggle-option"><input type="radio" name="wfIdeaOpen" value="1">Доступна всем для реализации</label></div>`,[{label:'Отмена',className:'button secondary',onClick:closeWorkflowModal},{label:'Добавить',onClick:saveProjectIdea}]);}
-async function saveProjectIdea(){try{const payload={init_data:tg.initData,topic:document.getElementById('wfIdeaTopic').value.trim(),chemistry_section:document.getElementById('wfIdeaSection').value,proposed_class:document.getElementById('wfIdeaClass').value.trim(),description:document.getElementById('wfIdeaDescription').value.trim(),is_open:document.querySelector('input[name="wfIdeaOpen"]:checked').value==='1',intended_olympiad:currentWorkspace.project.title};await api(`/api/projects/${currentWorkspaceProjectId}/ideas`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});closeWorkflowModal();await refreshProjectWorkspace();}catch(e){setWorkflowError(e.message);}}
+function openProjectIdeaForm(){showWorkflowModal('Добавить идею для задачи',`<div class="field"><label>Тема (коротко)</label><input id="wfIdeaTopic" maxlength="220"></div><div class="field"><label>Раздел химии</label><select id="wfIdeaSection">${chemistryOptions()}</select></div><div class="field"><label>Предполагаемый класс</label><input id="wfIdeaClass" placeholder="9-11 или 10"></div><div class="field"><label>Описание</label><textarea id="wfIdeaDescription" class="big-textarea" placeholder="Опишите идею подробней и возможные пункты вопроса"></textarea></div><div class="field"><label>Прикрепить файл(ы)</label><input id="wfIdeaFiles" type="file" multiple></div><div class="toggle-row"><label class="toggle-option"><input type="radio" name="wfIdeaOpen" value="0" checked>Идея будет реализована мной</label><label class="toggle-option"><input type="radio" name="wfIdeaOpen" value="1">Доступна всем для реализации</label></div>`,[{label:'Отмена',className:'button secondary',onClick:closeWorkflowModal},{label:'Добавить',onClick:saveProjectIdea}]);}
+async function uploadIdeaFiles(ideaId,files){if(!files.length)return;const form=new FormData();form.append('init_data',tg.initData);files.forEach(f=>form.append('files',f));await api(`/api/ideas/${ideaId}/files`,{method:'POST',body:form});}
+async function saveProjectIdea(){try{const files=Array.from(document.getElementById('wfIdeaFiles')?.files||[]);const payload={init_data:tg.initData,topic:document.getElementById('wfIdeaTopic').value.trim(),chemistry_section:document.getElementById('wfIdeaSection').value,proposed_class:document.getElementById('wfIdeaClass').value.trim(),description:document.getElementById('wfIdeaDescription').value.trim(),is_open:document.querySelector('input[name="wfIdeaOpen"]:checked').value==='1',intended_olympiad:currentWorkspace.project.title};const result=await api(`/api/projects/${currentWorkspaceProjectId}/ideas`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});await uploadIdeaFiles(result.id,files);closeWorkflowModal();await refreshProjectWorkspace();}catch(e){setWorkflowError(e.message);}}
 function findIdea(id){return (currentWorkspace?.ideas||[]).find(x=>x.id===id);}
-function openProjectIdeaDetail(id){const idea=findIdea(id);if(!idea)return;const canReview=currentWorkspace.project.can_review;const canEdit=idea.is_mine||canReview;const comments=(idea.comments||[]).map(c=>`<div class="comment-item"><strong>${c.author?escapeHtml(c.author.name):'Пользователь'}</strong><div>${escapeHtml(c.text).replace(/\n/g,'<br>')}</div><div class="message-time">${escapeHtml(c.created_at)}</div></div>`).join('')||'<div class="muted">Комментариев пока нет.</div>';showWorkflowModal(idea.topic,`<div class="description-row"><strong>Описание:</strong><br>${escapeHtml(idea.description).replace(/\n/g,'<br>')}</div><div class="description-row"><strong>Идея:</strong> ${personHtml(idea.creator)}</div><div class="comment-thread">${comments}</div>${canEdit?'<div class="field"><label>Комментарий</label><textarea id="wfIdeaComment" class="big-textarea"></textarea></div>':''}`,canEdit?[{label:'Редактировать идею',className:'button secondary',onClick:()=>openIdeaEditForm(id)},{label:'Комментировать',onClick:()=>commentIdea(id)}]:[{label:'Закрыть',className:'button secondary',onClick:closeWorkflowModal}]);}
+function ideaFilesHtml(idea){const files=idea.files||[];if(!files.length)return '<div class="muted">Файлов к идее нет.</div>';return `<div class="description-row"><strong>Файлы:</strong><br>${files.map(f=>`📄&nbsp;&nbsp;${escapeHtml(f.name)}`).join('<br>')}<br><button class="mini-secondary" style="margin-top:8px" onclick="getIdeaFiles(${idea.id})">Получить файлы</button></div>`;}
+async function getIdeaFiles(id){try{await api(`/api/ideas/${id}/files/send`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData})});demo('Файлы идеи отправлены Вам сообщением от бота.');}catch(e){demo(e.message);}}
+function openProjectIdeaDetail(id){const idea=findIdea(id);if(!idea)return;const canReview=currentWorkspace.project.can_review;const canEdit=idea.is_mine||canReview;const comments=(idea.comments||[]).map(c=>`<div class="comment-item"><strong>${c.author?escapeHtml(c.author.name):'Пользователь'}</strong><div>${escapeHtml(c.text).replace(/\n/g,'<br>')}</div><div class="message-time">${escapeHtml(c.created_at)}</div></div>`).join('')||'<div class="muted">Комментариев пока нет.</div>';showWorkflowModal(idea.topic,`<div class="description-row"><strong>Описание:</strong><br>${escapeHtml(idea.description).replace(/\n/g,'<br>')}</div><div class="description-row"><strong>Идея:</strong> ${personHtml(idea.creator)}</div>${ideaFilesHtml(idea)}<div class="comment-thread">${comments}</div>${canEdit?'<div class="field"><label>Комментарий</label><textarea id="wfIdeaComment" class="big-textarea"></textarea></div><div class="field"><label>Добавить файл(ы)</label><input id="wfIdeaMoreFiles" type="file" multiple></div>':''}`,canEdit?[{label:'Редактировать идею',className:'button secondary',onClick:()=>openIdeaEditForm(id)},{label:'Добавить файлы',className:'button secondary',onClick:()=>addFilesToIdea(id)},{label:'Комментировать',onClick:()=>commentIdea(id)}]:[{label:'Закрыть',className:'button secondary',onClick:closeWorkflowModal}]);}
+async function addFilesToIdea(id){try{const files=Array.from(document.getElementById('wfIdeaMoreFiles')?.files||[]);if(!files.length)throw new Error('Выберите файл.');await uploadIdeaFiles(id,files);closeWorkflowModal();await refreshProjectWorkspace();}catch(e){setWorkflowError(e.message);}}
 function openIdeaEditForm(id){const idea=findIdea(id);if(!idea)return;showWorkflowModal('Редактировать идею',`<div class="field"><label>Тема</label><input id="wfEditIdeaTopic" value="${escapeHtml(idea.topic)}"></div><div class="field"><label>Раздел химии</label><select id="wfEditIdeaSection">${chemistryOptions(idea.section)}</select></div><div class="field"><label>Предполагаемый класс</label><input id="wfEditIdeaClass" value="${escapeHtml(idea.proposed_class)}"></div><div class="field"><label>Описание</label><textarea id="wfEditIdeaDescription" class="big-textarea">${escapeHtml(idea.description)}</textarea></div>`,[{label:'Отмена',className:'button secondary',onClick:closeWorkflowModal},{label:'Сохранить',onClick:()=>saveIdeaEdit(id)}]);}
 async function saveIdeaEdit(id){try{await api(`/api/ideas/${id}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData,topic:document.getElementById('wfEditIdeaTopic').value.trim(),chemistry_section:document.getElementById('wfEditIdeaSection').value,proposed_class:document.getElementById('wfEditIdeaClass').value.trim(),description:document.getElementById('wfEditIdeaDescription').value.trim()})});closeWorkflowModal();await refreshProjectWorkspace();}catch(e){setWorkflowError(e.message);}}
 async function commentIdea(id){try{const comment=document.getElementById('wfIdeaComment').value.trim();if(!comment)throw new Error('Напишите комментарий.');await api(`/api/ideas/${id}/comments`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData,comment})});closeWorkflowModal();await refreshProjectWorkspace();}catch(e){setWorkflowError(e.message);}}
@@ -2981,7 +3201,18 @@ async function returnIdeaGlobal(id){if(!confirm('Вернуть эту идею 
 async function loadProjectGlobalIdeas(container){try{const rows=await api(`/api/projects/${currentWorkspaceProjectId}/global-ideas`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData})});currentWorkspace._globalIdeas=rows;container.innerHTML=renderGlobalIdeasTable(rows,true);}catch(e){container.innerHTML=`<div class="error">${escapeHtml(e.message)}</div>`;}}
 async function moveGlobalIdeaToProject(id){try{await api(`/api/ideas/${id}/move-to-project`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData,project_id:currentWorkspaceProjectId})});closeWorkflowModal();await refreshProjectWorkspace();}catch(e){demo(e.message);}}
 
-function renderTasksSection(w){const card=collapsibleSectionCard(`Список задач (${(w.progress&&w.progress.ready_tasks)||0}/${(w.progress&&w.progress.total_tasks)||0} задач)`,false,null,false);const add=document.createElement('button');add.className='soft-green-button';add.textContent='Добавить задачу';add.onclick=openTaskForm;card.appendChild(add);const layout=document.createElement('button');layout.className='mini-secondary';layout.style.marginBottom='10px';layout.textContent='Таблица с распределением задач';layout.onclick=openTaskLayout;card.appendChild(layout);const tasks=w.tasks||[];if(!tasks.length){const e=document.createElement('div');e.className='muted';e.textContent='Задач пока нет.';card.appendChild(e);return card;}const canReview=w.project.can_review;const wrap=document.createElement('div');wrap.className='workflow-table-wrap';wrap.innerHTML=`<table class="workflow-table"><thead><tr><th>Word-файлы</th><th>Раздел</th><th>Класс</th><th>Тема</th><th>Составитель</th><th>Архив</th><th>Готова</th></tr></thead><tbody>${tasks.map(t=>{const yellow=(canReview&&t.waiting_for==='editor')||(!canReview&&t.is_mine&&t.waiting_for==='author');const ready=t.is_ready;const work=t.can_work?`<button class="table-action" onclick="openTaskWork(${t.id})">⬆</button>`:'—';const topic=`<button class="table-action" onclick="${t.can_work?`openTaskWork(${t.id})`:`openTaskReadOnly(${t.id})`}">${escapeHtml(t.topic)}</button>`;const archive=t.can_work?`<button class="table-action" onclick="openTaskArchive(${t.id})">Архив</button>`:'—';const readyCell=canReview?`<input type="checkbox" ${ready?'checked':''} onchange="setTaskReady(${t.id}, this.checked)">`:(ready?'✓':'');return `<tr class="${yellow?'needs-attention':ready?'ready-row':''}"><td>${work}</td><td>${escapeHtml(t.section_short)}</td><td>${escapeHtml(t.proposed_class)}</td><td>${topic}</td><td>${t.assignee?personHtml(t.assignee):'—'}</td><td>${archive}</td><td>${readyCell}</td></tr>`;}).join('')}</tbody></table>`;card.appendChild(wrap);return card;}
+function renderTasksSection(w){
+    const card=collapsibleSectionCard(`Список задач (${(w.progress&&w.progress.ready_tasks)||0}/${(w.progress&&w.progress.total_tasks)||0} задач)`,false,null,false);
+    const add=document.createElement('button');add.className='soft-green-button';add.textContent='Добавить задачу';add.onclick=openTaskForm;card.appendChild(add);
+    const layout=document.createElement('button');layout.className='mini-secondary';layout.style.marginBottom='10px';layout.textContent='Таблица с распределением задач';layout.onclick=openTaskLayout;card.appendChild(layout);
+    const instruction=(w.instructions||{}).tasks||'';
+    if(instruction || (w.instructions||{}).can_edit){card.appendChild(renderInstructionBox('tasks',instruction||'Комментарий к списку задач пока не добавлен.',!!(w.instructions||{}).can_edit));}
+    const tasks=w.tasks||[];if(!tasks.length){const e=document.createElement('div');e.className='muted';e.textContent='Задач пока нет.';card.appendChild(e);return card;}
+    const canReview=w.project.can_review;const wrap=document.createElement('div');wrap.className='workflow-table-wrap';
+    wrap.innerHTML=`<table class="workflow-table"><thead><tr><th>Word-файлы</th><th>Раздел</th><th>Класс</th><th>Тема</th><th>Составитель</th><th>Архив</th><th>Готова</th>${canReview?'<th></th>':''}</tr></thead><tbody>${tasks.map(t=>{const yellow=(canReview&&t.waiting_for==='editor')||(!canReview&&t.is_mine&&t.waiting_for==='author');const ready=t.is_ready;const work=t.can_work?`<button class="table-action" onclick="openTaskWork(${t.id})">⬆</button>`:'—';const topic=`<button class="table-action" onclick="${t.can_work?`openTaskWork(${t.id})`:`openTaskReadOnly(${t.id})`}">${escapeHtml(t.topic)}</button>`;const archive=t.can_work?`<button class="table-action" onclick="openTaskArchive(${t.id})">Архив</button>`:'—';const readyCell=canReview?`<input type="checkbox" ${ready?'checked':''} onchange="setTaskReady(${t.id}, this.checked)">`:(ready?'✓':'');const remove=canReview?`<button class="danger-x" title="Вернуть в общий банк идей" onclick="returnTaskToGlobalIdea(${t.id},'${escapeHtml(t.topic).replaceAll("'","&#39;")}')">✕</button>`:'';return `<tr class="${yellow?'needs-attention':ready?'ready-row':''}"><td>${work}</td><td>${escapeHtml(t.section_short)}</td><td>${escapeHtml(t.proposed_class)}</td><td>${topic}</td><td>${t.assignee?personHtml(t.assignee):'—'}</td><td>${archive}</td><td>${readyCell}</td>${canReview?`<td>${remove}</td>`:''}</tr>`;}).join('')}</tbody></table>`;
+    card.appendChild(wrap);return card;
+}
+async function returnTaskToGlobalIdea(id,topic){if(!confirm(`Убрать задачу «${topic}» из проекта и вернуть её описание и файлы в общий банк идей?`))return;try{await api(`/api/tasks/${id}/return-global-idea`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData})});await refreshProjectWorkspace();demo('Задача перенесена в общий банк идей.');}catch(e){demo(e.message);}}
 function openTaskForm(){
     const canReview=currentWorkspace.project.can_review;
     let assigneeHtml='';
@@ -3006,7 +3237,7 @@ async function saveTaskEdit(id){try{await api(`/api/tasks/${id}`,{method:'PATCH'
 async function openTaskArchive(id){try{const rows=await api(`/api/tasks/${id}/archive`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData})});const html=rows.length?rows.map(m=>`<div class="comment-item"><strong>${m.author?escapeHtml(m.author.name):'Пользователь'}</strong><div>${escapeHtml(m.comment||'').replace(/\n/g,'<br>')}</div><div>${(m.files||[]).map(f=>`📄 ${escapeHtml(f.name)}`).join('<br>')}</div>${(m.files||[]).length?`<button class="mini-secondary" onclick="getTaskMessageFiles(${id},${m.id})">Получить файлы</button>`:''}<div class="message-time">${escapeHtml(m.created_at)}</div></div>`).join(''):'<div class="muted">Архив пока пуст.</div>';showWorkflowModal('Архив задачи',`<div class="comment-thread" style="max-height:55vh">${html}</div>`,[{label:'Закрыть',className:'button secondary',onClick:closeWorkflowModal}]);}catch(e){demo(e.message);}}
 async function setTaskReady(id,value){try{await api(`/api/tasks/${id}/ready`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData,is_ready:value})});await refreshProjectWorkspace();}catch(e){demo(e.message);await refreshProjectWorkspace();}}
 
-function openTaskLayout(){const rows=currentWorkspace.layout||[];const canReview=currentWorkspace.project.can_review;const html=`<div class="workflow-table-wrap"><table class="workflow-table"><thead><tr><th>№</th><th>Класс</th><th>Раздел</th><th>Тема</th><th>Составитель</th><th></th></tr></thead><tbody>${rows.map(slot=>{const task=slot.task;const topic=task?`<button class="table-action" onclick="${task.is_mine?`closeWorkflowModal(); openTaskWork(${slot.task_id})`:'void(0)'}">${escapeHtml(task.topic)}</button>`:(canReview?`<button class="table-action green" onclick="chooseLayoutTask(${slot.id})">Выбрать задачу</button>`:'');return `<tr><td>${slot.position}</td><td>${escapeHtml(slot.class_label)}</td><td>${task?escapeHtml(task.section_short):''}</td><td>${topic}</td><td>${task&&task.assignee?personHtml(task.assignee):''}</td><td>${canReview&&slot.task_id?`<button class="danger-x" onclick="clearLayoutSlot(${slot.id})">✕</button>`:''}</td></tr>`;}).join('')}</tbody></table></div>`;showWorkflowModal('В расставленном виде',html,[{label:'Закрыть',className:'button secondary',onClick:closeWorkflowModal}]);}
+function openTaskLayout(){const rows=currentWorkspace.layout||[];const canReview=currentWorkspace.project.can_review;const html=`<div class="workflow-table-wrap"><table class="workflow-table"><thead><tr><th>№</th><th>Класс</th><th>Раздел</th><th>Тема</th><th>Составитель</th><th></th></tr></thead><tbody>${rows.map(slot=>{const task=slot.task;const topic=task?`<button class="table-action" onclick="${task.is_mine?`closeWorkflowModal(); openTaskWork(${slot.task_id})`:'void(0)'}">${escapeHtml(task.topic)}</button>`:(canReview?`<button class="table-action green" onclick="chooseLayoutTask(${slot.id})">Выбрать задачу</button>`:'');return `<tr><td>${slot.position}</td><td>${escapeHtml(slot.class_label)}</td><td>${task?escapeHtml(task.section_short):''}</td><td>${topic}</td><td>${task&&task.assignee?personHtml(task.assignee):''}</td><td>${canReview&&slot.task_id?`<button class="danger-x" onclick="clearLayoutSlot(${slot.id})">✕</button>`:''}</td></tr>`;}).join('')}</tbody></table></div>`;showWorkflowModal('Таблица с распределением задач',html,[{label:'Закрыть',className:'button secondary',onClick:closeWorkflowModal}]);}
 function chooseLayoutTask(slotId){const tasks=currentWorkspace.tasks||[];const html=tasks.length?tasks.map(t=>`<button class="button secondary" style="margin-bottom:7px" onclick="assignLayoutTask(${slotId},${t.id})">${escapeHtml(t.topic)} — ${t.assignee?escapeHtml(t.assignee.name):'без автора'}</button>`).join(''):'<div class="muted">Задач пока нет.</div>';showWorkflowModal('Выберите задачу',html,[{label:'Отмена',className:'button secondary',onClick:openTaskLayout}]);}
 async function assignLayoutTask(slotId,taskId){try{await api(`/api/layout/${slotId}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData,task_id:taskId})});closeWorkflowModal();await refreshProjectWorkspace();openTaskLayout();}catch(e){demo(e.message);}}
 async function clearLayoutSlot(slotId){if(!confirm('Убрать задачу с этой позиции? Сама задача не удалится.'))return;try{await api(`/api/layout/${slotId}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData,task_id:null})});closeWorkflowModal();await refreshProjectWorkspace();openTaskLayout();}catch(e){demo(e.message);}}
@@ -3123,7 +3354,7 @@ async function refreshSurveyButtonState(){
 }
 function showOnlyPage(id){['mentorsPage','projectsPage','materialsPage','profilePage','projectCreatePage','ideaBankPage','projectWorkspacePage','notificationSettingsPage','surveysPage'].forEach(x=>document.getElementById(x)?.classList.add('hidden'));document.getElementById(id).classList.remove('hidden');window.scrollTo(0,0);}
 function timeDigitsInput(el){let d=(el.value||'').replace(/\D/g,'').slice(0,4);if(d.length>2)d=d.slice(0,2)+':'+d.slice(2);el.value=d;}
-function notificationModeChanged(){const mode=document.querySelector('input[name="notify_delivery_mode"]:checked')?.value||'immediate';document.getElementById('notifyIntervalWrap')?.classList.toggle('hidden',mode!=='interval');document.getElementById('notifyDailyWrap')?.classList.toggle('hidden',mode!=='daily');}
+function notificationModeChanged(){const mode=document.querySelector('input[name="notify_delivery_mode"]:checked')?.value||'immediate';document.getElementById('notifyIntervalValue')?.classList.toggle('hidden',mode!=='interval');document.getElementById('notifyDailyValue')?.classList.toggle('hidden',mode!=='daily');}
 async function openNotificationSettings(){
     showOnlyPage('notificationSettingsPage');
     const box=document.getElementById('notificationSettingsContent');box.innerHTML='Загрузка...';
@@ -3137,16 +3368,14 @@ async function openNotificationSettings(){
         <div class="notification-time-card">
           <label class="notification-line"><input id="notify_quiet_enabled" type="checkbox" ${d.values.quiet_enabled?'checked':''}> Ночной режим с
             <input id="notify_quiet_start" class="time-mini-input" inputmode="numeric" maxlength="5" placeholder="23:00" value="${escapeHtml(d.values.quiet_start||'23:00')}" oninput="timeDigitsInput(this)"> до
-            <input id="notify_quiet_end" class="time-mini-input" inputmode="numeric" maxlength="5" placeholder="10:00" value="${escapeHtml(d.values.quiet_end||'10:00')}" oninput="timeDigitsInput(this)">
+            <input id="notify_quiet_end" class="time-mini-input" inputmode="numeric" maxlength="5" placeholder="10:00" value="${escapeHtml(d.values.quiet_end||'10:00')}" oninput="timeDigitsInput(this)"> (по Москве)
           </label><div class="muted" style="margin-left:26px">не будут приходить сообщения от бота</div>
         </div>`;
         const mode=d.values.work_delivery_mode||'immediate';
         html+=`<div class="notification-time-card">
           <label class="notification-line"><input type="radio" name="notify_delivery_mode" value="immediate" ${mode==='immediate'?'checked':''} onchange="notificationModeChanged()"> Присылать сообщения по мере поступления обновлений в работе по моим проектам</label>
-          <label class="notification-line"><input type="radio" name="notify_delivery_mode" value="interval" ${mode==='interval'?'checked':''} onchange="notificationModeChanged()"> Присылать сообщения об обновлении работы по моим проектам каждый</label>
-          <div id="notifyIntervalWrap" class="${mode==='interval'?'':'hidden'}" style="margin:4px 0 8px 28px"><select id="notify_interval_hours" style="width:auto"><option value="0.5" ${Number(d.values.work_interval_hours)===0.5?'selected':''}>0,5</option><option value="1" ${Number(d.values.work_interval_hours)===1?'selected':''}>1</option><option value="2" ${Number(d.values.work_interval_hours)===2?'selected':''}>2</option><option value="3" ${Number(d.values.work_interval_hours)===3?'selected':''}>3</option><option value="4" ${Number(d.values.work_interval_hours)===4?'selected':''}>4</option></select> час(-а)</div>
-          <label class="notification-line"><input type="radio" name="notify_delivery_mode" value="daily" ${mode==='daily'?'checked':''} onchange="notificationModeChanged()"> Присылать сообщения об обновлении работы в моих проектах один раз в день в</label>
-          <div id="notifyDailyWrap" class="${mode==='daily'?'':'hidden'}" style="margin:4px 0 0 28px"><input id="notify_daily_time" class="time-mini-input" inputmode="numeric" maxlength="5" placeholder="10:00" value="${escapeHtml(d.values.work_daily_time||'10:00')}" oninput="timeDigitsInput(this)"></div>
+          <label class="notification-line"><input type="radio" name="notify_delivery_mode" value="interval" ${mode==='interval'?'checked':''} onchange="notificationModeChanged()"> Присылать сообщения об обновлении работы по моим проектам каждый <span id="notifyIntervalValue" class="${mode==='interval'?'':'hidden'}"><select id="notify_interval_hours" style="width:auto"><option value="0.5" ${Number(d.values.work_interval_hours)===0.5?'selected':''}>0,5</option><option value="1" ${Number(d.values.work_interval_hours)===1?'selected':''}>1</option><option value="2" ${Number(d.values.work_interval_hours)===2?'selected':''}>2</option><option value="3" ${Number(d.values.work_interval_hours)===3?'selected':''}>3</option><option value="4" ${Number(d.values.work_interval_hours)===4?'selected':''}>4</option></select></span> час</label>
+          <label class="notification-line"><input type="radio" name="notify_delivery_mode" value="daily" ${mode==='daily'?'checked':''} onchange="notificationModeChanged()"> Присылать сообщения об обновлении работы в моих проектах один раз в день в <span id="notifyDailyValue" class="${mode==='daily'?'':'hidden'}"><input id="notify_daily_time" class="time-mini-input" inputmode="numeric" maxlength="5" placeholder="10:00" value="${escapeHtml(d.values.work_daily_time||'10:00')}" oninput="timeDigitsInput(this)"></span> (по Москве)</label>
         </div>`;
         html+='<button class="button" onclick="saveNotificationSettings()">Сохранить</button>';
         box.innerHTML=html;
