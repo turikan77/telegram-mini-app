@@ -2242,7 +2242,10 @@ function openTaskCompositionForm() {
     document.getElementById('difficultySelect').value = '';
     document.getElementById('textLengthSelect').value = 'medium';
     document.getElementById('createProjectError').innerText = '';
-    document.getElementById('projectDeviceFiles').value = '';
+    const editorDeviceInput = document.getElementById('projectEditorDeviceFiles');
+    const authorDeviceInput = document.getElementById('projectAuthorDeviceFiles');
+    if (editorDeviceInput) editorDeviceInput.value = '';
+    if (authorDeviceInput) authorDeviceInput.value = '';
     platformChanged();
     renderTaskRows();
     renderEditorSlots();
