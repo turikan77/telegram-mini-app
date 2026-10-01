@@ -3169,6 +3169,26 @@ async function openWorkspaceMaterialPickerFolder(folderId,crumbs){
 function toggleWorkspacePickerMaterial(id,name,checked){if(checked)workspacePickerSelected.set(id,name);else workspacePickerSelected.delete(id);}
 async function attachWorkspaceSelectedMaterials(){try{for(const [id] of workspacePickerSelected){await api(`/api/projects/${currentWorkspaceProjectId}/attachments/from-material`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData,material_id:id,audience:workspacePickerAudience})});}closeWorkflowModal();await refreshProjectWorkspace();}catch(e){setWorkflowError(e.message);}}
 
+const OLD_DEFAULT_IDEAS_INSTRUCTION=`- Учитывайте все идеи задач проекта, чтобы Ваша была уникальна.
+- Полное описание задачи появляется при нажатии темы.
+- Посмотрите задачи прошлых лет, чтобы Ваша идея не дублировалась.
+- Жёлтым выделяется идея с оставленным комментарием редактора.`;
+const DEFAULT_IDEAS_INSTRUCTION=`- Здесь можно добавлять и редактировать задачи
+- Полное описание задачи появляется при нажатии темы
+- Редактор может прокомментировать Вашу идею, после чего
+она будет окрашена в жёлтый цвет и необходимо её отредактировать
+- После одобрения темы она попадёт в раздел "Список задач"
+- Избыточные идеи будут перенаправлены в банк идей для задач
+и смогут использоваться Вами в будущем
+- Учитывайте все идеи задачи проекта, чтобы Ваша была уникальна
+- Посмотрите задачи прошлых лет, чтобы Ваша идея не дублировалась`;
+const DEFAULT_TASKS_INSTRUCTION='- Посмотрите ВСЕ прикреплённые файлы, там требования и рекомендации';
+function workspaceInstructionValue(section){
+    const raw=((currentWorkspace&&currentWorkspace.instructions)||{})[section]||'';
+    if(section==='ideas'&&(!raw.trim()||raw.trim()===OLD_DEFAULT_IDEAS_INSTRUCTION.trim()))return DEFAULT_IDEAS_INSTRUCTION;
+    if(section==='tasks'&&!raw.trim())return DEFAULT_TASKS_INSTRUCTION;
+    return raw;
+}
 function renderInstructionBox(section,text,canEdit){
     const wrap=document.createElement('div');wrap.className='hint-banner';wrap.style.position='relative';
     const body=document.createElement('div');body.innerHTML=escapeHtml(text||'').replace(/\n/g,'<br>');wrap.appendChild(body);
@@ -3176,16 +3196,16 @@ function renderInstructionBox(section,text,canEdit){
     return wrap;
 }
 function openWorkspaceInstructionEditor(section){
-    const value=(currentWorkspace.instructions||{})[section]||'';
+    const value=workspaceInstructionValue(section);
     showWorkflowModal(section==='ideas'?'Текст над списком идей':'Комментарий к списку задач',`<div class="field"><label>Текст</label><textarea id="wfInstructionText" class="big-textarea">${escapeHtml(value)}</textarea></div>`,[{label:'Отмена',className:'button secondary',onClick:closeWorkflowModal},{label:'Сохранить',onClick:()=>saveWorkspaceInstruction(section)}]);
 }
 async function saveWorkspaceInstruction(section){try{await api(`/api/projects/${currentWorkspaceProjectId}/workspace-instruction`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData,section,text:document.getElementById('wfInstructionText').value})});closeWorkflowModal();await refreshProjectWorkspace();}catch(e){setWorkflowError(e.message);}}
 
 function renderIdeasSection(w){
-    const card=collapsibleSectionCard(`Список идей для задач (${(w.progress&&w.progress.ready_ideas)||0}/${(w.progress&&w.progress.total_tasks)||0} идей)`,false,null,false);
+    const card=collapsibleSectionCard(`Список идей для задач (готово ${(w.progress&&w.progress.ready_ideas)||0}/${(w.progress&&w.progress.total_tasks)||0} идей)`,false,null,false);
     const deadline=document.createElement('div');deadline.className='project-deadline-line';deadline.innerHTML=`<strong>Срок подготовки прототипов задач:</strong> ${escapeHtml(w.prototypes_deadline||'')}`;card.appendChild(deadline);
     const add=document.createElement('button');add.className='soft-green-button';add.textContent='Добавить идею для задачи';add.onclick=openProjectIdeaForm;card.appendChild(add);
-    card.appendChild(renderInstructionBox('ideas',(w.instructions||{}).ideas||'',!!(w.instructions||{}).can_edit));
+    card.appendChild(renderInstructionBox('ideas',workspaceInstructionValue('ideas'),!!(w.instructions||{}).can_edit));
     const table=document.createElement('div');table.innerHTML=renderProjectIdeasTable(w.ideas||[]);card.appendChild(table);
     const global=document.createElement('details');global.style.marginTop='12px';const summary=document.createElement('summary');summary.className='collapse-button';summary.textContent='Общий банк идей для задач';global.appendChild(summary);
     const content=document.createElement('div');content.style.marginTop='10px';content.innerHTML='<div class="muted">Откройте раздел, чтобы загрузить идеи.</div>';let loaded=false;global.ontoggle=async()=>{if(global.open&&!loaded){loaded=true;await loadProjectGlobalIdeas(content);}};global.appendChild(content);card.appendChild(global);return card;
@@ -3209,11 +3229,11 @@ async function loadProjectGlobalIdeas(container){try{const rows=await api(`/api/
 async function moveGlobalIdeaToProject(id){try{await api(`/api/ideas/${id}/move-to-project`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData,project_id:currentWorkspaceProjectId})});closeWorkflowModal();await refreshProjectWorkspace();}catch(e){demo(e.message);}}
 
 function renderTasksSection(w){
-    const card=collapsibleSectionCard(`Список задач (${(w.progress&&w.progress.ready_tasks)||0}/${(w.progress&&w.progress.total_tasks)||0} задач)`,false,null,false);
-    const add=document.createElement('button');add.className='soft-green-button';add.textContent='Добавить задачу';add.onclick=openTaskForm;card.appendChild(add);
+    const card=collapsibleSectionCard(`Список задач (готово ${(w.progress&&w.progress.ready_tasks)||0}/${(w.progress&&w.progress.total_tasks)||0} задач)`,false,null,false);
+    if(w.project.can_review){const add=document.createElement('button');add.className='soft-green-button';add.textContent='Добавить задачу';add.onclick=openTaskForm;card.appendChild(add);}
     const layout=document.createElement('button');layout.className='mini-secondary';layout.style.marginBottom='10px';layout.textContent='Таблица с распределением задач';layout.onclick=openTaskLayout;card.appendChild(layout);
-    const instruction=(w.instructions||{}).tasks||'';
-    if(instruction || (w.instructions||{}).can_edit){card.appendChild(renderInstructionBox('tasks',instruction||'Комментарий к списку задач пока не добавлен.',!!(w.instructions||{}).can_edit));}
+    const instruction=workspaceInstructionValue('tasks');
+    if(instruction || (w.instructions||{}).can_edit){card.appendChild(renderInstructionBox('tasks',instruction,!!(w.instructions||{}).can_edit));}
     const tasks=w.tasks||[];if(!tasks.length){const e=document.createElement('div');e.className='muted';e.textContent='Задач пока нет.';card.appendChild(e);return card;}
     const canReview=w.project.can_review;const wrap=document.createElement('div');wrap.className='workflow-table-wrap';
     wrap.innerHTML=`<table class="workflow-table"><thead><tr><th>Word-файлы</th><th>Раздел</th><th>Класс</th><th>Тема</th><th>Составитель</th><th>Архив</th><th>Готова</th>${canReview?'<th></th>':''}</tr></thead><tbody>${tasks.map(t=>{const yellow=(canReview&&t.waiting_for==='editor')||(!canReview&&t.is_mine&&t.waiting_for==='author');const ready=t.is_ready;const work=t.can_work?`<button class="table-action" onclick="openTaskWork(${t.id})">⬆</button>`:'—';const topic=`<button class="table-action" onclick="${t.can_work?`openTaskWork(${t.id})`:`openTaskReadOnly(${t.id})`}">${escapeHtml(t.topic)}</button>`;const archive=t.can_work?`<button class="table-action" onclick="openTaskArchive(${t.id})">Архив</button>`:'—';const readyCell=canReview?`<input type="checkbox" ${ready?'checked':''} onchange="setTaskReady(${t.id}, this.checked)">`:(ready?'✓':'');const remove=canReview?`<button class="danger-x" title="Вернуть в общий банк идей" onclick="returnTaskToGlobalIdea(${t.id},'${escapeHtml(t.topic).replaceAll("'","&#39;")}')">✕</button>`:'';return `<tr class="${yellow?'needs-attention':ready?'ready-row':''}"><td>${work}</td><td>${escapeHtml(t.section_short)}</td><td>${escapeHtml(t.proposed_class)}</td><td>${topic}</td><td>${t.assignee?personHtml(t.assignee):'—'}</td><td>${archive}</td><td>${readyCell}</td>${canReview?`<td>${remove}</td>`:''}</tr>`;}).join('')}</tbody></table>`;
@@ -3260,6 +3280,7 @@ async function getTestingSubmission(id){try{await api(`/api/testing/submissions/
 
 function renderDeliverySection(w) {
     const card=sectionCard('Готовый/Промежуточный комплект',false,null);
+    const deliveryHint=document.createElement('div');deliveryHint.className='workspace-note';deliveryHint.textContent='Комплект с комментарием будет отправлен менеджеру проекта';card.appendChild(deliveryHint);
     if(w.delivery && w.delivery.can_publish){
         const controls=document.createElement('div');
         controls.innerHTML=`<div class="field"><label>Тип комплекта</label><select id="wfDeliveryInlineType" onchange="updateDeliveryInlineButton()"><option value="final">Готовый</option><option value="intermediate">Промежуточный</option></select></div><button id="wfDeliveryInlineButton" class="soft-green-button" onclick="openDeliveryPackageModal()">Прикрепить готовый комплект</button>`;
