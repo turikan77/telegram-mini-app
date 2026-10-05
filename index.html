@@ -173,7 +173,9 @@
         .icon-button { width:34px; height:34px; border:0; border-radius:10px; cursor:pointer; background:rgba(120,120,120,.10); }
         .icon-button.delete { color:#c62828; background:rgba(210,40,40,.10); }
         .vacancy-title { font-size:18px; font-weight:800; }
-        .vacancy-card { width:100%; text-align:left; border:1px solid rgba(51,144,236,.18); border-radius:14px; padding:13px; margin-top:9px; background:rgba(51,144,236,.07); color:var(--tg-theme-text-color,#111); cursor:pointer; }
+        .vacancy-row { display:flex; align-items:stretch; gap:8px; width:100%; }
+        .vacancy-card { flex:1; min-width:0; text-align:left; border:1px solid rgba(51,144,236,.18); border-radius:14px; padding:13px; margin-top:9px; background:rgba(51,144,236,.07); color:var(--tg-theme-text-color,#111); cursor:pointer; }
+        .vacancy-decline { flex:0 0 42px; width:42px; min-width:42px; border:1px solid rgba(220,53,69,.28); border-radius:14px; margin-top:9px; background:rgba(220,53,69,.08); color:#c62828; font-size:27px; line-height:1; font-weight:700; cursor:pointer; }
         .vacancy-primary { font-weight:700; margin-top:3px; }
         .vacancy-small { margin-top:4px; font-size:13px; color:var(--tg-theme-hint-color,#666); line-height:1.35; }
         .subsection-title { font-size:16px; font-weight:700; margin:14px 0 10px; }
@@ -246,6 +248,18 @@
         .deadline-row { display:flex; justify-content:space-between; gap:12px; padding:7px 0; border-bottom:1px solid #edf0f3; }
         .deadline-row:last-child { border-bottom:0; }
         .info-dot { display:inline-flex; align-items:center; justify-content:center; width:19px; height:19px; border-radius:50%; border:1px solid #8b929c; font-size:12px; cursor:pointer; margin-left:4px; }
+        .priority-toggle-row { display:flex; align-items:center; gap:7px; margin:12px 0 8px; }
+        .priority-toggle-row label { display:flex; align-items:center; gap:8px; font-weight:600; cursor:pointer; }
+        .priority-toggle-row .info-dot { background:transparent; color:inherit; padding:0; flex:0 0 auto; }
+        .priority-editor-panel { margin:8px 0 14px; }
+        .priority-editor-table { width:100%; border-collapse:collapse; font-size:14px; }
+        .priority-editor-table th, .priority-editor-table td { padding:8px 7px; border-bottom:1px solid #edf0f3; vertical-align:middle; }
+        .priority-editor-table th { text-align:left; background:#f6f7f9; }
+        .priority-editor-table th:nth-child(1), .priority-editor-table td:nth-child(1) { width:42px; text-align:center; }
+        .priority-editor-table th:nth-child(3), .priority-editor-table td:nth-child(3),
+        .priority-editor-table th:nth-child(4), .priority-editor-table td:nth-child(4) { width:44px; text-align:center; }
+        .priority-move { width:34px; height:32px; border:1px solid #d8dde5; background:#fff; border-radius:8px; cursor:pointer; font-size:17px; }
+        .priority-move:disabled { opacity:.3; cursor:default; }
         .description-row { margin:7px 0; line-height:1.45; }
         .workspace-file-row { display:flex; align-items:center; gap:8px; padding:8px 0; border-bottom:1px solid #edf0f3; }
         .workspace-file-name { flex:1; cursor:pointer; color:#2f6fed; font-weight:650; }
@@ -418,6 +432,19 @@
             <div class="section-title" style="margin-top:0">Редактура</div>
             <div id="editorSlots"></div>
             <button id="addEditorButton" class="plus-button" onclick="addEditorSlot()">＋ Редактор</button>
+            <div class="priority-toggle-row">
+                <label><input id="editorPriorityEnabled" type="checkbox" onchange="toggleEditorPriorityPanel()"> Установить приоритет редакторов</label>
+                <button type="button" class="info-dot" aria-label="Информация о приоритете редакторов" onclick="showEditorPriorityInfo()">i</button>
+            </div>
+            <div id="editorPriorityPanel" class="priority-editor-panel hidden">
+                <div class="workflow-table-wrap">
+                    <table class="priority-editor-table">
+                        <thead><tr><th>№</th><th>Имя</th><th></th><th></th></tr></thead>
+                        <tbody id="editorPriorityTableBody"></tbody>
+                    </table>
+                </div>
+                <button type="button" class="mini-secondary" style="margin-top:10px" onclick="saveEditorPriorityOrder()">Сохранить</button>
+            </div>
             <div class="field inline-money" style="margin-top:14px">
                 <label>Оплата редактору</label>
                 <input id="editorPay" type="number" min="0" inputmode="numeric" value="0" oninput="recalculateProjectBudget()">
@@ -873,6 +900,7 @@ let previousTab = 'mentors';
 let projectCreateOptions = null;
 let activeTaskClasses = [6,7,8,9,10,11];
 let editorSlotsState = [];
+let editorPriorityOrderState = [];
 let selectedMaterialIds = []; // автор + редактор (совместимость со старой логикой)
 let selectedMaterialMap = new Map();
 let selectedEditorMaterialIds = [];
@@ -2088,6 +2116,9 @@ function buildProjectCard(project) {
         card.appendChild(heading);
     }
     buttons.forEach(vacancy => {
+        const row = document.createElement('div');
+        row.className = 'vacancy-row';
+
         const button = document.createElement('button');
         button.className = 'vacancy-card';
         button.onclick = () => joinProjectRole(project, vacancy);
@@ -2097,7 +2128,21 @@ function buildProjectCard(project) {
             <div class="vacancy-small">${escapeHtml(vacancy.description || '')}</div>
             <div class="vacancy-small"><strong>${escapeHtml(vacancy.deadline_text || '')}</strong></div>
         `;
-        card.appendChild(button);
+
+        const decline = document.createElement('button');
+        decline.className = 'vacancy-decline';
+        decline.type = 'button';
+        decline.title = `Отказаться от роли ${vacancy.title}`;
+        decline.setAttribute('aria-label', `Отказаться от роли ${vacancy.title}`);
+        decline.textContent = '×';
+        decline.onclick = (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            declineProjectRole(project, vacancy);
+        };
+
+        row.append(button, decline);
+        card.appendChild(row);
     });
 
     if (!hasJoined && !buttons.length) {
@@ -2131,6 +2176,22 @@ async function toggleProjectNotifications(project) {
         });
         await refreshProjects();
     } catch(e) { demo(e.message); }
+}
+
+async function declineProjectRole(project, vacancy) {
+    const roleName = vacancy.title || vacancy.role;
+    const ok = confirm(`Вы действительно отказываетесь от роли ${roleName} в проекте ${project.title}?`);
+    if (!ok) return;
+    try {
+        await api(`/api/projects/${project.id}/decline-role`, {
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({init_data:tg.initData, role:vacancy.role})
+        });
+        await refreshProjects();
+    } catch(e) {
+        demo(e.message);
+    }
 }
 
 async function joinProjectRole(project, vacancy) {
@@ -2222,6 +2283,7 @@ function openTaskCompositionForm() {
     taskClassValues = {6:0,7:0,8:0,9:0,10:0,11:0};
     commonTaskValues = {};
     editorSlotsState = [[]];
+    editorPriorityOrderState = (projectCreateOptions?.editor_priority_editors || []).map(item => ({...item}));
     selectedMaterialIds = [];
     selectedMaterialMap = new Map();
     selectedEditorMaterialIds = [];
@@ -2253,9 +2315,13 @@ function openTaskCompositionForm() {
     const authorDeviceInput = document.getElementById('projectAuthorDeviceFiles');
     if (editorDeviceInput) editorDeviceInput.value = '';
     if (authorDeviceInput) authorDeviceInput.value = '';
+    const priorityToggle = document.getElementById('editorPriorityEnabled');
+    if (priorityToggle) priorityToggle.checked = false;
     platformChanged();
     renderTaskRows();
     renderEditorSlots();
+    renderEditorPriorityTable();
+    toggleEditorPriorityPanel();
     renderSelectedAttachments();
     recalculateProjectBudget();
     window.scrollTo(0,0);
@@ -2392,6 +2458,62 @@ function renderEditorSlots() {
 
     const used = new Set(editorSlotsState.flat());
     document.getElementById('addEditorButton').classList.toggle('hidden', !allowed.some(x => !used.has(x)));
+}
+
+function showEditorPriorityInfo() {
+    const text = 'Проект не будет опубликован, пока редактор не будет присоединён. Проект будет предлагаться редакторам индивидуально в порядке их приоритетности. Игнорирование проекта 24 ч считается отказом редактора и предложение переходит к следующему редактору';
+    showWorkflowModal('Приоритет редакторов', `<div class="workspace-note">${escapeHtml(text)}</div>`, [{label:'Закрыть',className:'button secondary',onClick:closeWorkflowModal}]);
+}
+
+function toggleEditorPriorityPanel() {
+    const enabled = !!document.getElementById('editorPriorityEnabled')?.checked;
+    document.getElementById('editorPriorityPanel')?.classList.toggle('hidden', !enabled);
+    if (enabled) renderEditorPriorityTable();
+}
+
+function renderEditorPriorityTable() {
+    const body = document.getElementById('editorPriorityTableBody');
+    if (!body) return;
+    body.innerHTML = '';
+    if (!editorPriorityOrderState.length) {
+        const row = document.createElement('tr');
+        row.innerHTML = '<td colspan="4" class="muted">Пользователей с потенциальной ролью «Редактор» пока нет.</td>';
+        body.appendChild(row);
+        return;
+    }
+    editorPriorityOrderState.forEach((person, index) => {
+        const row = document.createElement('tr');
+        const name = escapeHtml(person.name || `Telegram ${person.telegram_id || ''}`);
+        row.innerHTML = `
+            <td>${index + 1}</td>
+            <td><button type="button" class="table-action" onclick="openRegisteredProfile(${Number(person.telegram_id)})">${name}</button></td>
+            <td><button type="button" class="priority-move" ${index === 0 ? 'disabled' : ''} onclick="moveEditorPriority(${index}, -1)">↑</button></td>
+            <td><button type="button" class="priority-move" ${index === editorPriorityOrderState.length - 1 ? 'disabled' : ''} onclick="moveEditorPriority(${index}, 1)">↓</button></td>`;
+        body.appendChild(row);
+    });
+}
+
+function moveEditorPriority(index, delta) {
+    const target = index + delta;
+    if (index < 0 || target < 0 || index >= editorPriorityOrderState.length || target >= editorPriorityOrderState.length) return;
+    [editorPriorityOrderState[index], editorPriorityOrderState[target]] = [editorPriorityOrderState[target], editorPriorityOrderState[index]];
+    renderEditorPriorityTable();
+}
+
+async function saveEditorPriorityOrder() {
+    try {
+        const data = await api('/api/editor-priority/order', {
+            method:'PUT',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({init_data:tg.initData, user_ids:editorPriorityOrderState.map(item => Number(item.user_id))})
+        });
+        editorPriorityOrderState = (data.editors || []).map(item => ({...item}));
+        if (projectCreateOptions) projectCreateOptions.editor_priority_editors = editorPriorityOrderState.map(item => ({...item}));
+        renderEditorPriorityTable();
+        demo('Порядок редакторов сохранён.');
+    } catch(e) {
+        demo(e.message);
+    }
 }
 
 function recalculateProjectBudget() {
@@ -2666,6 +2788,7 @@ async function submitTaskCompositionProject() {
             task_price:Number(document.getElementById('taskPrice').value)||0,
             editor_slots,
             editor_pay_each:Number(document.getElementById('editorPay').value)||0,
+            editor_priority_enabled:!!document.getElementById('editorPriorityEnabled')?.checked,
             tester_count:Number(document.getElementById('testerCount').value)||0,
             tester_pay_each:Number(document.getElementById('testerPay').value)||0,
             submission_deadline, testing_end_deadline, testing_version_deadline, prototypes_deadline,
