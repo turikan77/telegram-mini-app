@@ -168,7 +168,7 @@
         .title-row { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:20px; }
         .plus-button.compact { flex:0 0 auto; width:auto; }
         .project-card { position:relative; }
-        .project-card-title { font-size:20px; font-weight:800; text-transform:uppercase; padding-right:74px; }
+        .project-card-title { font-size:20px; font-weight:800; text-transform:uppercase; padding-right:118px; }
         .project-card-actions { position:absolute; top:12px; right:12px; display:flex; gap:6px; }
         .icon-button { width:34px; height:34px; border:0; border-radius:10px; cursor:pointer; background:rgba(120,120,120,.10); }
         .icon-button.delete { color:#c62828; background:rgba(210,40,40,.10); }
@@ -423,7 +423,7 @@
             <div class="total-line">Всего: <strong id="totalTasksValue">0</strong> задач</div>
             <div class="field inline-money">
                 <label>Оплата за задачу</label>
-                <input id="taskPrice" type="number" min="0" inputmode="numeric" value="0" oninput="recalculateProjectBudget()">
+                <input id="taskPrice" type="number" min="0" inputmode="numeric" placeholder="0" value="" oninput="recalculateProjectBudget()">
                 <span>рублей</span>
             </div>
         </div>
@@ -447,7 +447,7 @@
             </div>
             <div class="field inline-money" style="margin-top:14px">
                 <label>Оплата редактору</label>
-                <input id="editorPay" type="number" min="0" inputmode="numeric" value="0" oninput="recalculateProjectBudget()">
+                <input id="editorPay" type="number" min="0" inputmode="numeric" placeholder="0" value="" oninput="recalculateProjectBudget()">
                 <span>рублей</span>
             </div>
         </div>
@@ -461,7 +461,7 @@
             </div>
             <div class="field inline-money">
                 <label>Оплата тестировщику</label>
-                <input id="testerPay" type="number" min="0" inputmode="numeric" value="0" oninput="recalculateProjectBudget()">
+                <input id="testerPay" type="number" min="0" inputmode="numeric" placeholder="0" value="" oninput="recalculateProjectBudget()">
                 <span>рублей</span>
             </div>
         </div>
@@ -1986,7 +1986,7 @@ function buildProjectCard(project) {
     title.textContent = roleLabels[cardRole] ? `${project.title} (${roleLabels[cardRole]})` : project.title;
     card.appendChild(title);
 
-    if ((project.can_notify && project.card_role !== 'vacancies') || project.can_manage) {
+    if ((project.can_notify && project.card_role !== 'vacancies') || project.can_manage || project.can_manual_broadcast) {
         const actions = document.createElement('div');
         actions.className = 'project-card-actions';
         if (project.can_notify && project.card_role !== 'vacancies') {
@@ -1996,6 +1996,14 @@ function buildProjectCard(project) {
             bell.title = project.notifications_enabled === false ? 'Включить уведомления проекта' : 'Отключить уведомления проекта';
             bell.onclick = () => toggleProjectNotifications(project);
             actions.appendChild(bell);
+        }
+        if (project.can_manual_broadcast) {
+            const horn = document.createElement('button');
+            horn.className = 'icon-button';
+            horn.textContent = '📣';
+            horn.title = 'Отправить уведомление';
+            horn.onclick = () => openManualProjectNotification(project);
+            actions.appendChild(horn);
         }
         if (project.can_manage) {
             const del = document.createElement('button');
@@ -2155,6 +2163,130 @@ function buildProjectCard(project) {
     return card;
 }
 
+
+async function openManualProjectNotification(project) {
+    try {
+        const d = await api(`/api/projects/${project.id}/manual-notification/preview`, {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({init_data:tg.initData})
+        });
+        const html = `
+            <div class="field">
+                <label>Описание</label>
+                <textarea id="manualNotifyDescription" class="big-textarea" rows="6">${escapeHtml(d.description || '')}</textarea>
+            </div>
+
+            <label class="notification-line" style="font-weight:700">
+                <input id="manualNotifyAuthorEnabled" type="checkbox" checked onchange="syncManualNotificationRoleState()">
+                Потенциальному автору
+            </label>
+            <div class="field">
+                <textarea id="manualNotifyAuthorText" class="big-textarea" rows="5">${escapeHtml(d.author_text || '')}</textarea>
+            </div>
+
+            <label class="notification-line" style="font-weight:700">
+                <input id="manualNotifyEditorEnabled" type="checkbox" checked onchange="syncManualNotificationRoleState()">
+                Потенциальному редактору
+            </label>
+            <div class="field">
+                <textarea id="manualNotifyEditorText" class="big-textarea" rows="7">${escapeHtml(d.editor_text || '')}</textarea>
+            </div>
+
+            <label class="notification-line" style="font-weight:700">
+                <input id="manualNotifyTesterEnabled" type="checkbox" checked onchange="syncManualNotificationRoleState()">
+                Потенциальному тестировщику
+            </label>
+            <div class="field">
+                <textarea id="manualNotifyTesterText" class="big-textarea" rows="6">${escapeHtml(d.tester_text || '')}</textarea>
+            </div>
+
+            <div class="section-title" style="margin-top:14px">Кому отправить</div>
+            <label class="notification-line"><input type="radio" name="manualNotifyAudience" value="all" checked> Всем</label>
+            <label class="notification-line"><input type="radio" name="manualNotifyAudience" value="joined"> Вступившим в проект</label>
+            <label class="notification-line"><input type="radio" name="manualNotifyAudience" value="not_joined"> Не вступившим в проект</label>
+            <div class="muted" style="margin-top:8px">Одному человеку будет отправлено одно сообщение со всеми подходящими ему выбранными блоками.</div>
+        `;
+        showWorkflowModal('Отправить уведомление', html, [
+            {label:'Отмена', className:'button secondary', onClick:closeWorkflowModal},
+            {label:'Отправить', id:'manualBroadcastSendButton', onClick:()=>submitManualProjectNotification(project)}
+        ]);
+        syncManualNotificationRoleState();
+    } catch(e) {
+        demo(e.message);
+    }
+}
+
+function syncManualNotificationRoleState() {
+    const pairs = [
+        ['manualNotifyAuthorEnabled', 'manualNotifyAuthorText'],
+        ['manualNotifyEditorEnabled', 'manualNotifyEditorText'],
+        ['manualNotifyTesterEnabled', 'manualNotifyTesterText'],
+    ];
+    let anyEnabled = false;
+    pairs.forEach(([checkId, textId]) => {
+        const checkbox = document.getElementById(checkId);
+        const textarea = document.getElementById(textId);
+        if (!checkbox || !textarea) return;
+        textarea.disabled = !checkbox.checked;
+        textarea.style.opacity = checkbox.checked ? '1' : '0.55';
+        if (checkbox.checked) anyEnabled = true;
+    });
+    const send = document.getElementById('manualBroadcastSendButton');
+    if (send) send.disabled = !anyEnabled;
+}
+
+function manualProjectNotificationPayload() {
+    const authorEnabled = !!document.getElementById('manualNotifyAuthorEnabled')?.checked;
+    const editorEnabled = !!document.getElementById('manualNotifyEditorEnabled')?.checked;
+    const testerEnabled = !!document.getElementById('manualNotifyTesterEnabled')?.checked;
+    if (!authorEnabled && !editorEnabled && !testerEnabled) {
+        throw new Error('Выберите хотя бы одну роль для отправки уведомления.');
+    }
+    return {
+        init_data: tg.initData,
+        description: document.getElementById('manualNotifyDescription')?.value || '',
+        author_enabled: authorEnabled,
+        author_text: document.getElementById('manualNotifyAuthorText')?.value || '',
+        editor_enabled: editorEnabled,
+        editor_text: document.getElementById('manualNotifyEditorText')?.value || '',
+        tester_enabled: testerEnabled,
+        tester_text: document.getElementById('manualNotifyTesterText')?.value || '',
+        audience: document.querySelector('input[name="manualNotifyAudience"]:checked')?.value || 'all',
+    };
+}
+
+async function submitManualProjectNotification(project) {
+    const sendButton = document.getElementById('manualBroadcastSendButton');
+    try {
+        setWorkflowError('');
+        const payload = manualProjectNotificationPayload();
+        if (sendButton) sendButton.disabled = true;
+
+        const countData = await api(`/api/projects/${project.id}/manual-notification/count`, {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body:JSON.stringify(payload)
+        });
+        const count = Number(countData.recipient_count || 0);
+        if (!count) {
+            throw new Error('По выбранным ролям и аудитории получателей не найдено.');
+        }
+        if (!confirm(`Отправить уведомление ${count} пользователям?`)) {
+            syncManualNotificationRoleState();
+            return;
+        }
+
+        const result = await api(`/api/projects/${project.id}/manual-notification/send`, {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body:JSON.stringify(payload)
+        });
+        closeWorkflowModal();
+        demo(`Уведомление отправлено ${Number(result.recipient_count || 0)} пользователям.`);
+    } catch(e) {
+        setWorkflowError(e.message);
+        syncManualNotificationRoleState();
+    }
+}
+
 function pluralDays(count) {
     const n = Math.abs(count) % 100, d = n % 10;
     if (n >= 11 && n <= 14) return 'дней';
@@ -2305,7 +2437,8 @@ function openTaskCompositionForm() {
     select.appendChild(custom);
     projectNameChanged();
 
-    ['taskPrice','editorPay','testerCount','testerPay'].forEach(id => document.getElementById(id).value = '0');
+    ['taskPrice','editorPay','testerPay'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('testerCount').value = '0';
     ['submissionDeadline','testingEndDeadline','testingVersionDeadline','prototypesDeadline','themeText','customPlatform','questionsMin','questionsMax','additionalText'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('platformSelect').value = 'очно';
     document.getElementById('difficultySelect').value = '';
@@ -2967,6 +3100,8 @@ function showWorkflowModal(title, html, actions = []) {
         const button = document.createElement('button');
         button.className = action.className || 'button';
         button.textContent = action.label;
+        if (action.id) button.id = action.id;
+        if (action.disabled) button.disabled = true;
         button.onclick = action.onClick;
         box.appendChild(button);
     });
