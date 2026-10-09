@@ -6,7 +6,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <meta name="anod-build" content="15.3-hotfix3">
+    <meta name="anod-build" content="15.15-registration-rsosh">
     <title>АНОД Наставник</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
@@ -361,14 +361,21 @@
 
 <div id="registration" class="page hidden">
     <div class="title">Регистрация</div>
-    <p>Укажите ваше настоящее полное ФИО. Оно будет сохранено в профиле.</p>
-    <div class="field"><label>Фамилия</label><input id="regLastName"></div>
-    <div class="field"><label>Имя</label><input id="regFirstName"></div>
-    <div class="field"><label>Отчество</label><input id="regPatronymic"></div>
+    <p>Укажите ваше настоящее ФИО и дату рождения. Эти данные будут сохранены в профиле.</p>
+    <div class="field"><label>Фамилия *</label><input id="regLastName" autocomplete="family-name"></div>
+    <div class="field"><label>Имя *</label><input id="regFirstName" autocomplete="given-name"></div>
+    <div class="field"><label>Отчество</label><input id="regPatronymic" autocomplete="additional-name"></div>
+    <div class="field">
+        <label>Дата рождения *</label>
+        <input id="regBirthDate" type="text" inputmode="numeric" maxlength="10" placeholder="дд.мм.гггг" autocomplete="bday" oninput="formatDateInput(this)">
+    </div>
     <label style="display:block;margin:16px 0;line-height:1.4">
         <input id="regConsent" type="checkbox"> Я понимаю, что ФИО будет отображаться другим участникам приложения.
     </label>
-    <button class="button" id="registerButton">Сохранить ФИО</button>
+    <label style="display:block;margin:16px 0;line-height:1.4">
+        <input id="regWantsTaskAuthor" type="checkbox"> Я хочу составлять задачи для олимпиад
+    </label>
+    <button class="button" id="registerButton">Сохранить</button>
     <div id="registrationError" class="error"></div>
 </div>
 
@@ -963,8 +970,17 @@ async function loadUser() {
 }
 
 function showRegistration() {
-    document.getElementById('loading').classList.add('hidden');
+    const loading = document.getElementById('loading');
+    loading.innerText = 'Загружаем приложение...';
+    loading.classList.add('hidden');
     document.getElementById('registration').classList.remove('hidden');
+}
+
+function showRegistrationAchievementLoading() {
+    const loading = document.getElementById('loading');
+    document.getElementById('registration').classList.add('hidden');
+    loading.innerHTML = '<div>Загружаем приложение...</div><div class="muted" style="margin-top:8px">Проверяем олимпиадные достижения</div>';
+    loading.classList.remove('hidden');
 }
 
 document.getElementById('registerButton').onclick = async () => {
@@ -973,16 +989,39 @@ document.getElementById('registerButton').onclick = async () => {
     const last_name = document.getElementById('regLastName').value.trim();
     const first_name = document.getElementById('regFirstName').value.trim();
     const patronymic = document.getElementById('regPatronymic').value.trim();
+    const wants_task_author = document.getElementById('regWantsTaskAuthor').checked;
     if (!last_name || !first_name) return error.innerText = 'Введите фамилию и имя.';
     if (!document.getElementById('regConsent').checked) return error.innerText = 'Подтвердите условие отображения ФИО.';
+
+    let birth_date;
+    try {
+        birth_date = parseRuDate(document.getElementById('regBirthDate').value, false);
+    } catch (e) {
+        error.innerText = e.message;
+        return;
+    }
+
+    showRegistrationAchievementLoading();
     try {
         currentUser = await api('/api/profile/complete', {
             method:'POST', headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({init_data:tg.initData,last_name,first_name,patronymic:patronymic || null})
+            body:JSON.stringify({
+                init_data:tg.initData,
+                last_name,
+                first_name,
+                patronymic:patronymic || null,
+                birth_date,
+                wants_task_author
+            })
         });
-        document.getElementById('registration').classList.add('hidden');
+        const importWarning = currentUser.rsosh_import?.warning || null;
         showApp();
-    } catch(e) { error.innerText = e.message; }
+        if (importWarning) demo(importWarning);
+    } catch(e) {
+        document.getElementById('loading').classList.add('hidden');
+        document.getElementById('registration').classList.remove('hidden');
+        error.innerText = e.message;
+    }
 };
 
 function showApp() {
