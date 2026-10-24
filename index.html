@@ -746,7 +746,7 @@
             </div>
         </div>
         <div id="programCodeField" class="field">
-            <label>Код образовательной программы</label>
+            <label>Название образовательной программы</label>
             <input id="educationProgramCode" placeholder="04.05.01">
         </div>
         <div id="educationModalError" class="error"></div>
@@ -1473,7 +1473,7 @@ async function saveEducation() {
         return;
     }
     if (education_type === 'university' && !program_code) {
-        error.innerText = 'Укажите код образовательной программы.';
+        error.innerText = 'Укажите название образовательной программы.';
         return;
     }
 
