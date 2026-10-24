@@ -6,7 +6,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <!-- Version 15.22: денежная SVG-иконка вместо неподдерживаемого эмодзи -->
+    <!-- Version 15.28: город проживания в регистрации и профиле -->
     <meta name="anod-build" content="15.17-leave-project-roles">
     <title>АНОД Наставник</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -367,13 +367,17 @@
 
 <div id="registration" class="page hidden">
     <div class="title">Регистрация</div>
-    <p>Укажите ваше настоящее ФИО и дату рождения. Эти данные будут сохранены в профиле.</p>
+    <p>Укажите ваше настоящее ФИО, дату рождения и город проживания. Эти данные будут сохранены в профиле.</p>
     <div class="field"><label>Фамилия *</label><input id="regLastName" autocomplete="family-name"></div>
     <div class="field"><label>Имя *</label><input id="regFirstName" autocomplete="given-name"></div>
     <div class="field"><label>Отчество</label><input id="regPatronymic" autocomplete="additional-name"></div>
     <div class="field">
         <label>Дата рождения *</label>
         <input id="regBirthDate" type="text" inputmode="numeric" maxlength="10" placeholder="дд.мм.гггг" autocomplete="bday" oninput="formatDateInput(this)">
+    </div>
+    <div class="field">
+        <label>Город вашего проживания *</label>
+        <input id="regResidenceCity" type="text" maxlength="120" placeholder="Уфа" autocomplete="address-level2">
     </div>
     <label style="display:block;margin:16px 0;line-height:1.4">
         <input id="regConsent" type="checkbox"> Я понимаю, что ФИО будет отображаться другим участникам приложения.
@@ -624,8 +628,17 @@
             <div id="profileName" class="full-name"></div>
             <a id="profileTelegramLink" class="telegram-profile-link" href="#">Написать в Telegram</a>
             <div id="profileBirth" class="profile-line"></div>
+            <div id="profileResidenceCityHeader" class="profile-line hidden"></div>
             <div id="profileAnod" class="profile-line"></div>
             <div id="profileEducation" class="education-public"></div>
+        </div>
+
+        <div id="profileResidenceCityCard" class="card" style="margin-top:20px">
+            <div class="field" style="margin-bottom:0">
+                <label>Город вашего проживания</label>
+                <div id="profileResidenceCityValue">—</div>
+                <div id="profileResidenceCityUpdatedAt" class="date-help">Дата последнего обновления: —</div>
+            </div>
         </div>
 
         <div class="card" style="margin-top:20px">
@@ -650,6 +663,12 @@
                         <div class="date-help">Введите 8 цифр, например 12042001 → 12.04.2001</div>
                     </div>
                     <button class="button" onclick="saveBirthDate()">Сохранить дату рождения</button>
+                    <div class="field" style="margin-top:18px">
+                        <label>Город вашего проживания</label>
+                        <input id="residenceCityInput" type="text" maxlength="120" placeholder="Уфа" autocomplete="address-level2">
+                        <div id="residenceCityUpdatedAt" class="date-help">Дата последнего обновления: —</div>
+                    </div>
+                    <button class="button secondary" onclick="saveResidenceCity()">Сохранить город</button>
                     <div id="profileError" class="error"></div>
                 </div>
 
@@ -994,8 +1013,10 @@ document.getElementById('registerButton').onclick = async () => {
     const last_name = document.getElementById('regLastName').value.trim();
     const first_name = document.getElementById('regFirstName').value.trim();
     const patronymic = document.getElementById('regPatronymic').value.trim();
+    const residence_city = document.getElementById('regResidenceCity').value.trim();
     const wants_task_author = document.getElementById('regWantsTaskAuthor').checked;
     if (!last_name || !first_name) return error.innerText = 'Введите фамилию и имя.';
+    if (!residence_city) return error.innerText = 'Укажите город вашего проживания.';
     if (!document.getElementById('regConsent').checked) return error.innerText = 'Подтвердите условие отображения ФИО.';
 
     let birth_date;
@@ -1015,6 +1036,7 @@ document.getElementById('registerButton').onclick = async () => {
                 first_name,
                 patronymic:patronymic || null,
                 birth_date,
+                residence_city,
                 wants_task_author
             })
         });
@@ -1179,6 +1201,8 @@ async function openRegisteredProfile(telegramId) {
             name:data.full_name,
             birth:data.birth_date ? formatDateISO(data.birth_date) : null,
             age:data.age,
+            residence_city:data.residence_city,
+            residence_city_updated_at:data.residence_city_updated_at,
             anodYears:data.anod_years,
             anod_join_date:data.anod_join_date,
             photo_url:data.photo_url,
@@ -1329,7 +1353,17 @@ function openProfile(p) {
     telegramLink.classList.toggle('hidden', !p.telegram_id);
     setAvatar('profileAvatar', p.name, p.photo_url);
     document.getElementById('profileBirth').innerText = p.birth ? `${p.birth}${p.age !== null && p.age !== undefined ? ` (${p.age} лет)` : ''}` : 'Дата рождения не указана';
+    const residenceCityHeader = document.getElementById('profileResidenceCityHeader');
+    residenceCityHeader.textContent = p.residence_city || '';
+    residenceCityHeader.classList.toggle('hidden', !p.residence_city);
     document.getElementById('profileAnod').innerText = p.anodYears !== null && p.anodYears !== undefined ? `(${p.anodYears} лет в АНОДе)` : '(Дата вступления в АНОД пока не указана)';
+
+    const residenceUpdatedText = 'Дата последнего обновления: ' + (p.residence_city_updated_at ? formatDateISO(p.residence_city_updated_at.slice(0, 10)) : '—');
+    document.getElementById('profileResidenceCityValue').textContent = p.residence_city || '—';
+    document.getElementById('profileResidenceCityUpdatedAt').textContent = residenceUpdatedText;
+    // Владелец видит то же поле в блоке редактирования; для остальных оно показывается здесь только для просмотра.
+    document.getElementById('profileResidenceCityCard').classList.toggle('hidden', !!p.isMe);
+
     renderPublicEducation(p.education || []);
     renderPublicAchievements(p.achievements || []);
     renderPublicProjectParticipations(p.projects || []);
@@ -1349,6 +1383,8 @@ function openProfile(p) {
 
     if (p.isMe) {
         document.getElementById('birthDateInput').value = currentUser.birth_date ? formatDateISO(currentUser.birth_date) : '';
+        document.getElementById('residenceCityInput').value = p.residence_city || '';
+        document.getElementById('residenceCityUpdatedAt').textContent = residenceUpdatedText;
         renderEducationEditor();
         renderAchievementEditor();
     }
@@ -1380,6 +1416,25 @@ async function saveBirthDate() {
         demo('Дата рождения сохранена.');
     } catch(e) { error.innerText = e.message; }
 }
+
+async function saveResidenceCity() {
+    const error = document.getElementById('profileError');
+    error.innerText = '';
+    const residence_city = document.getElementById('residenceCityInput').value.trim();
+    if (!residence_city) {
+        error.innerText = 'Укажите город вашего проживания.';
+        return;
+    }
+    try {
+        currentUser = await api('/api/profile/me/residence-city', {
+            method:'PATCH', headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({init_data:tg.initData,residence_city})
+        });
+        await openMyProfile();
+        demo('Город проживания сохранён.');
+    } catch(e) { error.innerText = e.message; }
+}
+
 
 async function saveAnodJoinDate() {
     const error = document.getElementById('adminError');
