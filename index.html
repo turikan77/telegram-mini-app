@@ -633,13 +633,6 @@
             <div id="profileEducation" class="education-public"></div>
         </div>
 
-        <div id="profileResidenceCityCard" class="card" style="margin-top:20px">
-            <div class="field" style="margin-bottom:0">
-                <label>Город вашего проживания</label>
-                <div id="profileResidenceCityValue">—</div>
-                <div id="profileResidenceCityUpdatedAt" class="date-help">Дата последнего обновления: —</div>
-            </div>
-        </div>
 
         <div class="card" style="margin-top:20px">
             <div class="section-title" style="margin-top:0">Олимпиадные достижения:</div>
@@ -766,7 +759,7 @@
         </div>
         <div id="programCodeField" class="field">
             <label>Название образовательной программы</label>
-            <input id="educationProgramCode" placeholder="04.05.01">
+            <input id="educationProgramCode" placeholder="Фундаментальная и прикладная химия">
         </div>
         <div id="educationModalError" class="error"></div>
         <div class="modal-actions">
@@ -1354,15 +1347,14 @@ function openProfile(p) {
     setAvatar('profileAvatar', p.name, p.photo_url);
     document.getElementById('profileBirth').innerText = p.birth ? `${p.birth}${p.age !== null && p.age !== undefined ? ` (${p.age} лет)` : ''}` : 'Дата рождения не указана';
     const residenceCityHeader = document.getElementById('profileResidenceCityHeader');
-    residenceCityHeader.textContent = p.residence_city || '';
+    const residenceUpdatedDate = p.residence_city_updated_at ? formatDateISO(p.residence_city_updated_at.slice(0, 10)) : null;
+    residenceCityHeader.textContent = p.residence_city
+        ? `${p.residence_city}${residenceUpdatedDate ? ` (обновлено ${residenceUpdatedDate})` : ''}`
+        : '';
     residenceCityHeader.classList.toggle('hidden', !p.residence_city);
     document.getElementById('profileAnod').innerText = p.anodYears !== null && p.anodYears !== undefined ? `(${p.anodYears} лет в АНОДе)` : '(Дата вступления в АНОД пока не указана)';
 
-    const residenceUpdatedText = 'Дата последнего обновления: ' + (p.residence_city_updated_at ? formatDateISO(p.residence_city_updated_at.slice(0, 10)) : '—');
-    document.getElementById('profileResidenceCityValue').textContent = p.residence_city || '—';
-    document.getElementById('profileResidenceCityUpdatedAt').textContent = residenceUpdatedText;
-    // Владелец видит то же поле в блоке редактирования; для остальных оно показывается здесь только для просмотра.
-    document.getElementById('profileResidenceCityCard').classList.toggle('hidden', !!p.isMe);
+    const residenceUpdatedText = 'Дата последнего обновления: ' + (residenceUpdatedDate || '—');
 
     renderPublicEducation(p.education || []);
     renderPublicAchievements(p.achievements || []);
