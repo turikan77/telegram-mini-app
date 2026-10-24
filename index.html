@@ -676,14 +676,17 @@
 
             <div id="selfAchievementEditBlock" class="card">
                 <div class="section-title" style="margin-top:0">Олимпиадные достижения</div>
-                <div id="achievementEditorList"></div>
-                <div id="achievementEditorEmpty" class="muted">Пока ничего не добавлено.</div>
-                <div class="plus-row">
+                <div id="achievementEditorList" class="rsosh-self-only"></div>
+                <div id="achievementEditorEmpty" class="muted rsosh-self-only">Пока ничего не добавлено.</div>
+                <div class="plus-row rsosh-self-only">
                     <button class="plus-button" onclick="openAchievementModal()">＋ Достижение</button>
                 </div>
                 <div class="achievement-note">
                     Для ВсОШ выбирается региональный или заключительный уровень. Для остальных олимпиад уровень автоматически считается заключительным и в профиле не отображается.
                 </div>
+                <button id="rsoshImportButton" class="soft-green-button" type="button" onclick="runRsoshImport()">Добавить достижения из РСОШ автоматически</button>
+                <div id="rsoshLastUpdated" class="achievement-note">Дата последнего обновления: —</div>
+                <div id="rsoshImportStatus" class="achievement-note" role="status" aria-live="polite"></div>
             </div>
 
             <div id="adminProjectParticipationBlock" class="card hidden">
@@ -985,13 +988,6 @@ function showRegistration() {
     document.getElementById('registration').classList.remove('hidden');
 }
 
-function showRegistrationAchievementLoading() {
-    const loading = document.getElementById('loading');
-    document.getElementById('registration').classList.add('hidden');
-    loading.innerHTML = '<div>Загружаем приложение...</div><div class="muted" style="margin-top:8px">Проверяем олимпиадные достижения</div>';
-    loading.classList.remove('hidden');
-}
-
 document.getElementById('registerButton').onclick = async () => {
     const error = document.getElementById('registrationError');
     error.innerText = '';
@@ -1010,7 +1006,6 @@ document.getElementById('registerButton').onclick = async () => {
         return;
     }
 
-    showRegistrationAchievementLoading();
     try {
         currentUser = await api('/api/profile/complete', {
             method:'POST', headers:{'Content-Type':'application/json'},
@@ -1023,9 +1018,7 @@ document.getElementById('registerButton').onclick = async () => {
                 wants_task_author
             })
         });
-        const importWarning = currentUser.rsosh_import?.warning || null;
         showApp();
-        if (importWarning) demo(importWarning);
     } catch(e) {
         document.getElementById('loading').classList.add('hidden');
         document.getElementById('registration').classList.remove('hidden');
@@ -1193,7 +1186,8 @@ async function openRegisteredProfile(telegramId) {
             achievements:data.achievements || [],
             projects:data.project_participations || [],
             role_codes:data.role_codes || [],
-            isMe:data.telegram_id === currentUser.telegram_id
+            isMe:data.telegram_id === currentUser.telegram_id,
+            rsosh_last_updated_at:data.rsosh_last_updated_at
         });
     } catch (e) {
         demo('Не удалось открыть профиль: ' + e.message);
@@ -1222,6 +1216,49 @@ function renderPublicEducation(lines) {
         line.textContent = text;
         box.appendChild(line);
     });
+}
+
+function renderRsoshLastUpdated(iso) {
+    const label = document.getElementById('rsoshLastUpdated');
+    label.textContent = 'Дата последнего обновления: ' + (iso ? formatDateISO(iso.slice(0, 10)) : '—');
+}
+
+async function runRsoshImport() {
+    if (!currentProfileTelegramId || !currentUser ||
+        (currentProfileTelegramId !== currentUser.telegram_id && !currentUser.is_admin)) return;
+    const button = document.getElementById('rsoshImportButton');
+    const status = document.getElementById('rsoshImportStatus');
+    if (button.disabled) return;
+    button.disabled = true;
+    button.textContent = 'Проверяем достижения РСОШ…';
+    status.textContent = 'Проверка может занять некоторое время.';
+    try {
+        const targetId = currentProfileTelegramId;
+        const result = await api(`/api/users/${targetId}/achievements/rsosh-import`, {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({init_data:tg.initData})
+        });
+        if (result.status !== 'ok') {
+            status.textContent = result.warning || 'Не удалось проверить достижения РСОШ. Попробуйте позже.';
+        } else {
+            status.textContent = result.imported_count
+                ? `Готово! Добавлено достижений: ${result.imported_count}.`
+                : 'Проверка завершена. Новых достижений не найдено.';
+            if (currentProfileTelegramId === targetId) {
+                const updated = await loadProfileByTelegramId(targetId);
+                currentProfile = updated;
+                currentAchievements = updated.achievements || [];
+                renderPublicAchievements(currentAchievements);
+                if (targetId === currentUser.telegram_id) renderAchievementEditor();
+                renderRsoshLastUpdated(updated.rsosh_last_updated_at);
+            }
+        }
+    } catch (error) {
+        status.textContent = 'Не удалось проверить достижения РСОШ: ' + error.message;
+    } finally {
+        button.disabled = false;
+        button.textContent = 'Добавить достижения из РСОШ автоматически';
+    }
 }
 
 function renderPublicAchievements(items) {
@@ -1302,7 +1339,10 @@ function openProfile(p) {
     document.getElementById('selfPersonalDataBlock').classList.toggle('hidden', !(p.isMe || canAdminManage));
     document.getElementById('selfBirthEditBlock').classList.toggle('hidden', !p.isMe);
     document.getElementById('selfEducationEditBlock').classList.toggle('hidden', !p.isMe);
-    document.getElementById('selfAchievementEditBlock').classList.toggle('hidden', !p.isMe);
+    document.getElementById('selfAchievementEditBlock').classList.toggle('hidden', !(p.isMe || canAdminManage));
+    document.querySelectorAll('.rsosh-self-only').forEach(el => el.classList.toggle('hidden', !p.isMe));
+    renderRsoshLastUpdated(p.rsosh_last_updated_at);
+    document.getElementById('rsoshImportStatus').textContent = '';
     document.getElementById('adminAnodBlock').classList.toggle('hidden', !canAdminManage);
     document.getElementById('adminProjectParticipationBlock').classList.toggle('hidden', !canAdminManage);
     document.getElementById('adminRolesBlock').classList.toggle('hidden', !canAdminManage);
