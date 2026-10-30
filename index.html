@@ -6,7 +6,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <!-- Version 15.28: город проживания в регистрации и профиле -->
+    <!-- Version 15.32: статус готовности задачи в таблице списка идей -->
     <meta name="anod-build" content="15.17-leave-project-roles">
     <title>АНОД Наставник</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -3730,7 +3730,7 @@ function renderProjectWorkspace() {
     box.appendChild(renderDescriptionSection(w));
     box.appendChild(renderWorkspaceFilesSection(w));
     box.appendChild(renderIdeasSection(w));
-    box.appendChild(renderTasksSection(w));
+    box.appendChild(renderTaskLayoutSection(w));
     if (w.testing.can_publish) box.appendChild(renderTestingSection(w));
     // Автор не видит раздел отправки готового/промежуточного комплекта.
     if (w.project.can_review || w.project.can_manage) box.appendChild(renderDeliverySection(w));
@@ -3943,44 +3943,186 @@ function openWorkspaceInstructionEditor(section){
 async function saveWorkspaceInstruction(section){try{await api(`/api/projects/${currentWorkspaceProjectId}/workspace-instruction`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData,section,text:document.getElementById('wfInstructionText').value})});closeWorkflowModal();await refreshProjectWorkspace();}catch(e){setWorkflowError(e.message);}}
 
 function renderIdeasSection(w){
-    const card=collapsibleSectionCard(`Список идей для задач (готово ${(w.progress&&w.progress.ready_ideas)||0}/${(w.progress&&w.progress.total_tasks)||0} идей)`,false,null,false);
+    const approvedCount=(w.ideas||[]).filter(idea=>idea.approved).length;
+    const readyCount=(w.progress&&w.progress.ready_tasks)||0;
+    const ideaWord = count => {
+        const n = Math.abs(Number(count) || 0);
+        const mod100 = n % 100;
+        const mod10 = n % 10;
+        return mod100 >= 11 && mod100 <= 14 ? 'идей' : mod10 === 1 ? 'идея' : mod10 >= 2 && mod10 <= 4 ? 'идеи' : 'идей';
+    };
+    const card=collapsibleSectionCard(`Список задач (одобрено ${approvedCount} ${ideaWord(approvedCount)}; готово ${readyCount} ${projectTaskWord(readyCount)})`,false,null,false);
     const deadline=document.createElement('div');deadline.className='project-deadline-line';deadline.innerHTML=`<strong>Срок подготовки прототипов задач:</strong> ${escapeHtml(w.prototypes_deadline||'')}`;card.appendChild(deadline);
     const add=document.createElement('button');add.className='soft-green-button';add.textContent='Добавить идею для задачи';add.onclick=openProjectIdeaForm;card.appendChild(add);
     card.appendChild(renderInstructionBox('ideas',workspaceInstructionValue('ideas'),!!(w.instructions||{}).can_edit));
-    const table=document.createElement('div');table.innerHTML=renderProjectIdeasTable(w.ideas||[]);card.appendChild(table);
+    const taskInstruction=workspaceInstructionValue('tasks');
+    if (taskInstruction) {
+        const label=document.createElement('div');label.className='workspace-note';label.style.marginTop='12px';label.textContent='Рекомендации по работе с задачами:';card.appendChild(label);
+        card.appendChild(renderInstructionBox('tasks',taskInstruction,!!(w.instructions||{}).can_edit));
+    }
+    const table=document.createElement('div');table.innerHTML=renderProjectIdeasTable();card.appendChild(table);
     const global=document.createElement('details');global.style.marginTop='12px';const summary=document.createElement('summary');summary.className='collapse-button';summary.textContent='Общий банк идей для задач';global.appendChild(summary);
     const content=document.createElement('div');content.style.marginTop='10px';content.innerHTML='<div class="muted">Откройте раздел, чтобы загрузить идеи.</div>';let loaded=false;global.ontoggle=async()=>{if(global.open&&!loaded){loaded=true;await loadProjectGlobalIdeas(content);}};global.appendChild(content);card.appendChild(global);return card;
 }
-function renderProjectIdeasTable(items){if(!items.length)return '<div class="muted">Идей проекта пока нет.</div>';const canReview=currentWorkspace.project.can_review;const authorRole=(currentWorkspace.project.my_roles||[]).includes('author');return `<div class="workflow-table-wrap"><table class="workflow-table"><thead><tr><th>Раздел</th><th>Класс</th><th>Тема</th><th>Имя</th><th>Готова</th><th></th></tr></thead><tbody>${items.map(idea=>{const yellow=(canReview&&idea.waiting_for==='editor')||(!canReview&&idea.is_mine&&idea.waiting_for==='author');let name=idea.assignee?personHtml(idea.assignee):(idea.is_open&&authorRole?`<button class="table-action green" onclick="takeProjectIdea(${idea.id})">Взять</button>`:'—');let approve=canReview?(idea.approved?'☑':`<button class="table-action green" onclick="approveIdea(${idea.id})">□</button>`):(idea.approved?'☑':'');let remove=canReview?`<button class="danger-x" onclick="returnIdeaGlobal(${idea.id})">✕</button>`:'';return `<tr class="${yellow?'needs-attention':''}"><td>${escapeHtml(idea.section_short)}</td><td>${escapeHtml(idea.proposed_class)}</td><td><button class="table-action" onclick="openProjectIdeaDetail(${idea.id})">${escapeHtml(idea.topic)}</button></td><td>${name}</td><td>${approve}</td><td>${remove}</td></tr>`;}).join('')}</tbody></table></div>`;}
+function unifiedWorkspaceRows() {
+    const ideas = currentWorkspace.ideas || [];
+    const tasks = currentWorkspace.tasks || [];
+    const byId = new Map(tasks.map(task => [Number(task.id), task]));
+    const linkedTaskIds = new Set();
+    const rows = ideas.map(idea => {
+        const task = idea.task_id ? byId.get(Number(idea.task_id)) : null;
+        if (task) linkedTaskIds.add(Number(task.id));
+        return {idea, task: task || null};
+    });
+    // Старые задачи, созданные напрямую, также должны остаться доступными.
+    tasks.filter(task => !linkedTaskIds.has(Number(task.id))).forEach(task => rows.push({idea:null, task}));
+    return rows;
+}
+
+function renderProjectIdeasTable() {
+    const rows = unifiedWorkspaceRows();
+    if (!rows.length) return '<div class="muted">Идей проекта пока нет.</div>';
+    const canReview = currentWorkspace.project.can_review;
+    const authorRole = (currentWorkspace.project.my_roles || []).includes('author');
+    return `<div class="workflow-table-wrap"><table class="workflow-table"><thead><tr><th>№</th><th>Раздел</th><th>Класс</th><th>Тема</th><th>Составитель</th><th>Идея одобрена</th><th>Задача готова</th><th>Архив</th><th></th></tr></thead><tbody>${rows.map(({idea,task}, index) => {
+        const current = task || idea;
+        const ready = !!task?.is_ready;
+        const yellow = (canReview && current.waiting_for === 'editor') || (!canReview && !!current.is_mine && current.waiting_for === 'author');
+        const author = current.assignee ? personHtml(current.assignee)
+            : (!ready && authorRole && ((idea && idea.is_open && !task) || (task && !task.assignee)) ? `<button class="table-action green" onclick="${idea && !task ? `takeProjectIdea(${idea.id})` : task ? `takeFreeTask(${task.id})` : 'void(0)'}">Взять</button>` : '—');
+        const topic = idea ? `openProjectIdeaDetail(${idea.id})` : `openTaskTopic(${task.id})`;
+        const approve = !idea ? '—' : canReview
+            ? `<input type="checkbox" ${task ? 'checked' : ''} ${ready ? 'disabled title="Сначала снимите готовность задачи"' : ''} onchange="changeIdeaApproval(${idea.id},this.checked)">`
+            : (task ? '✓' : '—');
+        const taskReady = !task ? '—' : canReview
+            ? `<input type="checkbox" ${ready ? 'checked' : ''} onchange="setTaskReady(${task.id},this.checked)">`
+            : (ready ? '✓' : '—');
+        const archive = (!task || task.can_work)
+            ? `<button class="table-action" onclick="openUnifiedArchive(${idea ? idea.id : 'null'},${task ? task.id : 'null'})">Архив</button>`
+            : (idea ? `<button class="table-action" onclick="openUnifiedArchive(${idea.id},null)">Архив</button>` : '—');
+        const remove = canReview ? `<button class="danger-x" ${ready ? 'disabled title="Сначала снимите готовность задачи"' : 'title="Вернуть в общий банк идей"'} onclick="${idea ? `returnIdeaGlobal(${idea.id})` : `returnTaskToGlobalIdea(${task.id})`}">✕</button>` : '';
+        return `<tr class="${ready ? 'ready-row' : yellow ? 'needs-attention' : ''}"><td>${index+1}</td><td>${escapeHtml(current.section_short)}</td><td>${escapeHtml(current.proposed_class)}</td><td><button class="table-action" onclick="${topic}">${escapeHtml(current.topic)}</button></td><td>${author}</td><td>${approve}</td><td>${taskReady}</td><td>${archive}</td><td>${remove}</td></tr>`;
+    }).join('')}</tbody></table></div>`;
+}
+
+async function changeIdeaApproval(ideaId, checked) {
+    if (checked) return approveIdea(ideaId);
+    const idea = findIdea(ideaId);
+    const task = findTask(idea?.task_id);
+    if (task?.is_ready) {
+        demo('Сначала снимите галочку «Задача готова».');
+        await refreshProjectWorkspace();
+        return;
+    }
+    if (!confirm('Снять одобрение идеи? Файлы сохранятся, а переписка задачи будет удалена.')) {
+        await refreshProjectWorkspace();
+        return;
+    }
+    try {
+        await api(`/api/ideas/${ideaId}/unapprove`, {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({init_data:tg.initData})
+        });
+        await refreshProjectWorkspace();
+    } catch(e) { demo(e.message); await refreshProjectWorkspace(); }
+}
+
+function openTaskTopic(taskId) {
+    const task = findTask(taskId);
+    if (!task) return;
+    const idea = (currentWorkspace.ideas || []).find(row => Number(row.id) === Number(task.idea_id));
+    if (task.can_work) openUnifiedTaskWorkspace(task, idea || null);
+    else openTaskReadOnly(taskId);
+}
+
+function openUnifiedTaskWorkspace(task, idea) {
+    const latest = task.latest_message;
+    const latestHtml = latest ? `<div class="description-row"><strong>Последняя отправка:</strong> ${latest.sender ? escapeHtml(latest.sender.name) : ''}</div><div class="description-row">${escapeHtml(latest.comment || '').replace(/\n/g, '<br>')}</div><div>${(latest.files || []).map(f => `📄 ${escapeHtml(f.name)}`).join('<br>')}</div>${(latest.files || []).length ? `<button class="mini-secondary" style="margin-top:8px" onclick="getTaskMessageFiles(${task.id},${latest.id})">Получить файлы</button>` : ''}` : '<div class="muted">Версий задачи ещё нет.</div>';
+    const ideaMaterials = idea ? `<div style="margin-top:10px">${ideaFilesHtml(idea)}</div>` : '';
+    const oldComments = idea && (idea.comments || []).length
+        ? `<div class="workspace-note" style="margin:10px 0 4px">Раннее обсуждение идеи:</div><div class="comment-thread">${idea.comments.map(c => `<div class="comment-item"><strong>${c.author ? escapeHtml(c.author.name) : 'Пользователь'}</strong><div>${escapeHtml(c.text).replace(/\n/g,'<br>')}</div><div class="message-time">${escapeHtml(c.created_at)}</div></div>`).join('')}</div>` : '';
+    const body = `<div class="description-row"><strong>Описание:</strong><br>${escapeHtml(task.description).replace(/\n/g, '<br>')}</div>${ideaMaterials}${oldComments}${latestHtml}<div class="field" style="margin-top:14px"><label>Комментарий</label><textarea id="wfTaskComment" class="big-textarea"></textarea></div><div class="field"><label>Прикрепите файл(ы)</label><input id="wfTaskReplyFiles" type="file" multiple></div>`;
+    showWorkflowModal(task.topic, body, [
+        {label:'Редактировать описание',className:'button secondary',onClick:()=>openTaskEditForm(task.id)},
+        {label:'Отправить',onClick:()=>sendTaskReply(task.id)}
+    ]);
+}
+
+async function openUnifiedArchive(ideaId, taskId) {
+    const idea = ideaId != null ? findIdea(ideaId) : null;
+    const task = taskId != null ? findTask(taskId) : null;
+    if (task && !task.can_work && !idea) return;
+    try {
+        const rows = task && task.can_work ? await api(`/api/tasks/${task.id}/archive`, {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({init_data:tg.initData})
+        }) : [];
+        const events = [];
+        (idea?.comments || []).forEach(comment => events.push({
+            stamp:comment.created_at_iso || '',
+            html:`<strong>${comment.author ? escapeHtml(comment.author.name) : 'Пользователь'} (идея)</strong><div>${escapeHtml(comment.text).replace(/\n/g,'<br>')}</div><div class="message-time">${escapeHtml(comment.created_at)}</div>`
+        }));
+        rows.forEach(message => events.push({
+            stamp:message.created_at_iso || '',
+            html:`<strong>${message.author ? escapeHtml(message.author.name) : 'Пользователь'} (задача)</strong><div>${escapeHtml(message.comment || '').replace(/\n/g,'<br>')}</div><div>${(message.files || []).map(f=>`📄 ${escapeHtml(f.name)}`).join('<br>')}</div>${(message.files || []).length ? `<button class="mini-secondary" style="margin-top:8px" onclick="getTaskMessageFiles(${task.id},${message.id})">Получить файлы</button>` : ''}<div class="message-time">${escapeHtml(message.created_at)}</div>`
+        }));
+        events.sort((a,b)=>a.stamp.localeCompare(b.stamp));
+        const ideaFiles = idea && (idea.files || []).length ? `<div class="comment-item"><strong>Файлы идеи</strong><div>${idea.files.map(file=>`📄 ${escapeHtml(file.name)}`).join('<br>')}</div><button class="mini-secondary" style="margin-top:8px" onclick="getIdeaFiles(${idea.id})">Получить файлы идеи</button></div>` : '';
+        const html = ideaFiles + (events.length ? events.map(e=>`<div class="comment-item">${e.html}</div>`).join('') : (!ideaFiles ? '<div class="muted">Архив пока пуст.</div>' : ''));
+        showWorkflowModal('Общий архив идеи и задачи', `<div class="comment-thread" style="max-height:55vh">${html}</div>`, [{label:'Закрыть',className:'button secondary',onClick:closeWorkflowModal}]);
+    } catch(e) { demo(e.message); }
+}
+
 function openProjectIdeaForm(){showWorkflowModal('Добавить идею для задачи',`<div class="field"><label>Тема (коротко)</label><input id="wfIdeaTopic" maxlength="220"></div><div class="field"><label>Раздел химии</label><select id="wfIdeaSection">${chemistryOptions()}</select></div><div class="field"><label>Предполагаемый класс</label><input id="wfIdeaClass" placeholder="9-11 или 10"></div><div class="field"><label>Описание</label><textarea id="wfIdeaDescription" class="big-textarea" placeholder="Опишите идею подробней и возможные пункты вопроса"></textarea></div><div class="field"><label>Прикрепить файл(ы)</label><input id="wfIdeaFiles" type="file" multiple></div><div class="toggle-row"><label class="toggle-option"><input type="radio" name="wfIdeaOpen" value="0" checked>Идея будет реализована мной</label><label class="toggle-option"><input type="radio" name="wfIdeaOpen" value="1">Доступна всем для реализации</label></div>`,[{label:'Отмена',className:'button secondary',onClick:closeWorkflowModal},{label:'Добавить',onClick:saveProjectIdea}]);}
 async function uploadIdeaFiles(ideaId,files){if(!files.length)return;const form=new FormData();form.append('init_data',tg.initData);files.forEach(f=>form.append('files',f));await api(`/api/ideas/${ideaId}/files`,{method:'POST',body:form});}
 async function saveProjectIdea(){try{const files=Array.from(document.getElementById('wfIdeaFiles')?.files||[]);const payload={init_data:tg.initData,topic:document.getElementById('wfIdeaTopic').value.trim(),chemistry_section:document.getElementById('wfIdeaSection').value,proposed_class:document.getElementById('wfIdeaClass').value.trim(),description:document.getElementById('wfIdeaDescription').value.trim(),is_open:document.querySelector('input[name="wfIdeaOpen"]:checked').value==='1',intended_olympiad:currentWorkspace.project.title};const result=await api(`/api/projects/${currentWorkspaceProjectId}/ideas`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});await uploadIdeaFiles(result.id,files);closeWorkflowModal();await refreshProjectWorkspace();}catch(e){setWorkflowError(e.message);}}
 function findIdea(id){return (currentWorkspace?.ideas||[]).find(x=>x.id===id);}
 function ideaFilesHtml(idea){const files=idea.files||[];if(!files.length)return '<div class="muted">Файлов к идее нет.</div>';return `<div class="description-row"><strong>Файлы:</strong><br>${files.map(f=>`📄&nbsp;&nbsp;${escapeHtml(f.name)}`).join('<br>')}<br><button class="mini-secondary" style="margin-top:8px" onclick="getIdeaFiles(${idea.id})">Получить файлы</button></div>`;}
 async function getIdeaFiles(id){try{await api(`/api/ideas/${id}/files/send`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData})});demo('Файлы идеи отправлены Вам сообщением от бота.');}catch(e){demo(e.message);}}
-function openProjectIdeaDetail(id){const idea=findIdea(id);if(!idea)return;const canReview=currentWorkspace.project.can_review;const canEdit=idea.is_mine||canReview;const comments=(idea.comments||[]).map(c=>`<div class="comment-item"><strong>${c.author?escapeHtml(c.author.name):'Пользователь'}</strong><div>${escapeHtml(c.text).replace(/\n/g,'<br>')}</div><div class="message-time">${escapeHtml(c.created_at)}</div></div>`).join('')||'<div class="muted">Комментариев пока нет.</div>';showWorkflowModal(idea.topic,`<div class="description-row"><strong>Описание:</strong><br>${escapeHtml(idea.description).replace(/\n/g,'<br>')}</div><div class="description-row"><strong>Идея:</strong> ${personHtml(idea.creator)}</div>${ideaFilesHtml(idea)}<div class="comment-thread">${comments}</div>${canEdit?'<div class="field"><label>Комментарий</label><textarea id="wfIdeaComment" class="big-textarea"></textarea></div><div class="field"><label>Добавить файл(ы)</label><input id="wfIdeaMoreFiles" type="file" multiple></div>':''}`,canEdit?[{label:'Редактировать идею',className:'button secondary',onClick:()=>openIdeaEditForm(id)},{label:'Добавить файлы',className:'button secondary',onClick:()=>addFilesToIdea(id)},{label:'Комментировать',onClick:()=>commentIdea(id)}]:[{label:'Закрыть',className:'button secondary',onClick:closeWorkflowModal}]);}
+function openProjectIdeaDetail(id) {
+    const idea=findIdea(id);
+    if (!idea) return;
+    const task = idea.task_id ? findTask(idea.task_id) : null;
+    if (task) return openTaskTopic(task.id);
+    const canReview = currentWorkspace.project.can_review;
+    const canEdit = idea.is_mine || canReview;
+    const comments = (idea.comments || []).map(c=>`<div class="comment-item"><strong>${c.author ? escapeHtml(c.author.name) : 'Пользователь'}</strong><div>${escapeHtml(c.text).replace(/\n/g,'<br>')}</div><div class="message-time">${escapeHtml(c.created_at)}</div></div>`).join('') || '<div class="muted">Комментариев пока нет.</div>';
+    const editable = canEdit ? `<div class="field"><label>Комментарий</label><textarea id="wfIdeaComment" class="big-textarea"></textarea></div><div class="field"><label>Прикрепить файл(ы)</label><input id="wfIdeaMoreFiles" type="file" multiple></div>` : '';
+    const body = `<div class="description-row"><strong>Описание:</strong><br>${escapeHtml(idea.description).replace(/\n/g,'<br>')}</div><div class="description-row"><strong>Идея:</strong> ${personHtml(idea.creator)}</div>${ideaFilesHtml(idea)}<div class="comment-thread">${comments}</div>${editable}`;
+    showWorkflowModal(idea.topic, body, canEdit ? [
+        {label:'Редактировать описание',className:'button secondary',onClick:()=>openIdeaEditForm(id)},
+        {label:'Отправить',onClick:()=>submitIdeaMessage(id)}
+    ] : [{label:'Закрыть',className:'button secondary',onClick:closeWorkflowModal}]);
+}
+
+async function submitIdeaMessage(id) {
+    try {
+        const comment = document.getElementById('wfIdeaComment').value.trim();
+        const files = Array.from(document.getElementById('wfIdeaMoreFiles').files || []);
+        if (!comment && !files.length) throw new Error('Добавьте комментарий или хотя бы один файл.');
+        const form = new FormData();
+        form.append('init_data',tg.initData);
+        form.append('comment',comment);
+        files.forEach(f=>form.append('files',f));
+        await api(`/api/ideas/${id}/messages`, {method:'POST',body:form});
+        closeWorkflowModal();
+        await refreshProjectWorkspace();
+    } catch(e) { setWorkflowError(e.message); }
+}
+
 async function addFilesToIdea(id){try{const files=Array.from(document.getElementById('wfIdeaMoreFiles')?.files||[]);if(!files.length)throw new Error('Выберите файл.');await uploadIdeaFiles(id,files);closeWorkflowModal();await refreshProjectWorkspace();}catch(e){setWorkflowError(e.message);}}
 function openIdeaEditForm(id){const idea=findIdea(id);if(!idea)return;showWorkflowModal('Редактировать идею',`<div class="field"><label>Тема</label><input id="wfEditIdeaTopic" value="${escapeHtml(idea.topic)}"></div><div class="field"><label>Раздел химии</label><select id="wfEditIdeaSection">${chemistryOptions(idea.section)}</select></div><div class="field"><label>Предполагаемый класс</label><input id="wfEditIdeaClass" value="${escapeHtml(idea.proposed_class)}"></div><div class="field"><label>Описание</label><textarea id="wfEditIdeaDescription" class="big-textarea">${escapeHtml(idea.description)}</textarea></div>`,[{label:'Отмена',className:'button secondary',onClick:closeWorkflowModal},{label:'Сохранить',onClick:()=>saveIdeaEdit(id)}]);}
 async function saveIdeaEdit(id){try{await api(`/api/ideas/${id}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData,topic:document.getElementById('wfEditIdeaTopic').value.trim(),chemistry_section:document.getElementById('wfEditIdeaSection').value,proposed_class:document.getElementById('wfEditIdeaClass').value.trim(),description:document.getElementById('wfEditIdeaDescription').value.trim()})});closeWorkflowModal();await refreshProjectWorkspace();}catch(e){setWorkflowError(e.message);}}
 async function commentIdea(id){try{const comment=document.getElementById('wfIdeaComment').value.trim();if(!comment)throw new Error('Напишите комментарий.');await api(`/api/ideas/${id}/comments`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData,comment})});closeWorkflowModal();await refreshProjectWorkspace();}catch(e){setWorkflowError(e.message);}}
 async function takeProjectIdea(id){if(!confirm('Взять эту идею в работу?'))return;try{await api(`/api/ideas/${id}/take`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData})});await refreshProjectWorkspace();}catch(e){demo(e.message);}}
-async function approveIdea(id){if(!confirm('Вы действительно хотите перенести эту идею в задачу?'))return;try{await api(`/api/ideas/${id}/approve`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData})});await refreshProjectWorkspace();}catch(e){demo(e.message);}}
+async function approveIdea(id){if(!confirm('Вы действительно хотите перенести эту идею в задачу?')){await refreshProjectWorkspace();return;}try{await api(`/api/ideas/${id}/approve`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData})});await refreshProjectWorkspace();}catch(e){demo(e.message);await refreshProjectWorkspace();}}
 async function returnIdeaGlobal(id){if(!confirm('Вернуть эту идею в общий банк идей?'))return;try{await api(`/api/ideas/${id}/return-global`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData})});await refreshProjectWorkspace();}catch(e){demo(e.message);}}
 async function loadProjectGlobalIdeas(container){try{const rows=await api(`/api/projects/${currentWorkspaceProjectId}/global-ideas`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData})});currentWorkspace._globalIdeas=rows;container.innerHTML=renderGlobalIdeasTable(rows,true);}catch(e){container.innerHTML=`<div class="error">${escapeHtml(e.message)}</div>`;}}
 async function moveGlobalIdeaToProject(id){try{await api(`/api/ideas/${id}/move-to-project`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData,project_id:currentWorkspaceProjectId})});closeWorkflowModal();await refreshProjectWorkspace();}catch(e){demo(e.message);}}
 
-function renderTasksSection(w){
-    const card=collapsibleSectionCard(`Список задач (готово ${(w.progress&&w.progress.ready_tasks)||0}/${(w.progress&&w.progress.total_tasks)||0} задач)`,false,null,false);
-    if(w.project.can_review){const add=document.createElement('button');add.className='soft-green-button';add.textContent='Добавить задачу';add.onclick=openTaskForm;card.appendChild(add);}
-    const layout=document.createElement('button');layout.className='soft-blue-button';layout.textContent='Таблица с распределением задач';layout.onclick=openTaskLayout;card.appendChild(layout);
-    const instruction=workspaceInstructionValue('tasks');
-    if(instruction || (w.instructions||{}).can_edit){card.appendChild(renderInstructionBox('tasks',instruction,!!(w.instructions||{}).can_edit));}
-    const tasks=w.tasks||[];if(!tasks.length){const e=document.createElement('div');e.className='muted';e.textContent='Задач пока нет.';card.appendChild(e);return card;}
-    const canReview=w.project.can_review;const authorRole=(w.project.my_roles||[]).includes('author');const wrap=document.createElement('div');wrap.className='workflow-table-wrap';
-    wrap.innerHTML=`<table class="workflow-table"><thead><tr><th>Word-файлы</th><th>Раздел</th><th>Класс</th><th>Тема</th><th>Составитель</th><th>Архив</th><th>Готова</th>${canReview?'<th></th>':''}</tr></thead><tbody>${tasks.map(t=>{const yellow=(canReview&&t.waiting_for==='editor')||(!canReview&&t.is_mine&&t.waiting_for==='author');const ready=t.is_ready;const work=t.can_work?`<button class="table-action" onclick="openTaskWork(${t.id})">⬆</button>`:'—';const topic=`<button class="table-action" onclick="${t.can_work?`openTaskWork(${t.id})`:`openTaskReadOnly(${t.id})`}">${escapeHtml(t.topic)}</button>`;const archive=t.can_work?`<button class="table-action" onclick="openTaskArchive(${t.id})">Архив</button>`:'—';const readyCell=canReview?`<input type="checkbox" ${ready?'checked':''} onchange="setTaskReady(${t.id}, this.checked)">`:(ready?'✓':'');const remove=canReview?`<button class="danger-x" title="Вернуть в общий банк идей" onclick="returnTaskToGlobalIdea(${t.id},'${escapeHtml(t.topic).replaceAll("'","&#39;")}')">✕</button>`:'';const assignee=t.assignee?personHtml(t.assignee):(!ready&&authorRole?`<button class="table-action green" onclick="takeFreeTask(${t.id})">Взять</button>`:'—');return `<tr class="${yellow?'needs-attention':ready?'ready-row':''}"><td>${work}</td><td>${escapeHtml(t.section_short)}</td><td>${escapeHtml(t.proposed_class)}</td><td>${topic}</td><td>${assignee}</td><td>${archive}</td><td>${readyCell}</td>${canReview?`<td>${remove}</td>`:''}</tr>`;}).join('')}</tbody></table>`;
-    card.appendChild(wrap);return card;
-}
-async function returnTaskToGlobalIdea(id,topic){if(!confirm(`Убрать задачу «${topic}» из проекта и вернуть её описание и файлы в общий банк идей?`))return;try{await api(`/api/tasks/${id}/return-global-idea`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData})});await refreshProjectWorkspace();demo('Задача перенесена в общий банк идей.');}catch(e){demo(e.message);}}
+
+
+async function returnTaskToGlobalIdea(id,topic=null){const title=topic||findTask(id)?.topic||'без названия';if(!confirm(`Убрать задачу «${title}» из проекта и вернуть её описание и файлы в общий банк идей?`))return;try{await api(`/api/tasks/${id}/return-global-idea`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData})});await refreshProjectWorkspace();demo('Задача перенесена в общий банк идей.');}catch(e){demo(e.message);await refreshProjectWorkspace();}}
 async function takeFreeTask(id){if(!confirm('Взять эту свободную задачу в работу?'))return;try{await api(`/api/tasks/${id}/take`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData})});await refreshProjectWorkspace();}catch(e){demo(e.message);}}
 function openTaskForm(){
     const canReview=currentWorkspace.project.can_review;
@@ -3998,7 +4140,8 @@ function openTaskForm(){
 async function saveTask(){try{const canReview=currentWorkspace.project.can_review;const payload={init_data:tg.initData,topic:document.getElementById('wfTaskTopic').value.trim(),chemistry_section:document.getElementById('wfTaskSection').value,proposed_class:document.getElementById('wfTaskClass').value.trim(),description:document.getElementById('wfTaskDescription').value.trim(),assignee_telegram_id:canReview&&document.getElementById('wfTaskAssignee').value?Number(document.getElementById('wfTaskAssignee').value):null};const result=await api(`/api/projects/${currentWorkspaceProjectId}/tasks`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const files=Array.from(document.getElementById('wfTaskFiles').files||[]);if(files.length){const form=new FormData();form.append('init_data',tg.initData);form.append('comment','Первая версия задачи');files.forEach(f=>form.append('files',f));await api(`/api/tasks/${result.id}/messages`,{method:'POST',body:form});}closeWorkflowModal();await refreshProjectWorkspace();}catch(e){setWorkflowError(e.message);}}
 function findTask(id){return (currentWorkspace?.tasks||[]).find(x=>x.id===id);}
 function openTaskReadOnly(id){const t=findTask(id);if(!t)return;showWorkflowModal(t.topic,`<div class="description-row"><strong>Раздел:</strong> ${escapeHtml(t.section_label)}</div><div class="description-row"><strong>Класс:</strong> ${escapeHtml(t.proposed_class)}</div><div class="description-row"><strong>Описание:</strong><br>${escapeHtml(t.description).replace(/\n/g,'<br>')}</div><div class="description-row"><strong>Составитель:</strong> ${t.assignee?personHtml(t.assignee):'—'}</div><div class="workspace-note">Чужие файлы задачи автору недоступны.</div>`,[{label:'Закрыть',className:'button secondary',onClick:closeWorkflowModal}]);}
-function openTaskWork(id){const t=findTask(id);if(!t||!t.can_work)return;const latest=t.latest_message;let latestHtml='<div class="muted">Версий ещё нет.</div>';if(latest){latestHtml=`<div class="description-row"><strong>Последняя отправка:</strong> ${latest.sender?escapeHtml(latest.sender.name):''}</div><div class="description-row">${escapeHtml(latest.comment||'').replace(/\n/g,'<br>')}</div><div>${(latest.files||[]).map(f=>`📄 ${escapeHtml(f.name)}`).join('<br>')}</div>${(latest.files||[]).length?`<button class="mini-secondary" style="margin-top:8px" onclick="getTaskMessageFiles(${t.id},${latest.id})">Получить файлы</button>`:''}`;}showWorkflowModal(t.topic,`<div class="description-row"><strong>Описание:</strong><br>${escapeHtml(t.description).replace(/\n/g,'<br>')}</div>${latestHtml}<div class="field" style="margin-top:14px"><label>Комментарий</label><textarea id="wfTaskComment" class="big-textarea"></textarea></div><div class="field"><label>Прикрепите файл(ы)</label><input id="wfTaskReplyFiles" type="file" multiple></div>`,[{label:'Редактировать описание',className:'button secondary',onClick:()=>openTaskEditForm(id)},{label:'Отправить',onClick:()=>sendTaskReply(id)}]);}
+function openTaskWork(id) { openTaskTopic(id); }
+
 async function getTaskMessageFiles(taskId,messageId){try{await api(`/api/tasks/${taskId}/messages/${messageId}/send`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData})});demo('Файлы отправлены вам в Telegram.');}catch(e){demo(e.message);}}
 async function sendTaskReply(id){try{const comment=document.getElementById('wfTaskComment').value.trim();const files=Array.from(document.getElementById('wfTaskReplyFiles').files||[]);const form=new FormData();form.append('init_data',tg.initData);form.append('comment',comment);files.forEach(f=>form.append('files',f));await api(`/api/tasks/${id}/messages`,{method:'POST',body:form});closeWorkflowModal();await refreshProjectWorkspace();}catch(e){setWorkflowError(e.message);}}
 function openTaskEditForm(id){const t=findTask(id);if(!t)return;showWorkflowModal('Редактировать задачу',`<div class="field"><label>Тема</label><input id="wfEditTaskTopic" value="${escapeHtml(t.topic)}"></div><div class="field"><label>Раздел</label><select id="wfEditTaskSection">${chemistryOptions(t.section)}</select></div><div class="field"><label>Класс</label><input id="wfEditTaskClass" value="${escapeHtml(t.proposed_class)}"></div><div class="field"><label>Описание</label><textarea id="wfEditTaskDescription" class="big-textarea">${escapeHtml(t.description)}</textarea></div>`,[{label:'Отмена',className:'button secondary',onClick:closeWorkflowModal},{label:'Сохранить',onClick:()=>saveTaskEdit(id)}]);}
@@ -4006,10 +4149,21 @@ async function saveTaskEdit(id){try{await api(`/api/tasks/${id}`,{method:'PATCH'
 async function openTaskArchive(id){try{const rows=await api(`/api/tasks/${id}/archive`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData})});const html=rows.length?rows.map(m=>`<div class="comment-item"><strong>${m.author?escapeHtml(m.author.name):'Пользователь'}</strong><div>${escapeHtml(m.comment||'').replace(/\n/g,'<br>')}</div><div>${(m.files||[]).map(f=>`📄 ${escapeHtml(f.name)}`).join('<br>')}</div>${(m.files||[]).length?`<button class="mini-secondary" onclick="getTaskMessageFiles(${id},${m.id})">Получить файлы</button>`:''}<div class="message-time">${escapeHtml(m.created_at)}</div></div>`).join(''):'<div class="muted">Архив пока пуст.</div>';showWorkflowModal('Архив задачи',`<div class="comment-thread" style="max-height:55vh">${html}</div>`,[{label:'Закрыть',className:'button secondary',onClick:closeWorkflowModal}]);}catch(e){demo(e.message);}}
 async function setTaskReady(id,value){try{await api(`/api/tasks/${id}/ready`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData,is_ready:value})});await refreshProjectWorkspace();}catch(e){demo(e.message);await refreshProjectWorkspace();}}
 
-function openTaskLayout(){const rows=currentWorkspace.layout||[];const canReview=currentWorkspace.project.can_review;const html=`<div class="workflow-table-wrap"><table class="workflow-table"><thead><tr><th>№</th><th>Класс</th><th>Раздел</th><th>Тема</th><th>Составитель</th><th></th></tr></thead><tbody>${rows.map(slot=>{const task=slot.task;const topic=task?`<button class="table-action" onclick="${task.is_mine?`closeWorkflowModal(); openTaskWork(${slot.task_id})`:'void(0)'}">${escapeHtml(task.topic)}</button>`:(canReview?`<button class="table-action green" onclick="chooseLayoutTask(${slot.id})">Выбрать задачу</button>`:'');return `<tr><td>${slot.position}</td><td>${escapeHtml(slot.class_label)}</td><td>${task?escapeHtml(task.section_short):''}</td><td>${topic}</td><td>${task&&task.assignee?personHtml(task.assignee):''}</td><td>${canReview&&slot.task_id?`<button class="danger-x" onclick="clearLayoutSlot(${slot.id})">✕</button>`:''}</td></tr>`;}).join('')}</tbody></table></div>`;showWorkflowModal('Таблица с распределением задач',html,[{label:'Закрыть',className:'button secondary',onClick:closeWorkflowModal}]);}
-function chooseLayoutTask(slotId){const tasks=currentWorkspace.tasks||[];const html=tasks.length?tasks.map(t=>`<button class="button secondary" style="margin-bottom:7px" onclick="assignLayoutTask(${slotId},${t.id})">${escapeHtml(t.topic)} — ${t.assignee?escapeHtml(t.assignee.name):'без автора'}</button>`).join(''):'<div class="muted">Задач пока нет.</div>';showWorkflowModal('Выберите задачу',html,[{label:'Отмена',className:'button secondary',onClick:openTaskLayout}]);}
-async function assignLayoutTask(slotId,taskId){try{await api(`/api/layout/${slotId}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData,task_id:taskId})});closeWorkflowModal();await refreshProjectWorkspace();openTaskLayout();}catch(e){demo(e.message);}}
-async function clearLayoutSlot(slotId){if(!confirm('Убрать задачу с этой позиции? Сама задача не удалится.'))return;try{await api(`/api/layout/${slotId}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData,task_id:null})});closeWorkflowModal();await refreshProjectWorkspace();openTaskLayout();}catch(e){demo(e.message);}}
+function taskLayoutTableHtml(){
+    const rows=currentWorkspace.layout||[];
+    const canReview=currentWorkspace.project.can_review;
+    return `<div class="workflow-table-wrap"><table class="workflow-table"><thead><tr><th>№</th><th>Класс</th><th>Раздел</th><th>Тема</th><th>Составитель</th><th></th></tr></thead><tbody>${rows.map(slot=>{const task=slot.task;const topic=task?`<button class="table-action" onclick="${task.is_mine?`openTaskWork(${slot.task_id})`:'void(0)'}">${escapeHtml(task.topic)}</button>`:(canReview?`<button class="table-action green" onclick="chooseLayoutTask(${slot.id})">Выбрать задачу</button>`:'');return `<tr><td>${slot.position}</td><td>${escapeHtml(slot.class_label)}</td><td>${task?escapeHtml(task.section_short):''}</td><td>${topic}</td><td>${task&&task.assignee?personHtml(task.assignee):''}</td><td>${canReview&&slot.task_id?`<button class="danger-x" onclick="clearLayoutSlot(${slot.id})">✕</button>`:''}</td></tr>`;}).join('')}</tbody></table></div>`;
+}
+function renderTaskLayoutSection(w){
+    const card=collapsibleSectionCard('Таблица с распределением задач',false,null,false);
+    const content=document.createElement('div');
+    content.innerHTML=taskLayoutTableHtml();
+    card.appendChild(content);
+    return card;
+}
+function chooseLayoutTask(slotId){const tasks=currentWorkspace.tasks||[];const html=tasks.length?tasks.map(t=>`<button class="button secondary" style="margin-bottom:7px" onclick="assignLayoutTask(${slotId},${t.id})">${escapeHtml(t.topic)} — ${t.assignee?escapeHtml(t.assignee.name):'без автора'}</button>`).join(''):'<div class="muted">Задач пока нет.</div>';showWorkflowModal('Выберите задачу',html,[{label:'Отмена',className:'button secondary',onClick:closeWorkflowModal}]);}
+async function assignLayoutTask(slotId,taskId){try{await api(`/api/layout/${slotId}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData,task_id:taskId})});closeWorkflowModal();await refreshProjectWorkspace();}catch(e){demo(e.message);}}
+async function clearLayoutSlot(slotId){if(!confirm('Убрать задачу с этой позиции? Сама задача не удалится.'))return;try{await api(`/api/layout/${slotId}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData,task_id:null})});await refreshProjectWorkspace();}catch(e){demo(e.message);}}
 
 function renderTestingSection(w){const card=sectionCard('Тестирование:',false,null);const b=document.createElement('button');b.className='soft-green-button';b.textContent='Прикрепить комплект на тестирование';b.onclick=openTestingPackageModal;card.appendChild(b);if(w.testing.latest_package_comment){const c=document.createElement('div');c.className='workspace-note';c.textContent='Комментарий к последнему комплекту: '+w.testing.latest_package_comment;card.appendChild(c);}const results=w.testing.results||[];if(!results.length){const e=document.createElement('div');e.className='muted';e.textContent='Тестировщики пока не вступили в проект.';card.appendChild(e);}results.forEach(r=>{const d=document.createElement('div');d.className='testing-result';d.innerHTML=`<div>${personHtml(r.tester)}</div><div class="workspace-note">${r.submitted?'✓ Результат отправлен':'Ожидается результат'}</div>${r.comment?`<div>${escapeHtml(r.comment)}</div>`:''}${r.submitted?`<button class="mini-secondary" onclick="getTestingSubmission(${r.submission_id})">Получить файлы</button>`:''}`;card.appendChild(d);});return card;}
 function openTestingPackageModal(){showWorkflowModal('Прикрепить комплект на тестирование',`<div class="field"><label>Комментарий</label><textarea id="wfTestingComment" class="big-textarea"></textarea></div><div class="field"><label>Файлы</label><input id="wfTestingFiles" type="file" multiple></div>`,[{label:'Отмена',className:'button secondary',onClick:closeWorkflowModal},{label:'Отправить тестировщикам',onClick:publishTestingPackage}]);}
