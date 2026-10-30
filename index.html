@@ -278,6 +278,40 @@
         .workflow-table th { background:#f6f7f9; white-space:nowrap; }
         .workflow-table tr.needs-attention td { background:#fff8d8; }
         .workflow-table tr.ready-row td { background:#eff9f1; }
+        /* HOTFIX 15.35: расширяем рабочую страницу проекта под ноутбук и монитор.
+           Только единая таблица задач получает адаптивные колонки;
+           на узких экранах горизонтальная прокрутка остаётся доступной. */
+        @media (min-width: 900px) {
+            #projectWorkspacePage.page {
+                max-width: 1600px;
+                padding-left: clamp(16px, 2vw, 32px);
+                padding-right: clamp(16px, 2vw, 32px);
+            }
+            #projectWorkspacePage .unified-tasks-table {
+                min-width: 0;
+                table-layout: fixed;
+            }
+            #projectWorkspacePage .unified-tasks-table col:nth-child(1) { width: 5%; }
+            #projectWorkspacePage .unified-tasks-table col:nth-child(2) { width: 8%; }
+            #projectWorkspacePage .unified-tasks-table col:nth-child(3) { width: 6%; }
+            #projectWorkspacePage .unified-tasks-table col:nth-child(4) { width: 21%; }
+            #projectWorkspacePage .unified-tasks-table col:nth-child(5) { width: 19%; }
+            #projectWorkspacePage .unified-tasks-table col:nth-child(6) { width: 13%; }
+            #projectWorkspacePage .unified-tasks-table col:nth-child(7) { width: 13%; }
+            #projectWorkspacePage .unified-tasks-table col:nth-child(8) { width: 9%; }
+            #projectWorkspacePage .unified-tasks-table col:nth-child(9) { width: 6%; }
+            #projectWorkspacePage .unified-tasks-table th,
+            #projectWorkspacePage .unified-tasks-table td {
+                white-space: normal;
+                overflow-wrap: anywhere;
+            }
+            #projectWorkspacePage .unified-tasks-table .table-action,
+            #projectWorkspacePage .unified-tasks-table .person-link {
+                max-width: 100%;
+                white-space: normal;
+                overflow-wrap: anywhere;
+            }
+        }
         .table-action { border:0; background:#edf3ff; color:#285da9; border-radius:8px; padding:7px 9px; cursor:pointer; font-weight:700; }
         .table-action.green { background:#e3f5e8; color:#247343; }
         .table-action.danger { background:#fff0f0; color:#bf3434; }
@@ -3984,7 +4018,7 @@ function renderProjectIdeasTable() {
     if (!rows.length) return '<div class="muted">Идей проекта пока нет.</div>';
     const canReview = currentWorkspace.project.can_review;
     const authorRole = (currentWorkspace.project.my_roles || []).includes('author');
-    return `<div class="workflow-table-wrap"><table class="workflow-table"><thead><tr><th>№</th><th>Раздел</th><th>Класс</th><th>Тема</th><th>Составитель</th><th>Идея одобрена</th><th>Задача готова</th><th>Архив</th><th></th></tr></thead><tbody>${rows.map(({idea,task}, index) => {
+    return `<div class="workflow-table-wrap"><table class="workflow-table unified-tasks-table"><colgroup><col><col><col><col><col><col><col><col><col></colgroup><thead><tr><th>№</th><th>Раздел</th><th>Класс</th><th>Тема</th><th>Составитель</th><th>Идея одобрена</th><th>Задача готова</th><th>Архив</th><th></th></tr></thead><tbody>${rows.map(({idea,task}, index) => {
         const current = task || idea;
         const ready = !!task?.is_ready;
         const yellow = (canReview && current.waiting_for === 'editor') || (!canReview && !!current.is_mine && current.waiting_for === 'author');
