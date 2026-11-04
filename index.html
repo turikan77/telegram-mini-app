@@ -4107,9 +4107,60 @@ async function openUnifiedArchive(ideaId, taskId) {
     } catch(e) { demo(e.message); }
 }
 
-function openProjectIdeaForm(){showWorkflowModal('Добавить идею для задачи',`<div class="field"><label>Тема (коротко)</label><input id="wfIdeaTopic" maxlength="220"></div><div class="field"><label>Раздел химии</label><select id="wfIdeaSection">${chemistryOptions()}</select></div><div class="field"><label>Предполагаемый класс</label><input id="wfIdeaClass" placeholder="9-11 или 10"></div><div class="field"><label>Описание</label><textarea id="wfIdeaDescription" class="big-textarea" placeholder="Опишите идею подробней и возможные пункты вопроса"></textarea></div><div class="field"><label>Прикрепить файл(ы)</label><input id="wfIdeaFiles" type="file" multiple></div><div class="toggle-row"><label class="toggle-option"><input type="radio" name="wfIdeaOpen" value="0" checked>Идея будет реализована мной</label><label class="toggle-option"><input type="radio" name="wfIdeaOpen" value="1">Доступна всем для реализации</label></div>`,[{label:'Отмена',className:'button secondary',onClick:closeWorkflowModal},{label:'Добавить',onClick:saveProjectIdea}]);}
+function updateProjectIdeaAssigneeVisibility() {
+    const selectedMode = document.querySelector('input[name="wfIdeaOpen"]:checked')?.value;
+    const field = document.getElementById('wfIdeaAssigneeField');
+    if (field) field.classList.toggle('hidden', selectedMode !== 'assigned');
+}
+function openProjectIdeaForm() {
+    const canAssign = !!currentWorkspace?.project?.can_review;
+    const authors = (currentWorkspace?.participants?.authors || []).filter(person => person && person.telegram_id);
+    const assignedMode = canAssign ? `<label class="toggle-option" style="flex:1 1 100%"><input type="radio" name="wfIdeaOpen" value="assigned" onchange="updateProjectIdeaAssigneeVisibility()">Добавить задачу конкретного автора</label>` : '';
+    const assigneeField = canAssign ? `<div id="wfIdeaAssigneeField" class="field hidden">
+        <label for="wfIdeaAssignee">Составитель (автор проекта)</label>
+        <select id="wfIdeaAssignee"><option value="">Выберите автора</option>${authors.map(person => `<option value="${Number(person.telegram_id)}">${escapeHtml(person.name)}</option>`).join('')}</select>
+        ${authors.length ? '' : '<div class="muted" style="margin-top:6px">В этом проекте пока нет авторов.</div>'}
+    </div>` : '';
+    showWorkflowModal('Добавить идею для задачи',`
+        <div class="field"><label>Тема (коротко)</label><input id="wfIdeaTopic" maxlength="220"></div>
+        <div class="field"><label>Раздел химии</label><select id="wfIdeaSection">${chemistryOptions()}</select></div>
+        <div class="field"><label>Предполагаемый класс</label><input id="wfIdeaClass" placeholder="9-11 или 10"></div>
+        <div class="field"><label>Описание</label><textarea id="wfIdeaDescription" class="big-textarea" placeholder="Опишите идею подробней и возможные пункты вопроса"></textarea></div>
+        <div class="field"><label>Прикрепить файл(ы)</label><input id="wfIdeaFiles" type="file" multiple></div>
+        <div class="toggle-row" style="flex-wrap:wrap">
+            <label class="toggle-option"><input type="radio" name="wfIdeaOpen" value="0" checked onchange="updateProjectIdeaAssigneeVisibility()">Идея будет реализована мной</label>
+            <label class="toggle-option"><input type="radio" name="wfIdeaOpen" value="1" onchange="updateProjectIdeaAssigneeVisibility()">Доступна всем для реализации</label>
+            ${assignedMode}
+        </div>
+        ${assigneeField}
+    `,[{label:'Отмена',className:'button secondary',onClick:closeWorkflowModal},{label:'Добавить',onClick:saveProjectIdea}]);
+}
 async function uploadIdeaFiles(ideaId,files){if(!files.length)return;const form=new FormData();form.append('init_data',tg.initData);files.forEach(f=>form.append('files',f));await api(`/api/ideas/${ideaId}/files`,{method:'POST',body:form});}
-async function saveProjectIdea(){try{const files=Array.from(document.getElementById('wfIdeaFiles')?.files||[]);const payload={init_data:tg.initData,topic:document.getElementById('wfIdeaTopic').value.trim(),chemistry_section:document.getElementById('wfIdeaSection').value,proposed_class:document.getElementById('wfIdeaClass').value.trim(),description:document.getElementById('wfIdeaDescription').value.trim(),is_open:document.querySelector('input[name="wfIdeaOpen"]:checked').value==='1',intended_olympiad:currentWorkspace.project.title};const result=await api(`/api/projects/${currentWorkspaceProjectId}/ideas`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});await uploadIdeaFiles(result.id,files);closeWorkflowModal();await refreshProjectWorkspace();}catch(e){setWorkflowError(e.message);}}
+async function saveProjectIdea() {
+    try {
+        const selectedMode = document.querySelector('input[name="wfIdeaOpen"]:checked').value;
+        const payload = {
+            init_data:tg.initData,
+            topic:document.getElementById('wfIdeaTopic').value.trim(),
+            chemistry_section:document.getElementById('wfIdeaSection').value,
+            proposed_class:document.getElementById('wfIdeaClass').value.trim(),
+            description:document.getElementById('wfIdeaDescription').value.trim(),
+            is_open:selectedMode === '1',
+            intended_olympiad:currentWorkspace.project.title
+        };
+        if (selectedMode === 'assigned') {
+            if (!currentWorkspace.project.can_review) throw new Error('Назначать автора может только редактор или менеджер.');
+            const selectedAuthor = document.getElementById('wfIdeaAssignee')?.value;
+            if (!selectedAuthor) throw new Error('Выберите автора проекта.');
+            payload.assignee_telegram_id = Number(selectedAuthor);
+        }
+        const files=Array.from(document.getElementById('wfIdeaFiles')?.files||[]);
+        const result=await api(`/api/projects/${currentWorkspaceProjectId}/ideas`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+        await uploadIdeaFiles(result.id,files);
+        closeWorkflowModal();
+        await refreshProjectWorkspace();
+    } catch(e) { setWorkflowError(e.message); }
+}
 function findIdea(id){return (currentWorkspace?.ideas||[]).find(x=>x.id===id);}
 function ideaFilesHtml(idea){const files=idea.files||[];if(!files.length)return '<div class="muted">Файлов к идее нет.</div>';return `<div class="description-row"><strong>Файлы:</strong><br>${files.map(f=>`📄&nbsp;&nbsp;${escapeHtml(f.name)}`).join('<br>')}<br><button class="mini-secondary" style="margin-top:8px" onclick="getIdeaFiles(${idea.id})">Получить файлы</button></div>`;}
 async function getIdeaFiles(id){try{await api(`/api/ideas/${id}/files/send`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData})});demo('Файлы идеи отправлены Вам сообщением от бота.');}catch(e){demo(e.message);}}
