@@ -55,6 +55,25 @@
             flex: 1; border: 0; border-radius: 12px; padding: 11px 12px; font-size: 15px;
             cursor: pointer; background: rgba(51,144,236,.12); color: var(--tg-theme-link-color, #2476b9);
         }
+        /* HOTFIX 15.43 — только приватная страница выплат. */
+        .payout-profile-line { font-size:14px; margin:8px 0; line-height:1.45; overflow-wrap:anywhere; }
+        .payout-choice-button { display:block; width:100%; border:1px solid rgba(120,120,120,.22); border-radius:15px; padding:17px 14px; text-align:center; font-size:17px; font-weight:800; cursor:pointer; color:var(--tg-theme-text-color,#111); background:var(--tg-theme-secondary-bg-color,#fff); margin-top:10px; }
+        .payout-choice-button.primary { background:#e2f3e8; color:#176d37; border-color:#abd9bb; }
+        .payout-choice-button.active { outline:2px solid var(--tg-theme-button-color,#3390ec); outline-offset:1px; }
+        .payout-choice-button.small { padding:11px 12px; font-size:13px; margin-top:6px; }
+        .payout-intro { line-height:1.55; }
+        .payout-intro p { margin:9px 0; }
+        .payout-help { font-size:13px; line-height:1.45; color:var(--tg-theme-hint-color,#666); }
+        .payout-row { display:flex; align-items:center; gap:8px; }
+        .payout-row .field { min-width:0; flex:1; }
+        .payout-fill-name { flex:0 0 auto; border:1px solid rgba(120,120,120,.25); background:var(--tg-theme-secondary-bg-color,#fff); color:var(--tg-theme-text-color,#111); padding:10px 7px; border-radius:10px; cursor:pointer; font-weight:700; font-size:12px; }
+        .payout-form-card { margin-top:12px; }
+        .payout-status { padding:10px 12px; border-radius:11px; font-size:13px; line-height:1.5; background:rgba(120,120,120,.09); margin:10px 0; }
+        .payout-status.verified { background:#e4f5e9; color:#226b37; }
+        .payout-status.not_verified { background:#fff2d6; color:#8a5900; }
+        .payout-section-heading { font-weight:800; font-size:17px; margin:18px 0 10px; }
+        .payout-guide-step { padding:13px; background:var(--tg-theme-secondary-bg-color,#fff); border:1px solid rgba(120,120,120,.18); border-radius:13px; line-height:1.55; margin-bottom:10px; }
+        .payout-file { margin:8px 0; font-size:14px; overflow-wrap:anywhere; }
         .bottom-nav {
             position: fixed; left: 0; right: 0; bottom: 0; display: flex;
             background: var(--tg-theme-bg-color, #fff);
@@ -278,6 +297,8 @@
         .workflow-table th { background:#f6f7f9; white-space:nowrap; }
         .workflow-table tr.needs-attention td { background:#fff8d8; }
         .workflow-table tr.ready-row td { background:#eff9f1; }
+        /* HOTFIX 15.37: новая идея без комментариев выделяется только у редактора. */
+        .workflow-table tr.new-idea-row td { background:#eaf6ff; }
         /* HOTFIX 15.35: расширяем рабочую страницу проекта под ноутбук и монитор.
            Только единая таблица задач получает адаптивные колонки;
            на узких экранах горизонтальная прокрутка остаётся доступной. */
@@ -316,6 +337,40 @@
         .table-action.green { background:#e3f5e8; color:#247343; }
         .table-action.danger { background:#fff0f0; color:#bf3434; }
         .hint-banner { background:#f6f7f9; color:#656c76; padding:10px 12px; border-radius:10px; font-size:13px; margin:8px 0 12px; }
+
+        /* HOTFIX 15.41: краткая помощь по работе с проектом для автора и редактора. */
+        .workspace-help-button {
+            display: flex; align-items: center; justify-content: center; gap: 9px;
+            width: 100%; padding: 12px 14px; margin: 3px 0 16px;
+            border: 1px solid #dfe4ea; border-radius: 13px;
+            background: #fff; color: #27313f; font: inherit; font-weight: 750;
+            cursor: pointer; text-align: center;
+        }
+        .workspace-help-button:hover, .workspace-help-button:focus-visible { border-color: #b9c3d0; background: #fafbfc; }
+        .workspace-help-button:focus-visible, .workspace-help-item > summary:focus-visible { outline: 2px solid #5086cb; outline-offset: 2px; }
+        .workspace-help-button-icon { display: inline-flex; align-items:center; justify-content:center; width:21px; height:21px; border: 1.5px solid #8491a3; border-radius:50%; color:#667487; font-size:13px; font-weight:800; }
+        .workspace-help-intro { position: relative; padding: 0 30px 4px 0; line-height:1.55; }
+        .workspace-help-intro p { margin:0 0 10px; }
+        .workspace-help-close { position:absolute; top:-4px; right:0; background:transparent; color:#707c89; border:0; border-radius:8px; font-size:26px; line-height:1; cursor:pointer; padding:0 5px; }
+        .workspace-help-accordion { display:grid; gap:8px; margin:12px 0 8px; }
+        .workspace-help-item { border:1px solid #dfe4ea; border-radius:12px; background:var(--tg-theme-bg-color,#fff); overflow:hidden; }
+        .workspace-help-item > summary { list-style:none; display:flex; justify-content:space-between; align-items:center; gap:10px; padding:13px 14px; font-size:14px; font-weight:750; cursor:pointer; }
+        .workspace-help-item > summary::-webkit-details-marker { display:none; }
+        .workspace-help-item > summary::after { content:'⌄'; color:#798493; font-size:21px; font-weight:400; line-height:1; transition:transform .15s; }
+        .workspace-help-item[open] > summary::after { transform:rotate(180deg); }
+        .workspace-help-item-body { padding:3px 14px 13px; border-top:1px solid #edf0f3; line-height:1.6; font-size:14px; overflow-wrap:anywhere; }
+        .workspace-help-item-body p { margin:10px 0; }
+        .workspace-help-item-body ul, .workspace-help-item-body ol { margin:9px 0 12px; padding-left:23px; }
+        .workspace-help-item-body li { margin:5px 0; }
+        .workspace-help-swatch { display:inline-block; width:19px; height:19px; flex:0 0 auto; border-radius:5px; border:1px solid #d4dce4; vertical-align:middle; margin-right:7px; }
+        .workspace-help-swatch-blue { background:#eaf6ff; }
+        .workspace-help-swatch-yellow { background:#fff8d8; }
+        .workspace-help-swatch-green { background:#eff9f1; }
+        .workspace-help-swatch-normal { background:var(--tg-theme-bg-color,#fff); }
+        @media (max-width: 520px) {
+            .workspace-help-item > summary { padding:12px 11px; font-size:13px; }
+            .workspace-help-item-body { padding:3px 11px 12px; font-size:13px; }
+        }
         .collapse-button { width:100%; display:flex; justify-content:space-between; align-items:center; border:1px solid #dfe4ea; background:#fff; border-radius:12px; padding:12px; font-weight:800; cursor:pointer; margin-top:10px; }
         .workflow-modal-wide { width:min(94vw, 720px); max-height:88vh; overflow:auto; }
         .comment-thread { max-height:260px; overflow:auto; background:#f7f8fa; border-radius:10px; padding:10px; margin:10px 0; }
@@ -655,6 +710,27 @@
         </div>
     </section>
 
+    <section id="payoutPage" class="page hidden" style="max-width:760px">
+        <button class="back" onclick="closePayoutSetup()">← В профиль</button>
+        <div class="title">Как получать выплаты от АНОД?</div>
+        <div class="card payout-intro">
+            <p><strong>Мы рекомендуем оформлять выплаты через самозанятость.</strong></p>
+            <p>Это простой и удобный способ официально получать вознаграждение за выполненную работу. Регистрация бесплатная и обычно занимает около <strong>10 минут</strong> — всё можно сделать онлайн, даже с телефона.</p>
+            <p>Оформление самозанятости значительно упрощает подготовку выплат для АНОД и помогает нам быстрее организовывать сотрудничество с авторами.</p>
+            <p><strong>Если вы получаете социальные пособия</strong>, рекомендуем предварительно уточнить, как дополнительный доход может повлиять на их получение. В таком случае можно рассмотреть оформление выплаты как физическому лицу. При назначении некоторых пособий учитывается сам доход независимо от способа оформления выплаты.</p>
+            <p><strong>Если у вас уже есть ИП</strong>, вы можете выбрать получение выплат через него.</p>
+            <p>Выберите подходящий вариант ниже. Если самозанятости пока нет, воспользуйтесь нашей пошаговой инструкцией — оформить её проще, чем кажется!</p>
+        </div>
+        <div class="card">
+            <button id="payoutMethodSelf" class="payout-choice-button primary" onclick="selectPayoutMethod('self_employed')">Самозанятый · рекомендуемый способ</button>
+            <button class="payout-choice-button small" onclick="openPayoutGuide()">📖 Инструкция по оформлению самозанятости</button>
+            <button id="payoutMethodIndividual" class="payout-choice-button" onclick="selectPayoutMethod('individual')">Физлицо</button>
+            <button id="payoutMethodIp" class="payout-choice-button" onclick="selectPayoutMethod('ip')">ИП</button>
+        </div>
+        <div id="payoutEditForm" class="card payout-form-card hidden"></div>
+        <div id="payoutPageError" class="error" role="alert" aria-live="polite"></div>
+    </section>
+
     <section id="profilePage" class="page hidden">
         <button class="back" onclick="closeProfile()">← Назад</button>
         <div class="profile-header">
@@ -672,6 +748,20 @@
             <div class="section-title" style="margin-top:0">Олимпиадные достижения:</div>
             <div id="profileAchievements" class="achievement-public"></div>
             <div id="profileAchievementsEmpty" class="muted">Пока ничего не добавлено.</div>
+        </div>
+
+        <div id="profilePayoutBlock" class="card hidden">
+            <div class="section-title" style="margin-top:0">Данные для выплат</div>
+            <div id="profilePayoutContents" class="muted">Загрузка данных...</div>
+            <button id="profilePayoutEditButton" class="button secondary hidden" style="margin-top:12px" onclick="openPayoutSetup()">Внести данные для выплат</button>
+            <div id="profilePayoutError" class="error" role="status"></div>
+            <div id="adminOrgPayoutDocBlock" class="hidden" style="margin-top:18px;border-top:1px solid rgba(120,120,120,.2);padding-top:12px">
+                <div style="font-weight:700;margin-bottom:8px">Реквизиты РОО «АНОД» — настройка администратора</div>
+                <div id="adminOrgPayoutDocInfo" class="payout-help">Загружаем сведения о файле...</div>
+                <div class="field" style="margin-top:10px"><input id="adminOrgPayoutDocInput" type="file" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"></div>
+                <button class="button secondary" onclick="uploadPayoutOrgDocument()">Загрузить / заменить реквизиты</button>
+                <div id="adminOrgPayoutDocError" class="error" role="status"></div>
+            </div>
         </div>
 
         <div class="card">
@@ -959,6 +1049,7 @@ let projectCompositionNames = [];
 let olympiadCatalog = [];
 let academicYears = [];
 let previousTab = 'mentors';
+let profileReturnState = null; // Страница, с которой открыли профиль, и позиция прокрутки.
 let projectCreateOptions = null;
 let activeTaskClasses = [6,7,8,9,10,11];
 let editorSlotsState = [];
@@ -1087,7 +1178,7 @@ function showApp() {
 }
 
 function switchTab(tab) {
-    ['mentorsPage','projectsPage','materialsPage','profilePage','projectCreatePage','ideaBankPage','projectWorkspacePage','notificationSettingsPage','surveysPage'].forEach(id => document.getElementById(id).classList.add('hidden'));
+    ['mentorsPage','projectsPage','materialsPage','profilePage','payoutPage','projectCreatePage','ideaBankPage','projectWorkspacePage','notificationSettingsPage','surveysPage'].forEach(id => document.getElementById(id).classList.add('hidden'));
     const pages = {mentors:'mentorsPage',projects:'projectsPage',materials:'materialsPage'};
     document.getElementById(pages[tab]).classList.remove('hidden');
     document.querySelectorAll('.nav-button').forEach(x => x.classList.remove('active'));
@@ -1365,7 +1456,18 @@ function renderPublicProjectParticipations(items) {
 }
 
 function openProfile(p) {
-    ['mentorsPage','projectsPage','materialsPage','projectCreatePage','ideaBankPage','projectWorkspacePage','notificationSettingsPage','surveysPage'].forEach(id => document.getElementById(id).classList.add('hidden'));
+    // Не перезаписываем точку возврата при обновлении уже открытого профиля.
+    if (document.getElementById('profilePage').classList.contains('hidden')) {
+        const originId = ['projectWorkspacePage','mentorsPage','projectsPage','materialsPage','ideaBankPage','projectCreatePage','notificationSettingsPage','surveysPage']
+            .find(id => !document.getElementById(id).classList.contains('hidden'));
+        profileReturnState = originId ? {
+            pageId: originId,
+            projectId: originId === 'projectWorkspacePage' ? currentWorkspaceProjectId : null,
+            scrollX: window.scrollX,
+            scrollY: window.scrollY
+        } : null;
+    }
+    ['mentorsPage','projectsPage','materialsPage','projectCreatePage','ideaBankPage','projectWorkspacePage','notificationSettingsPage','surveysPage','payoutPage'].forEach(id => document.getElementById(id).classList.add('hidden'));
     document.getElementById('profilePage').classList.remove('hidden');
     document.getElementById('profileName').innerText = p.name;
     const telegramLink = document.getElementById('profileTelegramLink');
@@ -1393,6 +1495,14 @@ function openProfile(p) {
     renderPublicEducation(p.education || []);
     renderPublicAchievements(p.achievements || []);
     renderPublicProjectParticipations(p.projects || []);
+    const payoutAllowed = !!(p.isMe || currentUser.is_admin);
+    document.getElementById('profilePayoutBlock').classList.toggle('hidden', !payoutAllowed);
+    document.getElementById('profilePayoutContents').innerHTML = '<span class="muted">Загрузка данных...</span>';
+    document.getElementById('profilePayoutEditButton').classList.add('hidden');
+    document.getElementById('adminOrgPayoutDocBlock').classList.toggle('hidden', !(p.isMe && currentUser.is_admin));
+    document.getElementById('profilePayoutError').textContent = '';
+    if (payoutAllowed) loadPayoutProfileSection(p.telegram_id, !!p.isMe);
+    if (p.isMe && currentUser.is_admin) loadOrgPayoutDocument();
 
     const canAdminManage = !!currentUser.is_admin;
     document.getElementById('myEditBlock').classList.toggle('hidden', !(p.isMe || canAdminManage));
@@ -1426,7 +1536,291 @@ function openProfile(p) {
 }
 
 
-function closeProfile() { switchTab(previousTab); }
+
+// HOTFIX 15.43: приватные реквизиты для выплат. Не кладём их в публичный профиль.
+let payoutCurrent = null;
+let payoutSelectedMethod = null;
+let payoutSetupScrollY = 0;
+let payoutGuideMethod = 'gosuslugi';
+let payoutGuideStep = 0;
+const payoutAuth = () => ({method:'POST', headers:{'Content-Type':'application/json'}, cache:'no-store', body:JSON.stringify({init_data:tg.initData})});
+const payoutMethodLabels = {self_employed:'Самозанятый', individual:'Физлицо', ip:'ИП'};
+
+function payoutStatusHtml(data) {
+    if (!data || data.method !== 'self_employed') return '';
+    const status = data.npd_status;
+    const at = data.npd_checked_at ? ` на ${escapeHtml(formatDateISO(data.npd_checked_at.slice(0,10)))}` : '';
+    if (status === 'verified') return `<div class="payout-status verified">✓ Статус НПД проверен ФНС${at}. Перед выплатой требуется повторная проверка.</div>`;
+    if (status === 'not_verified') return `<div class="payout-status not_verified">ФНС не подтвердила статус НПД${at}. Проверьте ИНН и регистрацию.</div>`;
+    return '<div class="payout-status">Статус НПД пока не проверен: сервис может быть временно недоступен. Можно повторить проверку позже.</div>';
+}
+
+function payoutSafeLast(text, start=4, end=3) {
+    const str = String(text || '');
+    if (str.length <= start+end) return '••••';
+    return str.slice(0,start) + '•'.repeat(Math.max(2,str.length-start-end)) + str.slice(-end);
+}
+
+async function loadPayoutProfileSection(telegramId, isOwner) {
+    const box = document.getElementById('profilePayoutContents');
+    const edit = document.getElementById('profilePayoutEditButton');
+    try {
+        const data = await api(`/api/payouts/users/${telegramId}/view`, payoutAuth());
+        if (currentProfileTelegramId !== telegramId) return;
+        if (isOwner) payoutCurrent = data;
+        edit.classList.toggle('hidden', !isOwner);
+        edit.textContent = data.exists ? 'Изменить данные для выплат' : 'Внести данные для выплат';
+        if (!data.exists) {
+            box.textContent = 'Данные для получения выплат пока не указаны.';
+            return;
+        }
+        const d = data.details || {};
+        const lines = [`<strong>${payoutMethodLabels[data.method] || 'Способ выплаты'}</strong>`];
+        if (data.method === 'self_employed') lines.push(payoutStatusHtml(data));
+        if (d.full_name) lines.push(`<div class="payout-profile-line"><b>ФИО:</b> ${escapeHtml(d.full_name)}</div>`);
+        if (d.inn) lines.push(`<div class="payout-profile-line"><b>ИНН:</b> ${escapeHtml(d.inn)}</div>`);
+        if (d.bank_name) lines.push(`<div class="payout-profile-line"><b>Банк:</b> ${escapeHtml(d.bank_name)}</div>`);
+        if (d.transfer_method) lines.push(`<div class="payout-profile-line"><b>Способ перевода:</b> ${d.transfer_method==='sbp'?'СБП':'На банковский счёт'}</div>`);
+        if (d.phone) lines.push(`<div class="payout-profile-line"><b>Телефон:</b> ${escapeHtml(d.phone)}</div>`);
+        if (d.bik) lines.push(`<div class="payout-profile-line"><b>БИК:</b> ${escapeHtml(d.bik)}</div>`);
+        if (d.account_number) lines.push(`<div class="payout-profile-line"><b>Счёт:</b> ${escapeHtml(d.account_number)}</div>`);
+        if (d.invoice) lines.push(`<div class="payout-profile-line"><b>Счёт ИП:</b> ${escapeHtml(d.invoice.name)} <button class="small-button" onclick="sendPayoutInvoice()">Получить файл</button></div>`);
+        if (isOwner && data.method==='self_employed' && data.npd_status!=='verified') lines.push('<button class="button secondary" onclick="retryPayoutNpd()" style="margin-top:8px">Проверить статус НПД повторно</button>');
+        lines.push('<div class="payout-help">Реквизиты видны только вам и администратору АНОД.</div>');
+        box.innerHTML = lines.join('');
+    } catch (e) {
+        if (currentProfileTelegramId === telegramId) {
+            box.textContent = 'Не удалось загрузить платёжные сведения.';
+            document.getElementById('profilePayoutError').textContent = e.message;
+        }
+    }
+}
+
+async function retryPayoutNpd() {
+    const error = document.getElementById('profilePayoutError');
+    error.textContent = 'Проверяем статус НПД через ФНС...';
+    try {
+        await api('/api/payouts/me/verify-npd', payoutAuth());
+        error.textContent = '';
+        await loadPayoutProfileSection(currentUser.telegram_id, true);
+    } catch(e) { error.textContent = e.message; }
+}
+
+function openPayoutSetup() {
+    if (!currentProfile || currentProfile.telegram_id !== currentUser.telegram_id) return;
+    payoutSetupScrollY = window.scrollY;
+    document.getElementById('profilePage').classList.add('hidden');
+    document.getElementById('payoutPage').classList.remove('hidden');
+    document.getElementById('payoutPageError').textContent = '';
+    selectPayoutMethod(payoutCurrent && payoutCurrent.exists ? payoutCurrent.method : null);
+    window.scrollTo(0,0);
+}
+
+function closePayoutSetup() {
+    document.getElementById('payoutPage').classList.add('hidden');
+    document.getElementById('profilePage').classList.remove('hidden');
+    const y = payoutSetupScrollY;
+    window.scrollTo(0,y);
+    requestAnimationFrame(() => window.scrollTo(0,y));
+}
+
+function payoutField(id, label, value, type='text', placeholder='') {
+    return `<div class="field"><label for="${id}">${label}</label><input id="${id}" type="${type}" value="${escapeHtml(value||'')}" placeholder="${escapeHtml(placeholder)}" autocomplete="off"></div>`;
+}
+
+function payoutNameField(value) {
+    return `<div class="payout-row"><div class="field"><label for="payoutFullName">Фамилия, имя, отчество</label><input id="payoutFullName" autocomplete="name" value="${escapeHtml(value||'')}" placeholder="Иванов Иван Иванович"></div><button type="button" class="payout-fill-name" onclick="fillPayoutNameFromProfile()">Как в профиле</button></div>`;
+}
+
+function fillPayoutNameFromProfile() {
+    const field = document.getElementById('payoutFullName');
+    if (field) field.value = (currentProfile && currentProfile.full_name) || (currentUser && currentUser.full_name) || '';
+}
+
+function selectPayoutMethod(method) {
+    payoutSelectedMethod = method;
+    document.getElementById('payoutPageError').textContent = '';
+    ['self_employed','individual','ip'].forEach((m)=>{
+        const id = {self_employed:'payoutMethodSelf',individual:'payoutMethodIndividual',ip:'payoutMethodIp'}[m];
+        document.getElementById(id).classList.toggle('active',method===m);
+    });
+    const container=document.getElementById('payoutEditForm');
+    container.classList.toggle('hidden',!method);
+    if (!method) { container.innerHTML=''; return; }
+    const existing = payoutCurrent && payoutCurrent.exists && payoutCurrent.method===method ? (payoutCurrent.details||{}) : {};
+    if (method==='ip') {
+        container.innerHTML=`<div class="payout-section-heading">Данные индивидуального предпринимателя</div>
+            ${payoutField('payoutInn','ИНН ИП (12 цифр)',existing.inn,'text','12 цифр')}
+            <div class="payout-help">Для получения выплаты желательно самостоятельно выставить счёт на РОО «АНОД». Реквизиты организации можно получить по кнопке ниже.</div>
+            <button class="button secondary" style="margin:10px 0" onclick="sendPayoutOrgDocument()">Получить реквизиты РОО «АНОД»</button>
+            <div class="field"><label for="payoutInvoiceFile">Прикрепить готовый счёт (PDF или DOCX, до 15 МБ)</label><input id="payoutInvoiceFile" type="file" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"></div>
+            <div class="payout-file">${existing.invoice ? `Сохранённый счёт: ${escapeHtml(existing.invoice.name)} <button class="small-button" onclick="deletePayoutInvoice()">Удалить счёт</button>` : 'Счёт пока не прикреплён. Можно сохранить ИНН и прикрепить счёт позже.'}</div>
+            ${payoutConsentMarkup()}<button id="payoutSaveButton" class="button" onclick="savePayoutDetails()">Сохранить</button>`;
+    } else {
+        const isSelf=method==='self_employed';
+        container.innerHTML=`<div class="payout-section-heading">${isSelf?'Данные самозанятого':'Данные физического лица'}</div>
+            ${payoutNameField(existing.full_name)}
+            ${isSelf ? payoutField('payoutInn','ИНН самозанятого (12 цифр)',existing.inn,'text','12 цифр') : ''}
+            <div class="field"><label for="payoutTransferMethod">Способ выплаты</label><select id="payoutTransferMethod" onchange="payoutToggleTransferFields()"><option value="sbp" ${existing.transfer_method!=='bank_account'?'selected':''}>Через СБП по номеру телефона</option><option value="bank_account" ${existing.transfer_method==='bank_account'?'selected':''}>На банковский счёт</option></select></div>
+            ${payoutField('payoutBankName','Название банка',existing.bank_name,'text','Укажите банк')}
+            <div id="payoutSbpFields">${payoutField('payoutPhone','Телефон для СБП',existing.phone,'tel','+7 (999) 123-45-67')}</div>
+            <div id="payoutBankFields">${payoutField('payoutBik','БИК банка',existing.bik,'text','9 цифр')}${payoutField('payoutAccount','Номер банковского счёта',existing.account_number,'text','20 цифр')}</div>
+            ${isSelf?'<div class="payout-help" style="margin-bottom:12px">После сохранения проверим ИНН и актуальный статус НПД по базе ФНС. Это не подтверждает принадлежность банковского счёта.</div>':''}
+            ${payoutConsentMarkup()}<button id="payoutSaveButton" class="button" onclick="savePayoutDetails()">Сохранить</button>`;
+        payoutToggleTransferFields();
+    }
+}
+
+function payoutConsentMarkup() {
+    return '<label class="payout-help" style="display:flex;align-items:flex-start;gap:8px;margin:12px 0 15px"><input id="payoutConsent" type="checkbox" style="width:20px;height:20px;flex:0 0 auto;margin-top:0"> <span>Согласен(на) на обработку указанных персональных и платёжных данных для подготовки выплат РОО «АНОД».</span></label>';
+}
+
+function payoutToggleTransferFields() {
+    const choice = document.getElementById('payoutTransferMethod');
+    if (!choice) return;
+    document.getElementById('payoutSbpFields').classList.toggle('hidden',choice.value!=='sbp');
+    document.getElementById('payoutBankFields').classList.toggle('hidden',choice.value!=='bank_account');
+}
+
+async function savePayoutDetails() {
+    const m = payoutSelectedMethod;
+    if (!m || currentProfileTelegramId!==currentUser.telegram_id) return;
+    const byId=id=>document.getElementById(id)?.value?.trim()||'';
+    const payload={init_data:tg.initData,method:m,consent:document.getElementById('payoutConsent')?.checked===true};
+    if (m==='ip') payload.inn=byId('payoutInn');
+    else {
+        payload.full_name=byId('payoutFullName');
+        payload.transfer_method=byId('payoutTransferMethod');
+        payload.bank_name=byId('payoutBankName');
+        if (m==='self_employed') payload.inn=byId('payoutInn');
+        if (payload.transfer_method==='sbp') payload.phone=byId('payoutPhone');
+        else { payload.bik=byId('payoutBik');payload.account_number=byId('payoutAccount'); }
+    }
+    const button=document.getElementById('payoutSaveButton');
+    const error=document.getElementById('payoutPageError');
+    button.disabled=true;
+    button.textContent=m==='self_employed'?'Сохраняем и проверяем статус ФНС...':'Сохраняем данные...';
+    error.textContent='';
+    try {
+        const data=await api('/api/payouts/me',{method:'PUT',headers:{'Content-Type':'application/json'},cache:'no-store',body:JSON.stringify(payload)});
+        payoutCurrent=data;
+        if (m==='ip') {
+            const file=document.getElementById('payoutInvoiceFile')?.files?.[0];
+            if (file) {
+                button.textContent='Прикрепляем счёт...';
+                const body=new FormData();body.append('init_data',tg.initData);body.append('file',file);
+                try { await api('/api/payouts/me/invoice',{method:'POST',cache:'no-store',body}); }
+                catch (uploadError) { error.textContent='Данные ИП сохранены, но счёт не загрузился: '+uploadError.message; return; }
+            }
+        }
+        closePayoutSetup();
+        await loadPayoutProfileSection(currentUser.telegram_id,true);
+    } catch(e) { error.textContent=e.message; }
+    finally {button.disabled=false;button.textContent='Сохранить';}
+}
+
+async function deletePayoutInvoice() {
+    if (!confirm('Удалить прикреплённый счёт ИП?')) return;
+    try {
+        await api('/api/payouts/me/invoice/delete',payoutAuth());
+        payoutCurrent = await api(`/api/payouts/users/${currentUser.telegram_id}/view`,payoutAuth());
+        selectPayoutMethod('ip');
+    } catch(e) { document.getElementById('payoutPageError').textContent=e.message; }
+}
+
+async function sendPayoutInvoice() {
+    try { await api(`/api/payouts/users/${currentProfileTelegramId}/invoice/send`,payoutAuth());demo('Счёт отправлен вам сообщением от бота.'); }
+    catch(e) { demo('Не удалось получить счёт: '+e.message); }
+}
+
+async function sendPayoutOrgDocument() {
+    try { await api('/api/payouts/organization-document/send',payoutAuth());demo('Реквизиты АНОД отправлены вам сообщением от бота.'); }
+    catch(e) { document.getElementById('payoutPageError').textContent=e.message; }
+}
+
+async function loadOrgPayoutDocument() {
+    try {
+        const data=await api('/api/payouts/organization-document',payoutAuth());
+        document.getElementById('adminOrgPayoutDocInfo').textContent=data.exists?`Текущий файл: ${data.name}`:'Файл реквизитов ещё не загружен.';
+    } catch(e) { document.getElementById('adminOrgPayoutDocInfo').textContent=e.message; }
+}
+
+async function uploadPayoutOrgDocument() {
+    const input=document.getElementById('adminOrgPayoutDocInput');
+    const error=document.getElementById('adminOrgPayoutDocError');
+    error.textContent='';
+    if (!input.files.length) { error.textContent='Выберите PDF или DOCX с реквизитами АНОД.';return; }
+    const body=new FormData();body.append('init_data',tg.initData);body.append('file',input.files[0]);
+    try {
+        await api('/api/admin/payouts/organization-document',{method:'POST',cache:'no-store',body});
+        input.value=''; await loadOrgPayoutDocument();
+        demo('Реквизиты РОО АНОД сохранены.');
+    } catch(e) {error.textContent=e.message;}
+}
+
+const PAYOUT_GUIDE = {
+    gosuslugi:[
+        ['Установите «Мой налог»','Откройте официальный сайт ФНС и установите приложение «Мой налог» на телефон.'],
+        ['Откройте регистрацию','В приложении «Мой налог» нажмите «Регистрация» и выберите регистрацию через портал Госуслуг.'],
+        ['Войдите в Госуслуги','Авторизуйтесь в своей учётной записи Госуслуг и подтвердите вход, если понадобится.'],
+        ['Укажите необходимые данные','Подтвердите номер телефона кодом из СМС и выберите регион деятельности, если приложение попросит.'],
+        ['Подтвердите постановку на учёт','Проверьте данные и подтвердите регистрацию. Иногда налоговой требуется дополнительное время для обработки заявления.'],
+        ['Вернитесь в АНОД','Откройте этот раздел снова, выберите «Самозанятый», укажите ФИО, ИНН и реквизиты. После сохранения проверим статус по ФНС.']
+    ],
+    passport:[
+        ['Установите «Мой налог»','Скачайте официальное приложение ФНС «Мой налог».'],
+        ['Регистрация по паспорту','Откройте «Регистрация» и выберите «По паспорту РФ».'],
+        ['Подтвердите телефон','Введите номер телефона, подтвердите код из СМС и выберите регион деятельности.'],
+        ['Сфотографируйте паспорт','Следуя подсказкам приложения, наведите камеру на разворот паспорта с фотографией и проверьте распознанные данные.'],
+        ['Подтвердите лицо','Сделайте селфи по инструкциям приложения и подтвердите регистрацию.'],
+        ['Вернитесь в АНОД','Вернитесь к данным для выплат, укажите ИНН и реквизиты. Если регистрация ещё обрабатывается, повторите проверку позже.']
+    ]
+};
+
+function openPayoutGuide(method=null, step=null) {
+    if (method) payoutGuideMethod=method;
+    else {
+        payoutGuideMethod=localStorage.getItem('anod_payout_guide_method')||'gosuslugi';
+        if (!PAYOUT_GUIDE[payoutGuideMethod]) payoutGuideMethod='gosuslugi';
+    }
+    if (Number.isInteger(step)) payoutGuideStep=step;
+    else payoutGuideStep=Number(localStorage.getItem('anod_payout_guide_step')||0);
+    const steps=PAYOUT_GUIDE[payoutGuideMethod];
+    payoutGuideStep=Math.max(0,Math.min(payoutGuideStep,steps.length-1));
+    localStorage.setItem('anod_payout_guide_method',payoutGuideMethod);
+    localStorage.setItem('anod_payout_guide_step',String(payoutGuideStep));
+    const [title,description]=steps[payoutGuideStep];
+    showWorkflowModal('Оформление самозанятости', `
+        <div class="payout-help">Бесплатно · обычно около 10 минут · онлайн</div>
+        <div style="display:flex;gap:8px;margin:12px 0">
+          <button class="small-button" style="flex:1;${payoutGuideMethod==='gosuslugi'?'font-weight:800;outline:2px solid #3390ec':''}" onclick="openPayoutGuide('gosuslugi',0)">Через Госуслуги</button>
+          <button class="small-button" style="flex:1;${payoutGuideMethod==='passport'?'font-weight:800;outline:2px solid #3390ec':''}" onclick="openPayoutGuide('passport',0)">По паспорту РФ</button>
+        </div>
+        <div class="payout-guide-step"><div class="payout-help">Шаг ${payoutGuideStep+1} из ${steps.length}</div><h3 style="margin:8px 0">${escapeHtml(title)}</h3>${escapeHtml(description)}</div>
+        <a href="https://npd.nalog.ru/app/" target="_blank" rel="noopener noreferrer" style="display:block;margin:12px 0;font-weight:700">↗ Официальное приложение «Мой налог»</a>
+        <div class="payout-help">Экран регистрации может немного отличаться в зависимости от версии приложения ФНС. Не передавайте АНОД пароли и коды подтверждения.</div>
+    `,[
+        {label:payoutGuideStep===0?'Закрыть':'← Назад',className:'button secondary',onClick:()=>payoutGuideStep===0?closeWorkflowModal():openPayoutGuide(payoutGuideMethod,payoutGuideStep-1)},
+        {label:payoutGuideStep===steps.length-1?'Готово':'Далее →',onClick:()=>payoutGuideStep===steps.length-1?closeWorkflowModal():openPayoutGuide(payoutGuideMethod,payoutGuideStep+1)}
+    ]);
+}
+
+function closeProfile() {
+    const origin = profileReturnState;
+    profileReturnState = null;
+    if (origin && (origin.pageId !== 'projectWorkspacePage' || currentWorkspaceProjectId === origin.projectId)) {
+        const page = document.getElementById(origin.pageId);
+        if (page) {
+            // Страница проекта не пересоздаётся: раскрытые секции и таблицы остаются на месте.
+            document.getElementById('profilePage').classList.add('hidden');
+            page.classList.remove('hidden');
+            window.scrollTo(origin.scrollX, origin.scrollY);
+            requestAnimationFrame(() => window.scrollTo(origin.scrollX, origin.scrollY));
+            return;
+        }
+    }
+    switchTab(previousTab);
+}
 
 async function saveBirthDate() {
     const error = document.getElementById('profileError');
@@ -2732,7 +3126,7 @@ function chooseProjectType(code) {
 }
 
 function openTaskCompositionForm() {
-    ['mentorsPage','projectsPage','materialsPage','profilePage','notificationSettingsPage','surveysPage'].forEach(id => document.getElementById(id).classList.add('hidden'));
+    ['mentorsPage','projectsPage','materialsPage','profilePage','payoutPage','notificationSettingsPage','surveysPage'].forEach(id => document.getElementById(id).classList.add('hidden'));
     document.getElementById('projectCreatePage').classList.remove('hidden');
     document.querySelectorAll('.nav-button').forEach(x => x.classList.remove('active'));
 
@@ -3487,7 +3881,7 @@ function findGlobalIdeaInBank(id) {
 }
 
 async function openGlobalIdeaBank() {
-    ['mentorsPage','projectsPage','materialsPage','profilePage','projectCreatePage','projectWorkspacePage','notificationSettingsPage','surveysPage'].forEach(id => document.getElementById(id).classList.add('hidden'));
+    ['mentorsPage','projectsPage','materialsPage','profilePage','payoutPage','projectCreatePage','projectWorkspacePage','notificationSettingsPage','surveysPage'].forEach(id => document.getElementById(id).classList.add('hidden'));
     document.getElementById('ideaBankPage').classList.remove('hidden');
     previousTab = 'projects';
     window.scrollTo(0,0);
@@ -3729,7 +4123,7 @@ async function deleteGlobalIdea(id, topic) {
 }
 
 async function openProjectWorkspace(projectId) {
-    ['mentorsPage','projectsPage','materialsPage','profilePage','projectCreatePage','ideaBankPage','notificationSettingsPage','surveysPage'].forEach(id => document.getElementById(id).classList.add('hidden'));
+    ['mentorsPage','projectsPage','materialsPage','profilePage','payoutPage','projectCreatePage','ideaBankPage','notificationSettingsPage','surveysPage'].forEach(id => document.getElementById(id).classList.add('hidden'));
     document.getElementById('projectWorkspacePage').classList.remove('hidden');
     currentWorkspaceProjectId = projectId;
     workspaceFileEditMode = false;
@@ -3976,6 +4370,30 @@ function openWorkspaceInstructionEditor(section){
 }
 async function saveWorkspaceInstruction(section){try{await api(`/api/projects/${currentWorkspaceProjectId}/workspace-instruction`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData,section,text:document.getElementById('wfInstructionText').value})});closeWorkflowModal();await refreshProjectWorkspace();}catch(e){setWorkflowError(e.message);}}
 
+
+// HOTFIX 15.41: статические справки, текст одобрен пользователем.
+const PROJECT_HELP_AUTHOR = {"intro":"<p><strong>Здесь вы можете предложить идею, разработать задачу и отправить её редактору на проверку.</strong></p>\n<p>Все этапы работы проходят в одном разделе — «Список задач».</p>","sections":[{"title":"🎨 Что означают цвета строк?","html":"<p><span class=\"workspace-help-swatch workspace-help-swatch-yellow\" aria-label=\"Жёлтый цвет\"></span> <strong>Светло-жёлтый — ждём ваших действий</strong></p>\n<p>Редактор оставил замечания или вернул задачу на доработку. Нажмите на название темы, прочитайте комментарий и внесите необходимые изменения.</p>\n<p><span class=\"workspace-help-swatch workspace-help-swatch-green\" aria-label=\"Зелёный цвет\"></span> <strong>Светло-зелёный — задача готова</strong></p>\n<p>Редактор подтвердил готовность задачи. Дополнительные действия не требуются, если не появятся новые замечания.</p>\n<p><span class=\"workspace-help-swatch workspace-help-swatch-normal\" aria-label=\"Обычный фон\"></span> <strong>Обычный фон — работа в обычном режиме</strong></p>\n<p>Строка не требует срочных действий по цветовому статусу. Проверяйте комментарии и уведомления о новых изменениях.</p>"},{"title":"💡 Как добавить идею?","html":"<ol>\n<li>Нажмите <strong>«Добавить идею для задачи»</strong>.</li>\n<li>Укажите тему, раздел химии, класс и подробное описание.</li>\n<li>При необходимости прикрепите файлы.</li>\n<li>Выберите, будете ли вы реализовывать идею самостоятельно или она будет доступна другим авторам.</li>\n<li>Нажмите <strong>«Добавить»</strong>.</li>\n</ol>\n<p>Идея появится в общей таблице и будет доступна редактору для рассмотрения.</p>\n<p><strong>Важно:</strong> перед добавлением изучите уже предложенные идеи и задачи прошлых лет, чтобы избежать повторений.</p>"},{"title":"📝 Что происходит при нажатии на тему?","html":"<p>Название темы — основная кнопка для работы над идеей или задачей.</p>\n<p>Нажав на свою тему, вы сможете:</p>\n<ul>\n<li>прочитать описание;</li>\n<li>посмотреть замечания редактора;</li>\n<li>написать ответный комментарий;</li>\n<li>прикрепить новую версию задачи;</li>\n<li>получить доступные файлы;</li>\n<li>при необходимости изменить описание.</li>\n</ul>\n<p>После внесения изменений нажмите <strong>«Отправить»</strong>.</p>\n<p>Редактор получит уведомление о вашей работе.</p>"},{"title":"☑ Что означают две галочки?","html":"<p><strong>«Идея одобрена»</strong> — редактор принял вашу идею, и теперь она перешла на этап разработки задачи.</p>\n<p><strong>«Задача готова»</strong> — редактор подтвердил, что задача полностью готова.</p>"},{"title":"📁 Что такое «Архив»?","html":"<p>Архив — история работы над вашей идеей и задачей.</p>\n<p>Здесь можно посмотреть предыдущие комментарии, рецензии и версии файлов.</p>\n<p>Чтобы получить нужные файлы, воспользуйтесь кнопкой <strong>«Получить файлы»</strong>.</p>"},{"title":"🔔 Как работают уведомления?","html":"<p>Когда редактор оставляет комментарий, одобряет идею, возвращает задачу на доработку или подтверждает её готовность, вы получаете уведомление в Telegram.</p>\n<p>Когда вы отправляете новую версию или комментарий, редактор получает уведомление и может продолжить проверку.</p>"},{"title":"📚 Где найти требования и рекомендации?","html":"<p>Перед разработкой задачи обязательно откройте раздел <strong>«Файлы»</strong> рабочего пространства проекта.</p>\n<p>Изучите прикреплённые требования, макеты оформления и другие рекомендации. Также полезно ознакомиться с задачами прошлых лет.</p>\n<p><strong>Главное правило:</strong> следите за замечаниями редактора, соблюдайте сроки и отправляйте новые версии через название своей темы.</p>"}]};
+const PROJECT_HELP_EDITOR = {"intro":"<p><strong>Здесь вы управляете подготовкой задач: рассматриваете идеи авторов, назначаете задачи, оставляете рецензии и подтверждаете готовность работ.</strong></p>\n<p>Все основные действия выполняются в единой таблице «Список задач».</p>","sections":[{"title":"🎨 Что означают цвета строк?","html":"<p><span class=\"workspace-help-swatch workspace-help-swatch-blue\" aria-label=\"Голубой цвет\"></span> <strong>Светло-голубой — новая идея</strong></p>\n<p>Идея добавлена в проект, ещё не одобрена и пока не получила комментариев.</p>\n<p>Она требует первоначального рассмотрения.</p>\n<p>Голубым отмечаются также идеи, которые вы сами создали и назначили конкретным авторам.</p>\n<p>После первого комментария голубая подсветка исчезает.</p>\n<p><span class=\"workspace-help-swatch workspace-help-swatch-yellow\" aria-label=\"Жёлтый цвет\"></span> <strong>Светло-жёлтый — ожидается проверка редактора</strong></p>\n<p>Автор отправил комментарий или новую версию, которая ждёт вашего рассмотрения.</p>\n<p>Откройте тему, проверьте материалы и при необходимости оставьте замечания.</p>\n<p><span class=\"workspace-help-swatch workspace-help-swatch-green\" aria-label=\"Зелёный цвет\"></span> <strong>Светло-зелёный — задача готова</strong></p>\n<p>Вы установили галочку «Задача готова».</p>\n<p>Если готовность будет снята или поступит новая рабочая версия, зелёная подсветка исчезнет.</p>\n<p><span class=\"workspace-help-swatch workspace-help-swatch-normal\" aria-label=\"Обычный фон\"></span> <strong>Обычный фон — нет специального цветового статуса</strong></p>\n<p>Работа может ожидать действий автора или находиться на другом этапе. При необходимости откройте тему, чтобы посмотреть подробности.</p>"},{"title":"💡 Как добавить идею или назначить её автору?","html":"<p>Нажмите <strong>«Добавить идею для задачи»</strong> и заполните необходимые поля.</p>\n<p>Доступны три варианта:</p>\n<ul>\n<li><strong>«Идея будет реализована мной»</strong> — запись создаётся за вами.</li>\n<li><strong>«Доступна всем для реализации»</strong> — свободную идею может взять автор проекта.</li>\n<li><strong>«Добавить задачу конкретного автора»</strong> — выберите одного из авторов проекта. Идея сразу появится с его именем в столбце «Составитель».</li>\n</ul>\n<p>В третьем случае автор получает уведомление о назначении.</p>\n<p>Также идею можно взять из общего банка идей для задач, для этого нажмите на кнопку <strong>«Общий банк идей для задач»</strong> ниже таблицы, в раскрывающимся списке выберите <strong>«Взять задачу»</strong> и идея перейдёт в комплект.</p>"},{"title":"📝 Как проверить идею или задачу?","html":"<p>Нажмите на <strong>название темы</strong>.</p>\n<p>В открывшемся окне можно:</p>\n<ol>\n<li>Прочитать описание и посмотреть материалы.</li>\n<li>Написать комментарий с замечаниями.</li>\n<li>Прикрепить исправленный файл или свою версию задачи.</li>\n<li>Отправить материалы автору.</li>\n</ol>\n<p>Автор получит уведомление и сможет продолжить работу, а строка этой идеи перестанет быть жёлтой.</p>\n<p>После его ответа вы получите соответствующее уведомление и сможете снова открыть тему.</p>\n<p>Так продолжается работа до окончательного согласования.</p>"},{"title":"☑ «Идея одобрена» — первый этап","html":"<p>Если идея подходит для проекта, установите галочку <strong>«Идея одобрена»</strong>.</p>\n<p>После этого:</p>\n<ul>\n<li>идея переходит на стадию задачи;</li>\n<li>автор получает уведомление об одобрении;</li>\n<li>становится доступной галочка «Задача готова»;</li>\n<li>работа продолжается через то же название темы.</li>\n</ul>\n<p><strong>Если нужно отменить одобрение</strong>, снимите галочку.</p>\n<p>Все загруженные файлы сохранятся у идеи, но переписка стадии задачи будет удалена.</p>\n<p>Если задача уже готова, сначала необходимо снять галочку «Задача готова».</p>"},{"title":"✅ «Задача готова» — второй этап","html":"<p>Когда задача полностью проверена и соответствует требованиям, установите галочку <strong>«Задача готова»</strong>.</p>\n<p>Строка станет зелёной, а автор получит уведомление о готовности.</p>\n<p>Если обнаружились ошибки, снимите галочку. Задача вернётся автору в работу, и ему придёт уведомление.</p>"},{"title":"📁 Как пользоваться архивом?","html":"<p>Нажмите <strong>«Архив»</strong> напротив нужной работы.</p>\n<p>В архиве доступны история обсуждения идеи, комментарии по задаче, предыдущие отправки и прикреплённые рабочие файлы.</p>\n<p>Это помогает проследить, какие замечания уже были сделаны и какие изменения присылал автор.</p>"},{"title":"📊 Что такое «Таблица с распределением задач»?","html":"<p>Это отдельный раскрывающийся раздел, где одобренные задачи распределяются по позициям будущего комплекта.</p>\n<p>Чтобы заполнить свободную позицию:</p>\n<ol>\n<li>Нажмите <strong>«Выбрать задачу»</strong>.</li>\n<li>Выберите подходящую задачу из списка ещё не распределённых.</li>\n<li>Задача появится в выбранной строке.</li>\n</ol>\n<p><strong>Зелёным цветом в таблице распределения выделены готовые задачи.</strong></p>"},{"title":"🗂 Что делать с ненужными идеями?","html":"<p>Если идея не подходит для текущего проекта, её можно вернуть в <strong>«Общий банк идей для задач»</strong> с помощью крестика справа.</p>\n<p>В банке идея сохраняется для возможного использования в будущем.</p>\n<p>При возврате уже созданной задачи её файлы сохраняются, а статусы одобрения и готовности сбрасываются.</p>"},{"title":"🔔 Как работают уведомления?","html":"<p>Система автоматически сообщает:</p>\n<ul>\n<li>автору — о назначении идеи, замечаниях, одобрении и готовности задачи;</li>\n<li>редактору — о поступлении новых идей и новых материалов, ожидающих рассмотрения.</li>\n</ul>\n<p>Отправлять отдельные сообщения вручную обычно не требуется.</p>\n<p><strong>Главное правило:</strong> регулярно проверяйте новые и ожидающие рассмотрения работы, своевременно оставляйте замечания и отмечайте готовность только полностью проверенных задач.</p>"}]};
+function openProjectWorkspaceHelp(editorView) {
+    const help = editorView ? PROJECT_HELP_EDITOR : PROJECT_HELP_AUTHOR;
+    const title = editorView ? 'В помощь редактору' : 'В помощь автору';
+    const sections = help.sections.map((section, index) => `
+        <details class="workspace-help-item" ${index === 0 ? 'open' : ''}>
+            <summary>${escapeHtml(section.title)}</summary>
+            <div class="workspace-help-item-body">${section.html}</div>
+        </details>`).join('');
+    const html = `<div class="workspace-help-intro">
+        <button class="workspace-help-close" type="button" aria-label="Закрыть справку" onclick="closeWorkflowModal()">×</button>
+        ${help.intro}
+    </div><div class="workspace-help-accordion">${sections}</div>`;
+    showWorkflowModal(title, html, [{label:'Понятно',onClick:closeWorkflowModal}]);
+    const modalBody = document.getElementById('workflowModalBody');
+    const items = Array.from(modalBody.querySelectorAll('.workspace-help-item'));
+    items.forEach(item => item.addEventListener('toggle', () => {
+        if (item.open) items.forEach(other => { if (other !== item) other.open = false; });
+    }));
+}
+
 function renderIdeasSection(w){
     const approvedCount=(w.ideas||[]).filter(idea=>idea.approved).length;
     const readyCount=(w.progress&&w.progress.ready_tasks)||0;
@@ -3988,12 +4406,13 @@ function renderIdeasSection(w){
     const card=collapsibleSectionCard(`Список задач (одобрено ${approvedCount} ${ideaWord(approvedCount)}; готово ${readyCount} ${projectTaskWord(readyCount)})`,false,null,false);
     const deadline=document.createElement('div');deadline.className='project-deadline-line';deadline.innerHTML=`<strong>Срок подготовки прототипов задач:</strong> ${escapeHtml(w.prototypes_deadline||'')}`;card.appendChild(deadline);
     const add=document.createElement('button');add.className='soft-green-button';add.textContent='Добавить идею для задачи';add.onclick=openProjectIdeaForm;card.appendChild(add);
-    card.appendChild(renderInstructionBox('ideas',workspaceInstructionValue('ideas'),!!(w.instructions||{}).can_edit));
-    const taskInstruction=workspaceInstructionValue('tasks');
-    if (taskInstruction) {
-        const label=document.createElement('div');label.className='workspace-note';label.style.marginTop='12px';label.textContent='Рекомендации по работе с задачами:';card.appendChild(label);
-        card.appendChild(renderInstructionBox('tasks',taskInstruction,!!(w.instructions||{}).can_edit));
-    }
+    const helpButton=document.createElement('button');
+    const helpForEditor=!!(w.project.can_review || w.project.can_manage);
+    helpButton.type='button';
+    helpButton.className='workspace-help-button';
+    helpButton.innerHTML=`<span class="workspace-help-button-icon" aria-hidden="true">?</span><span>${helpForEditor ? 'В помощь редактору' : 'В помощь автору'}</span>`;
+    helpButton.onclick=()=>openProjectWorkspaceHelp(helpForEditor);
+    card.appendChild(helpButton);
     const table=document.createElement('div');table.innerHTML=renderProjectIdeasTable();card.appendChild(table);
     const global=document.createElement('details');global.style.marginTop='12px';const summary=document.createElement('summary');summary.className='collapse-button';summary.textContent='Общий банк идей для задач';global.appendChild(summary);
     const content=document.createElement('div');content.style.marginTop='10px';content.innerHTML='<div class="muted">Откройте раздел, чтобы загрузить идеи.</div>';let loaded=false;global.ontoggle=async()=>{if(global.open&&!loaded){loaded=true;await loadProjectGlobalIdeas(content);}};global.appendChild(content);card.appendChild(global);return card;
@@ -4021,6 +4440,7 @@ function renderProjectIdeasTable() {
     return `<div class="workflow-table-wrap"><table class="workflow-table unified-tasks-table"><colgroup><col><col><col><col><col><col><col><col><col></colgroup><thead><tr><th>№</th><th>Раздел</th><th>Класс</th><th>Тема</th><th>Составитель</th><th>Идея одобрена</th><th>Задача готова</th><th>Архив</th><th></th></tr></thead><tbody>${rows.map(({idea,task}, index) => {
         const current = task || idea;
         const ready = !!task?.is_ready;
+        const newIdea = canReview && !!idea && !idea.approved && !task && (idea.comments || []).length === 0;
         const yellow = (canReview && current.waiting_for === 'editor') || (!canReview && !!current.is_mine && current.waiting_for === 'author');
         const author = current.assignee ? personHtml(current.assignee)
             : (!ready && authorRole && ((idea && idea.is_open && !task) || (task && !task.assignee)) ? `<button class="table-action green" onclick="${idea && !task ? `takeProjectIdea(${idea.id})` : task ? `takeFreeTask(${task.id})` : 'void(0)'}">Взять</button>` : '—');
@@ -4031,11 +4451,12 @@ function renderProjectIdeasTable() {
         const taskReady = !task ? '—' : canReview
             ? `<input type="checkbox" ${ready ? 'checked' : ''} onchange="setTaskReady(${task.id},this.checked)">`
             : (ready ? '✓' : '—');
-        const archive = (!task || task.can_work)
+        const canViewArchive = canReview || (task ? task.can_work : !!idea?.is_mine);
+        const archive = canViewArchive
             ? `<button class="table-action" onclick="openUnifiedArchive(${idea ? idea.id : 'null'},${task ? task.id : 'null'})">Архив</button>`
-            : (idea ? `<button class="table-action" onclick="openUnifiedArchive(${idea.id},null)">Архив</button>` : '—');
+            : '—';
         const remove = canReview ? `<button class="danger-x" ${ready ? 'disabled title="Сначала снимите готовность задачи"' : 'title="Вернуть в общий банк идей"'} onclick="${idea ? `returnIdeaGlobal(${idea.id})` : `returnTaskToGlobalIdea(${task.id})`}">✕</button>` : '';
-        return `<tr class="${ready ? 'ready-row' : yellow ? 'needs-attention' : ''}"><td>${index+1}</td><td>${escapeHtml(current.section_short)}</td><td>${escapeHtml(current.proposed_class)}</td><td><button class="table-action" onclick="${topic}">${escapeHtml(current.topic)}</button></td><td>${author}</td><td>${approve}</td><td>${taskReady}</td><td>${archive}</td><td>${remove}</td></tr>`;
+        return `<tr class="${ready ? 'ready-row' : newIdea ? 'new-idea-row' : yellow ? 'needs-attention' : ''}"><td>${index+1}</td><td>${escapeHtml(current.section_short)}</td><td>${escapeHtml(current.proposed_class)}</td><td><button class="table-action" onclick="${topic}">${escapeHtml(current.topic)}</button></td><td>${author}</td><td>${approve}</td><td>${taskReady}</td><td>${archive}</td><td>${remove}</td></tr>`;
     }).join('')}</tbody></table></div>`;
 }
 
@@ -4085,7 +4506,8 @@ function openUnifiedTaskWorkspace(task, idea) {
 async function openUnifiedArchive(ideaId, taskId) {
     const idea = ideaId != null ? findIdea(ideaId) : null;
     const task = taskId != null ? findTask(taskId) : null;
-    if (task && !task.can_work && !idea) return;
+    if (!idea && !task) return;
+    if (!currentWorkspace?.project?.can_review && !(task ? task.can_work : idea?.is_mine)) return;
     try {
         const rows = task && task.can_work ? await api(`/api/tasks/${task.id}/archive`, {
             method:'POST', headers:{'Content-Type':'application/json'},
@@ -4171,6 +4593,11 @@ function openProjectIdeaDetail(id) {
     if (task) return openTaskTopic(task.id);
     const canReview = currentWorkspace.project.can_review;
     const canEdit = idea.is_mine || canReview;
+    if (!canEdit) {
+        const readOnly = `<div class="description-row"><strong>Раздел:</strong> ${escapeHtml(idea.section_label)}</div><div class="description-row"><strong>Класс:</strong> ${escapeHtml(idea.proposed_class)}</div><div class="description-row"><strong>Описание:</strong><br>${escapeHtml(idea.description).replace(/\n/g,'<br>')}</div><div class="description-row"><strong>Составитель:</strong> ${idea.assignee ? personHtml(idea.assignee) : '—'}</div>`;
+        showWorkflowModal(idea.topic, readOnly, [{label:'Закрыть',className:'button secondary',onClick:closeWorkflowModal}]);
+        return;
+    }
     const comments = (idea.comments || []).map(c=>`<div class="comment-item"><strong>${c.author ? escapeHtml(c.author.name) : 'Пользователь'}</strong><div>${escapeHtml(c.text).replace(/\n/g,'<br>')}</div><div class="message-time">${escapeHtml(c.created_at)}</div></div>`).join('') || '<div class="muted">Комментариев пока нет.</div>';
     const editable = canEdit ? `<div class="field"><label>Комментарий</label><textarea id="wfIdeaComment" class="big-textarea"></textarea></div><div class="field"><label>Прикрепить файл(ы)</label><input id="wfIdeaMoreFiles" type="file" multiple></div>` : '';
     const body = `<div class="description-row"><strong>Описание:</strong><br>${escapeHtml(idea.description).replace(/\n/g,'<br>')}</div><div class="description-row"><strong>Идея:</strong> ${personHtml(idea.creator)}</div>${ideaFilesHtml(idea)}<div class="comment-thread">${comments}</div>${editable}`;
@@ -4237,7 +4664,8 @@ async function setTaskReady(id,value){try{await api(`/api/tasks/${id}/ready`,{me
 function taskLayoutTableHtml(){
     const rows=currentWorkspace.layout||[];
     const canReview=currentWorkspace.project.can_review;
-    return `<div class="workflow-table-wrap"><table class="workflow-table"><thead><tr><th>№</th><th>Класс</th><th>Раздел</th><th>Тема</th><th>Составитель</th><th></th></tr></thead><tbody>${rows.map(slot=>{const task=slot.task;const topic=task?`<button class="table-action" onclick="${task.is_mine?`openTaskWork(${slot.task_id})`:'void(0)'}">${escapeHtml(task.topic)}</button>`:(canReview?`<button class="table-action green" onclick="chooseLayoutTask(${slot.id})">Выбрать задачу</button>`:'');return `<tr><td>${slot.position}</td><td>${escapeHtml(slot.class_label)}</td><td>${task?escapeHtml(task.section_short):''}</td><td>${topic}</td><td>${task&&task.assignee?personHtml(task.assignee):''}</td><td>${canReview&&slot.task_id?`<button class="danger-x" onclick="clearLayoutSlot(${slot.id})">✕</button>`:''}</td></tr>`;}).join('')}</tbody></table></div>`;
+    const readyTaskIds=new Set((currentWorkspace.tasks||[]).filter(task=>task.is_ready).map(task=>Number(task.id)));
+    return `<div class="workflow-table-wrap"><table class="workflow-table"><thead><tr><th>№</th><th>Класс</th><th>Раздел</th><th>Тема</th><th>Составитель</th><th></th></tr></thead><tbody>${rows.map(slot=>{const task=slot.task;const topic=task?`<button class="table-action" onclick="${task.is_mine?`openTaskWork(${slot.task_id})`:'void(0)'}">${escapeHtml(task.topic)}</button>`:(canReview?`<button class="table-action green" onclick="chooseLayoutTask(${slot.id})">Выбрать задачу</button>`:'');return `<tr class="${slot.task_id!=null&&readyTaskIds.has(Number(slot.task_id))?'ready-row':''}"><td>${slot.position}</td><td>${escapeHtml(slot.class_label)}</td><td>${task?escapeHtml(task.section_short):''}</td><td>${topic}</td><td>${task&&task.assignee?personHtml(task.assignee):''}</td><td>${canReview&&slot.task_id?`<button class="danger-x" onclick="clearLayoutSlot(${slot.id})">✕</button>`:''}</td></tr>`;}).join('')}</tbody></table></div>`;
 }
 function renderTaskLayoutSection(w){
     const card=collapsibleSectionCard('Таблица с распределением задач',false,null,false);
@@ -4246,7 +4674,14 @@ function renderTaskLayoutSection(w){
     card.appendChild(content);
     return card;
 }
-function chooseLayoutTask(slotId){const tasks=currentWorkspace.tasks||[];const html=tasks.length?tasks.map(t=>`<button class="button secondary" style="margin-bottom:7px" onclick="assignLayoutTask(${slotId},${t.id})">${escapeHtml(t.topic)} — ${t.assignee?escapeHtml(t.assignee.name):'без автора'}</button>`).join(''):'<div class="muted">Задач пока нет.</div>';showWorkflowModal('Выберите задачу',html,[{label:'Отмена',className:'button secondary',onClick:closeWorkflowModal}]);}
+function chooseLayoutTask(slotId){
+    const assignedTaskIds=new Set((currentWorkspace.layout||[])
+        .filter(slot=>slot.task_id!==null&&slot.task_id!==undefined)
+        .map(slot=>Number(slot.task_id)));
+    const tasks=(currentWorkspace.tasks||[]).filter(t=>!assignedTaskIds.has(Number(t.id)));
+    const html=tasks.length?tasks.map(t=>`<button class="button secondary" style="margin-bottom:7px" onclick="assignLayoutTask(${slotId},${t.id})">${escapeHtml(t.topic)} — ${t.assignee?escapeHtml(t.assignee.name):'без автора'}</button>`).join(''):'<div class="muted">Нет нераспределённых задач.</div>';
+    showWorkflowModal('Выберите задачу',html,[{label:'Отмена',className:'button secondary',onClick:closeWorkflowModal}]);
+}
 async function assignLayoutTask(slotId,taskId){try{await api(`/api/layout/${slotId}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData,task_id:taskId})});closeWorkflowModal();await refreshProjectWorkspace();}catch(e){demo(e.message);}}
 async function clearLayoutSlot(slotId){if(!confirm('Убрать задачу с этой позиции? Сама задача не удалится.'))return;try{await api(`/api/layout/${slotId}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData,task_id:null})});await refreshProjectWorkspace();}catch(e){demo(e.message);}}
 
@@ -4361,7 +4796,7 @@ async function refreshSurveyButtonState(){
     else if(d.has_pending){b.classList.remove('hidden');b.classList.add('survey-pending-pink');b.textContent='Новый опрос для Вас!';}
     else {b.classList.remove('survey-pending-pink');b.classList.add('hidden');}
 }
-function showOnlyPage(id){['mentorsPage','projectsPage','materialsPage','profilePage','projectCreatePage','ideaBankPage','projectWorkspacePage','notificationSettingsPage','surveysPage'].forEach(x=>document.getElementById(x)?.classList.add('hidden'));document.getElementById(id).classList.remove('hidden');window.scrollTo(0,0);}
+function showOnlyPage(id){['mentorsPage','projectsPage','materialsPage','profilePage','payoutPage','projectCreatePage','ideaBankPage','projectWorkspacePage','notificationSettingsPage','surveysPage'].forEach(x=>document.getElementById(x)?.classList.add('hidden'));document.getElementById(id).classList.remove('hidden');window.scrollTo(0,0);}
 function timeDigitsInput(el){let d=(el.value||'').replace(/\D/g,'').slice(0,4);if(d.length>2)d=d.slice(0,2)+':'+d.slice(2);el.value=d;}
 function notificationModeChanged(){const mode=document.querySelector('input[name="notify_delivery_mode"]:checked')?.value||'immediate';document.getElementById('notifyIntervalValue')?.classList.toggle('hidden',mode!=='interval');document.getElementById('notifyDailyValue')?.classList.toggle('hidden',mode!=='daily');}
 async function openNotificationSettings(){
