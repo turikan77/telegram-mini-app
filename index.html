@@ -169,6 +169,20 @@
         .admin-role-label { font-weight: 700; }
         .admin-role-description { margin-top: 3px; font-size: 12px; color: var(--tg-theme-hint-color, #777); line-height: 1.35; }
         .participant-empty { text-align:center; padding:18px 8px; color:var(--tg-theme-hint-color,#777); }
+        /* HOTFIX 15.51: компактный профиль и существующие формы в отдельных окнах. */
+        .profile-card-heading { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; }
+        .profile-card-heading .section-title { margin:0; }
+        .profile-edit-pencil { flex:0 0 auto; display:inline-flex; justify-content:center; align-items:center; width:36px; height:36px; border:1px solid #b3dfbe; border-radius:10px; background:#e0f4e5; color:#247a40; cursor:pointer; font-size:19px; line-height:1; }
+        .profile-edit-pencil:active { background:#c9ecd4; }
+        .profile-personal-field { margin:11px 0; line-height:1.4; }
+        .profile-personal-label { font-weight:700; margin-bottom:3px; }
+        .profile-personal-value { white-space:pre-line; overflow-wrap:anywhere; }
+        .modal-backdrop.profile-edit-modal-backdrop { z-index:190; }
+        .profile-edit-modal-header { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:14px; }
+        .profile-edit-modal-header .modal-title { margin:0; }
+        .profile-edit-modal-close { flex:0 0 auto; background:rgba(120,120,120,.12); border:0; border-radius:9px; font-size:22px; line-height:1; width:36px; height:36px; cursor:pointer; color:var(--tg-theme-text-color,#111); }
+        #profileEditModalContent > .card { box-shadow:none; border:1px solid rgba(120,120,120,.15); }
+
         .modal-backdrop {
             position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,.45);
             display: flex; align-items: flex-end; justify-content: center;
@@ -754,9 +768,32 @@
 
 
         <div class="card" style="margin-top:20px">
-            <div class="section-title" style="margin-top:0">Олимпиадные достижения:</div>
+            <div class="profile-card-heading">
+                <div class="section-title">Олимпиадные достижения:</div>
+                <button id="profileEditAchievementsButton" type="button" class="profile-edit-pencil hidden" aria-label="Редактировать олимпиадные достижения" title="Редактировать олимпиадные достижения" onclick="openProfileEditModal('achievements')">✎</button>
+            </div>
             <div id="profileAchievements" class="achievement-public"></div>
             <div id="profileAchievementsEmpty" class="muted">Пока ничего не добавлено.</div>
+        </div>
+
+        <div class="card">
+            <div class="profile-card-heading">
+                <div class="section-title">Участие в проектах:</div>
+                <button id="profileEditProjectsButton" type="button" class="profile-edit-pencil hidden" aria-label="Редактировать участие в проектах" title="Редактировать участие в проектах" onclick="openProfileEditModal('projects')">✎</button>
+            </div>
+            <div id="profileProjectParticipations"></div>
+            <div id="profileProjectParticipationsEmpty" class="muted">Пока ничего не добавлено.</div>
+        </div>
+
+        <div class="card">
+            <div class="profile-card-heading">
+                <div class="section-title">Личные данные</div>
+                <button id="profileEditPersonalButton" type="button" class="profile-edit-pencil hidden" aria-label="Редактировать личные данные" title="Редактировать личные данные" onclick="openProfileEditModal('personal')">✎</button>
+            </div>
+            <div class="profile-personal-field"><div class="profile-personal-label">Дата рождения:</div><div id="profilePersonalBirth" class="profile-personal-value"></div></div>
+            <div class="profile-personal-field"><div class="profile-personal-label">Город вашего проживания:</div><div id="profilePersonalCity" class="profile-personal-value"></div></div>
+            <div class="profile-personal-field"><div class="profile-personal-label">ВУЗ(-ы):</div><div id="profilePersonalUniversities" class="profile-personal-value"></div></div>
+            <div class="profile-personal-field"><div class="profile-personal-label">Школа(-ы):</div><div id="profilePersonalSchools" class="profile-personal-value"></div></div>
         </div>
 
         <div id="profilePayoutBlock" class="card hidden">
@@ -773,11 +810,16 @@
             </div>
         </div>
 
-        <div class="card">
-            <div class="section-title" style="margin-top:0">Участие в проектах:</div>
-            <div id="profileProjectParticipations"></div>
-            <div id="profileProjectParticipationsEmpty" class="muted">Пока ничего не добавлено.</div>
-        </div>
+            <div id="adminRolesBlock" class="card hidden">
+                <div class="section-title" style="margin-top:0">Роли — только администратор</div>
+                <div class="achievement-note" style="margin-bottom:10px">
+                    Автор, редактор, тестировщик и преподаватель здесь означают потенциальные роли.
+                    Они дают право откликаться на соответствующую роль внутри конкретного проекта.
+                </div>
+                <div id="adminRolesList" class="admin-role-list"></div>
+                <button class="button secondary" onclick="saveAdminRoles()">Сохранить роли</button>
+                <div id="adminRolesError" class="error"></div>
+            </div>
 
         <div id="myEditBlock" class="hidden" style="margin-top:22px">
             <div id="selfPersonalDataBlock" class="card">
@@ -846,16 +888,6 @@
                 </div>
             </div>
 
-            <div id="adminRolesBlock" class="card hidden">
-                <div class="section-title" style="margin-top:0">Роли — только администратор</div>
-                <div class="achievement-note" style="margin-bottom:10px">
-                    Автор, редактор, тестировщик и преподаватель здесь означают потенциальные роли.
-                    Они дают право откликаться на соответствующую роль внутри конкретного проекта.
-                </div>
-                <div id="adminRolesList" class="admin-role-list"></div>
-                <button class="button secondary" onclick="saveAdminRoles()">Сохранить роли</button>
-                <div id="adminRolesError" class="error"></div>
-            </div>
         </div>
     </section>
 
@@ -864,6 +896,17 @@
         <button id="navProjects" class="nav-button active" onclick="switchTab('projects')"><span class="nav-icon">📋</span>Проекты</button>
         <button id="navMaterials" class="nav-button" onclick="switchTab('materials')"><span class="nav-icon">📁</span>Материалы</button>
     </nav>
+</div>
+
+<div id="profileEditModalBackdrop" class="modal-backdrop profile-edit-modal-backdrop hidden" onclick="profileEditModalBackdropClick(event)">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="profileEditModalTitle" onclick="event.stopPropagation()">
+        <div class="profile-edit-modal-header">
+            <div id="profileEditModalTitle" class="modal-title"></div>
+            <button class="profile-edit-modal-close" type="button" aria-label="Закрыть окно редактирования" onclick="closeProfileEditModal()">×</button>
+        </div>
+        <div id="profileEditModalContent"></div>
+        <button class="button secondary" type="button" onclick="closeProfileEditModal()">Закрыть</button>
+    </div>
 </div>
 
 <div id="educationModalBackdrop" class="modal-backdrop hidden" onclick="educationBackdropClick(event)">
@@ -1488,6 +1531,63 @@ function renderPublicProjectParticipations(items) {
     });
 }
 
+
+// HOTFIX 15.51: переносим существующие редакторы в окно, не копируя формы и не меняя их API.
+let profileEditModalActive = null;
+let profileEditModalReturnScrollY = 0;
+const profileEditPanelIds = {
+    achievements:['selfAchievementEditBlock'],
+    projects:['adminProjectParticipationBlock'],
+    personal:['selfPersonalDataBlock','selfEducationEditBlock']
+};
+function renderProfilePersonalSummary(p) {
+    document.getElementById('profilePersonalBirth').textContent = p.birth || 'Не указано';
+    document.getElementById('profilePersonalCity').textContent = p.residence_city || 'Не указано';
+    const entries = currentEducation || [];
+    [['university','profilePersonalUniversities'],['school','profilePersonalSchools']].forEach(([type,id]) => {
+        const box = document.getElementById(id);
+        box.replaceChildren();
+        const values = entries.filter(e => e.education_type === type).map(e => e.display_text).filter(Boolean);
+        if (!values.length) { box.textContent = 'Не указано'; return; }
+        values.forEach(value => { const row = document.createElement('div'); row.textContent = value; box.appendChild(row); });
+    });
+}
+function openProfileEditModal(kind) {
+    const isOwner = !!(currentUser && currentProfileTelegramId === currentUser.telegram_id);
+    const isAdmin = !!(currentUser && currentUser.is_admin);
+    if (!document.getElementById('profilePage').classList.contains('hidden') &&
+        ((kind === 'projects' && isAdmin) ||
+         (kind === 'achievements' && (isOwner || isAdmin)) ||
+         (kind === 'personal' && (isOwner || isAdmin)))) {
+        if (profileEditModalActive) closeProfileEditModal();
+        profileEditModalReturnScrollY = window.scrollY;
+        profileEditModalActive = kind;
+        const body = document.getElementById('profileEditModalContent');
+        body.replaceChildren();
+        (profileEditPanelIds[kind] || []).forEach(id => {
+            const panel = document.getElementById(id);
+            if (panel && !panel.classList.contains('hidden')) body.appendChild(panel);
+        });
+        const titles = {achievements:'Редактирование олимпиадных достижений',projects:'Управление участием в проектах',personal:'Редактирование личных данных'};
+        document.getElementById('profileEditModalTitle').textContent = titles[kind];
+        document.getElementById('profileEditModalBackdrop').classList.remove('hidden');
+    }
+}
+function closeProfileEditModal() {
+    document.getElementById('profileEditModalBackdrop').classList.add('hidden');
+    const repository = document.getElementById('myEditBlock');
+    const body = document.getElementById('profileEditModalContent');
+    ['selfPersonalDataBlock','selfEducationEditBlock','selfAchievementEditBlock','adminProjectParticipationBlock'].forEach(id => {
+        const panel = document.getElementById(id);
+        if (panel && panel.parentElement === body) repository.appendChild(panel);
+    });
+    profileEditModalActive = null;
+    window.scrollTo(0, profileEditModalReturnScrollY);
+}
+function profileEditModalBackdropClick(event) {
+    if (event.target.id === 'profileEditModalBackdrop') closeProfileEditModal();
+}
+
 function openProfile(p) {
     // Не перезаписываем точку возврата при обновлении уже открытого профиля.
     if (document.getElementById('profilePage').classList.contains('hidden')) {
@@ -1528,6 +1628,11 @@ function openProfile(p) {
     renderPublicEducation(p.education || []);
     renderPublicAchievements(p.achievements || []);
     renderPublicProjectParticipations(p.projects || []);
+    renderProfilePersonalSummary(p);
+    const canEditAsAdmin = !!currentUser.is_admin;
+    document.getElementById('profileEditAchievementsButton').classList.toggle('hidden', !(p.isMe || canEditAsAdmin));
+    document.getElementById('profileEditProjectsButton').classList.toggle('hidden', !canEditAsAdmin);
+    document.getElementById('profileEditPersonalButton').classList.toggle('hidden', !(p.isMe || canEditAsAdmin));
     const payoutAllowed = !!(p.isMe || currentUser.is_admin);
     document.getElementById('profilePayoutBlock').classList.toggle('hidden', !payoutAllowed);
     document.getElementById('profilePayoutContents').innerHTML = '<span class="muted">Загрузка данных...</span>';
@@ -1538,7 +1643,7 @@ function openProfile(p) {
     if (p.isMe && currentUser.is_admin) loadOrgPayoutDocument();
 
     const canAdminManage = !!currentUser.is_admin;
-    document.getElementById('myEditBlock').classList.toggle('hidden', !(p.isMe || canAdminManage));
+    document.getElementById('myEditBlock').classList.add('hidden'); // Формы доступны только через карандаши.
     document.getElementById('selfPersonalDataBlock').classList.toggle('hidden', !(p.isMe || canAdminManage));
     document.getElementById('selfBirthEditBlock').classList.toggle('hidden', !p.isMe);
     document.getElementById('selfEducationEditBlock').classList.toggle('hidden', !p.isMe);
@@ -1565,7 +1670,7 @@ function openProfile(p) {
             document.getElementById('adminRolesError').innerText = e.message;
         });
     }
-    window.scrollTo(0,0);
+    window.scrollTo(0, profileEditModalActive ? profileEditModalReturnScrollY : 0);
 }
 
 
@@ -1856,6 +1961,7 @@ function openPayoutGuide(method=null, step=null) {
 }
 
 function closeProfile() {
+    if (profileEditModalActive) closeProfileEditModal();
     const origin = profileReturnState;
     profileReturnState = null;
     if (origin && (origin.pageId !== 'projectWorkspacePage' || currentWorkspaceProjectId === origin.projectId)) {
@@ -4429,8 +4535,8 @@ async function saveWorkspaceInstruction(section){try{await api(`/api/projects/${
 
 
 // HOTFIX 15.41: статические справки, текст одобрен пользователем.
-const PROJECT_HELP_AUTHOR = {"intro":"<p><strong>Здесь вы можете предложить идею, разработать задачу и отправить её редактору на проверку.</strong></p>\n<p>Все этапы работы проходят в одном разделе — «Список задач».</p>","sections":[{"title":"🎨 Что означают цвета строк?","html":"<p><span class=\"workspace-help-swatch workspace-help-swatch-yellow\" aria-label=\"Жёлтый цвет\"></span> <strong>Светло-жёлтый — ждём ваших действий</strong></p>\n<p>Редактор оставил замечания или вернул задачу на доработку. Нажмите на название темы, прочитайте комментарий и внесите необходимые изменения.</p>\n<p><span class=\"workspace-help-swatch workspace-help-swatch-green\" aria-label=\"Зелёный цвет\"></span> <strong>Светло-зелёный — задача готова</strong></p>\n<p>Редактор подтвердил готовность задачи. Дополнительные действия не требуются, если не появятся новые замечания.</p>\n<p><span class=\"workspace-help-swatch workspace-help-swatch-normal\" aria-label=\"Обычный фон\"></span> <strong>Обычный фон — работа в обычном режиме</strong></p>\n<p>Строка не требует срочных действий по цветовому статусу. Проверяйте комментарии и уведомления о новых изменениях.</p>"},{"title":"💡 Как добавить идею?","html":"<ol>\n<li>Нажмите <strong>«Добавить идею для задачи»</strong>.</li>\n<li>Укажите тему, раздел химии, класс и подробное описание.</li>\n<li>При необходимости прикрепите файлы.</li>\n<li>Выберите, будете ли вы реализовывать идею самостоятельно или она будет доступна другим авторам.</li>\n<li>Нажмите <strong>«Добавить»</strong>.</li>\n</ol>\n<p>Идея появится в общей таблице и будет доступна редактору для рассмотрения.</p>\n<p><strong>Важно:</strong> перед добавлением изучите уже предложенные идеи и задачи прошлых лет, чтобы избежать повторений.</p>"},{"title":"📝 Что происходит при нажатии на тему?","html":"<p>Название темы — основная кнопка для работы над идеей или задачей.</p>\n<p>Нажав на свою тему, вы сможете:</p>\n<ul>\n<li>прочитать описание;</li>\n<li>посмотреть замечания редактора;</li>\n<li>написать ответный комментарий;</li>\n<li>прикрепить новую версию задачи;</li>\n<li>получить доступные файлы;</li>\n<li>при необходимости изменить описание.</li>\n</ul>\n<p>После внесения изменений нажмите <strong>«Отправить»</strong>.</p>\n<p>Редактор получит уведомление о вашей работе.</p>"},{"title":"☑ Что означают две галочки?","html":"<p><strong>«Идея одобрена»</strong> — редактор принял вашу идею, и теперь она перешла на этап разработки задачи.</p>\n<p><strong>«Задача готова»</strong> — редактор подтвердил, что задача полностью готова.</p>"},{"title":"📁 Что такое «Архив»?","html":"<p>Архив — история работы над вашей идеей и задачей.</p>\n<p>Здесь можно посмотреть предыдущие комментарии, рецензии и версии файлов.</p>\n<p>Чтобы получить нужные файлы, воспользуйтесь кнопкой <strong>«Получить файлы»</strong>.</p>"},{"title":"🔔 Как работают уведомления?","html":"<p>Когда редактор оставляет комментарий, одобряет идею, возвращает задачу на доработку или подтверждает её готовность, вы получаете уведомление в Telegram.</p>\n<p>Когда вы отправляете новую версию или комментарий, редактор получает уведомление и может продолжить проверку.</p>"},{"title":"📚 Где найти требования и рекомендации?","html":"<p>Перед разработкой задачи обязательно откройте раздел <strong>«Файлы»</strong> рабочего пространства проекта.</p>\n<p>Изучите прикреплённые требования, макеты оформления и другие рекомендации. Также полезно ознакомиться с задачами прошлых лет.</p>\n<p><strong>Главное правило:</strong> следите за замечаниями редактора, соблюдайте сроки и отправляйте новые версии через название своей темы.</p>"}]};
-const PROJECT_HELP_EDITOR = {"intro":"<p><strong>Здесь вы управляете подготовкой задач: рассматриваете идеи авторов, назначаете задачи, оставляете рецензии и подтверждаете готовность работ.</strong></p>\n<p>Все основные действия выполняются в единой таблице «Список задач».</p>","sections":[{"title":"🎨 Что означают цвета строк?","html":"<p><span class=\"workspace-help-swatch workspace-help-swatch-blue\" aria-label=\"Голубой цвет\"></span> <strong>Светло-голубой — новая идея</strong></p>\n<p>Идея добавлена в проект, ещё не одобрена и пока не получила комментариев.</p>\n<p>Она требует первоначального рассмотрения.</p>\n<p>Голубым отмечаются также идеи, которые вы сами создали и назначили конкретным авторам.</p>\n<p>После первого комментария голубая подсветка исчезает.</p>\n<p><span class=\"workspace-help-swatch workspace-help-swatch-yellow\" aria-label=\"Жёлтый цвет\"></span> <strong>Светло-жёлтый — ожидается проверка редактора</strong></p>\n<p>Автор отправил комментарий или новую версию, которая ждёт вашего рассмотрения.</p>\n<p>Откройте тему, проверьте материалы и при необходимости оставьте замечания.</p>\n<p><span class=\"workspace-help-swatch workspace-help-swatch-green\" aria-label=\"Зелёный цвет\"></span> <strong>Светло-зелёный — задача готова</strong></p>\n<p>Вы установили галочку «Задача готова».</p>\n<p>Если готовность будет снята или поступит новая рабочая версия, зелёная подсветка исчезнет.</p>\n<p><span class=\"workspace-help-swatch workspace-help-swatch-normal\" aria-label=\"Обычный фон\"></span> <strong>Обычный фон — нет специального цветового статуса</strong></p>\n<p>Работа может ожидать действий автора или находиться на другом этапе. При необходимости откройте тему, чтобы посмотреть подробности.</p>"},{"title":"💡 Как добавить идею или назначить её автору?","html":"<p>Нажмите <strong>«Добавить идею для задачи»</strong> и заполните необходимые поля.</p>\n<p>Доступны три варианта:</p>\n<ul>\n<li><strong>«Идея будет реализована мной»</strong> — запись создаётся за вами.</li>\n<li><strong>«Доступна всем для реализации»</strong> — свободную идею может взять автор проекта.</li>\n<li><strong>«Добавить задачу конкретного автора»</strong> — выберите одного из авторов проекта. Идея сразу появится с его именем в столбце «Составитель».</li>\n</ul>\n<p>В третьем случае автор получает уведомление о назначении.</p>\n<p>Также идею можно взять из общего банка идей для задач, для этого нажмите на кнопку <strong>«Общий банк идей для задач»</strong> ниже таблицы, в раскрывающимся списке выберите <strong>«Взять задачу»</strong> и идея перейдёт в комплект.</p>"},{"title":"📝 Как проверить идею или задачу?","html":"<p>Нажмите на <strong>название темы</strong>.</p>\n<p>В открывшемся окне можно:</p>\n<ol>\n<li>Прочитать описание и посмотреть материалы.</li>\n<li>Написать комментарий с замечаниями.</li>\n<li>Прикрепить исправленный файл или свою версию задачи.</li>\n<li>Отправить материалы автору.</li>\n</ol>\n<p>Автор получит уведомление и сможет продолжить работу, а строка этой идеи перестанет быть жёлтой.</p>\n<p>После его ответа вы получите соответствующее уведомление и сможете снова открыть тему.</p>\n<p>Так продолжается работа до окончательного согласования.</p>"},{"title":"☑ «Идея одобрена» — первый этап","html":"<p>Если идея подходит для проекта, установите галочку <strong>«Идея одобрена»</strong>.</p>\n<p>После этого:</p>\n<ul>\n<li>идея переходит на стадию задачи;</li>\n<li>автор получает уведомление об одобрении;</li>\n<li>становится доступной галочка «Задача готова»;</li>\n<li>работа продолжается через то же название темы.</li>\n</ul>\n<p><strong>Если нужно отменить одобрение</strong>, снимите галочку.</p>\n<p>Все загруженные файлы сохранятся у идеи, но переписка стадии задачи будет удалена.</p>\n<p>Если задача уже готова, сначала необходимо снять галочку «Задача готова».</p>"},{"title":"✅ «Задача готова» — второй этап","html":"<p>Когда задача полностью проверена и соответствует требованиям, установите галочку <strong>«Задача готова»</strong>.</p>\n<p>Строка станет зелёной, а автор получит уведомление о готовности.</p>\n<p>Если обнаружились ошибки, снимите галочку. Задача вернётся автору в работу, и ему придёт уведомление.</p>"},{"title":"📁 Как пользоваться архивом?","html":"<p>Нажмите <strong>«Архив»</strong> напротив нужной работы.</p>\n<p>В архиве доступны история обсуждения идеи, комментарии по задаче, предыдущие отправки и прикреплённые рабочие файлы.</p>\n<p>Это помогает проследить, какие замечания уже были сделаны и какие изменения присылал автор.</p>"},{"title":"📊 Что такое «Таблица с распределением задач»?","html":"<p>Это отдельный раскрывающийся раздел, где одобренные задачи распределяются по позициям будущего комплекта.</p>\n<p>Чтобы заполнить свободную позицию:</p>\n<ol>\n<li>Нажмите <strong>«Выбрать задачу»</strong>.</li>\n<li>Выберите подходящую задачу из списка ещё не распределённых.</li>\n<li>Задача появится в выбранной строке.</li>\n</ol>\n<p><strong>Зелёным цветом в таблице распределения выделены готовые задачи.</strong></p>"},{"title":"🗂 Что делать с ненужными идеями?","html":"<p>Если идея не подходит для текущего проекта, её можно вернуть в <strong>«Общий банк идей для задач»</strong> с помощью крестика справа.</p>\n<p>В банке идея сохраняется для возможного использования в будущем.</p>\n<p>При возврате уже созданной задачи её файлы сохраняются, а статусы одобрения и готовности сбрасываются.</p>"},{"title":"🔔 Как работают уведомления?","html":"<p>Система автоматически сообщает:</p>\n<ul>\n<li>автору — о назначении идеи, замечаниях, одобрении и готовности задачи;</li>\n<li>редактору — о поступлении новых идей и новых материалов, ожидающих рассмотрения.</li>\n</ul>\n<p>Отправлять отдельные сообщения вручную обычно не требуется.</p>\n<p><strong>Главное правило:</strong> регулярно проверяйте новые и ожидающие рассмотрения работы, своевременно оставляйте замечания и отмечайте готовность только полностью проверенных задач.</p>"}]};
+const PROJECT_HELP_AUTHOR = {"intro":"<p><strong>Здесь вы можете предложить идею, разработать задачу и отправить её редактору на проверку.</strong></p>\n<p>Все этапы работы проходят в одном разделе — «Список задач».</p>","sections":[{"title":"🎨 Что означают цвета строк?","html":"<p><span class=\"workspace-help-swatch workspace-help-swatch-yellow\" aria-label=\"Жёлтый цвет\"></span> <strong>Светло-жёлтый — ждём ваших действий</strong></p>\n<p>Редактор оставил замечания или вернул задачу на доработку. Нажмите на название темы, прочитайте комментарий и внесите необходимые изменения.</p>\n<p><span class=\"workspace-help-swatch workspace-help-swatch-green\" aria-label=\"Зелёный цвет\"></span> <strong>Светло-зелёный — задача готова</strong></p>\n<p>Редактор подтвердил готовность задачи. Дополнительные действия не требуются, если не появятся новые замечания.</p>\n<p><span class=\"workspace-help-swatch workspace-help-swatch-normal\" aria-label=\"Обычный фон\"></span> <strong>Обычный фон — работа в обычном режиме</strong></p>\n<p>Строка не требует срочных действий по цветовому статусу. Проверяйте комментарии и уведомления о новых изменениях.</p>"},{"title":"💡 Как добавить идею?","html":"<ol>\n<li>Нажмите <strong>«Добавить идею для задачи»</strong>.</li>\n<li>Укажите тему, раздел химии, класс и подробное описание.</li>\n<li>При необходимости прикрепите файлы.</li>\n<li>Выберите, будете ли вы реализовывать идею самостоятельно или она будет доступна другим авторам.</li>\n<li>Нажмите <strong>«Добавить»</strong>.</li>\n</ol>\n<p>Идея появится в общей таблице и будет доступна редактору для рассмотрения.</p>\n<p><strong>Важно:</strong> перед добавлением изучите уже предложенные идеи и задачи прошлых лет, чтобы избежать повторений.</p>"},{"title":"📝 Что происходит при нажатии на тему?","html":"<p>Название темы — основная кнопка для работы над идеей или задачей.</p>\n<p>Нажав на свою тему, вы сможете:</p>\n<ul>\n<li>прочитать описание;</li>\n<li>посмотреть замечания редактора;</li>\n<li>написать ответный комментарий;</li>\n<li>прикрепить новую версию задачи;</li>\n<li>получить доступные файлы;</li>\n<li>при необходимости изменить описание.</li>\n</ul>\n<p>После внесения изменений нажмите <strong>«Отправить»</strong>.</p>\n<p>Редактор получит уведомление о вашей работе.</p>"},{"title":"☑ Что означают две галочки?","html":"<p><strong>«Идея одобрена»</strong> — редактор принял вашу идею, и теперь она перешла на этап разработки задачи.</p>\n<p><strong>«Задача готова»</strong> — редактор подтвердил, что задача полностью готова.</p>"},{"title":"🔔 Как работают уведомления?","html":"<p>Когда редактор оставляет комментарий, одобряет идею, возвращает задачу на доработку или подтверждает её готовность, вы получаете уведомление в Telegram.</p>\n<p>Когда вы отправляете новую версию или комментарий, редактор получает уведомление и может продолжить проверку.</p>"},{"title":"📚 Где найти требования и рекомендации?","html":"<p>Перед разработкой задачи обязательно откройте раздел <strong>«Файлы»</strong> рабочего пространства проекта.</p>\n<p>Изучите прикреплённые требования, макеты оформления и другие рекомендации. Также полезно ознакомиться с задачами прошлых лет.</p>\n<p><strong>Главное правило:</strong> следите за замечаниями редактора, соблюдайте сроки и отправляйте новые версии через название своей темы.</p>"}]};
+const PROJECT_HELP_EDITOR = {"intro":"<p><strong>Здесь вы управляете подготовкой задач: рассматриваете идеи авторов, назначаете задачи, оставляете рецензии и подтверждаете готовность работ.</strong></p>\n<p>Все основные действия выполняются в единой таблице «Список задач».</p>","sections":[{"title":"🎨 Что означают цвета строк?","html":"<p><span class=\"workspace-help-swatch workspace-help-swatch-blue\" aria-label=\"Голубой цвет\"></span> <strong>Светло-голубой — новая идея</strong></p>\n<p>Идея добавлена в проект, ещё не одобрена и пока не получила комментариев.</p>\n<p>Она требует первоначального рассмотрения.</p>\n<p>Голубым отмечаются также идеи, которые вы сами создали и назначили конкретным авторам.</p>\n<p>После первого комментария голубая подсветка исчезает.</p>\n<p><span class=\"workspace-help-swatch workspace-help-swatch-yellow\" aria-label=\"Жёлтый цвет\"></span> <strong>Светло-жёлтый — ожидается проверка редактора</strong></p>\n<p>Автор отправил комментарий или новую версию, которая ждёт вашего рассмотрения.</p>\n<p>Откройте тему, проверьте материалы и при необходимости оставьте замечания.</p>\n<p><span class=\"workspace-help-swatch workspace-help-swatch-green\" aria-label=\"Зелёный цвет\"></span> <strong>Светло-зелёный — задача готова</strong></p>\n<p>Вы установили галочку «Задача готова».</p>\n<p>Если готовность будет снята или поступит новая рабочая версия, зелёная подсветка исчезнет.</p>\n<p><span class=\"workspace-help-swatch workspace-help-swatch-normal\" aria-label=\"Обычный фон\"></span> <strong>Обычный фон — нет специального цветового статуса</strong></p>\n<p>Работа может ожидать действий автора или находиться на другом этапе. При необходимости откройте тему, чтобы посмотреть подробности.</p>"},{"title":"💡 Как добавить идею или назначить её автору?","html":"<p>Нажмите <strong>«Добавить идею для задачи»</strong> и заполните необходимые поля.</p>\n<p>Доступны три варианта:</p>\n<ul>\n<li><strong>«Идея будет реализована мной»</strong> — запись создаётся за вами.</li>\n<li><strong>«Доступна всем для реализации»</strong> — свободную идею может взять автор проекта.</li>\n<li><strong>«Добавить задачу конкретного автора»</strong> — выберите одного из авторов проекта. Идея сразу появится с его именем в столбце «Составитель».</li>\n</ul>\n<p>В третьем случае автор получает уведомление о назначении.</p>\n<p>Также идею можно взять из общего банка идей для задач, для этого нажмите на кнопку <strong>«Общий банк идей для задач»</strong> ниже таблицы, в раскрывающимся списке выберите <strong>«Взять задачу»</strong> и идея перейдёт в комплект.</p>"},{"title":"📝 Как проверить идею или задачу?","html":"<p>Нажмите на <strong>название темы</strong>.</p>\n<p>В открывшемся окне можно:</p>\n<ol>\n<li>Прочитать описание и посмотреть материалы.</li>\n<li>Написать комментарий с замечаниями.</li>\n<li>Прикрепить исправленный файл или свою версию задачи.</li>\n<li>Отправить материалы автору.</li>\n</ol>\n<p>Автор получит уведомление и сможет продолжить работу, а строка этой идеи перестанет быть жёлтой.</p>\n<p>После его ответа вы получите соответствующее уведомление и сможете снова открыть тему.</p>\n<p>Так продолжается работа до окончательного согласования.</p>"},{"title":"☑ «Идея одобрена» — первый этап","html":"<p>Если идея подходит для проекта, установите галочку <strong>«Идея одобрена»</strong>.</p>\n<p>После этого:</p>\n<ul>\n<li>идея переходит на стадию задачи;</li>\n<li>автор получает уведомление об одобрении;</li>\n<li>становится доступной галочка «Задача готова»;</li>\n<li>работа продолжается через то же название темы.</li>\n</ul>\n<p><strong>Если нужно отменить одобрение</strong>, снимите галочку.</p>\n<p>Все загруженные файлы сохранятся у идеи, но переписка стадии задачи будет удалена.</p>\n<p>Если задача уже готова, сначала необходимо снять галочку «Задача готова».</p>"},{"title":"✅ «Задача готова» — второй этап","html":"<p>Когда задача полностью проверена и соответствует требованиям, установите галочку <strong>«Задача готова»</strong>.</p>\n<p>Строка станет зелёной, а автор получит уведомление о готовности.</p>\n<p>Если обнаружились ошибки, снимите галочку. Задача вернётся автору в работу, и ему придёт уведомление.</p>"},{"title":"📊 Что такое «Таблица с распределением задач»?","html":"<p>Это отдельный раскрывающийся раздел, где одобренные задачи распределяются по позициям будущего комплекта.</p>\n<p>Чтобы заполнить свободную позицию:</p>\n<ol>\n<li>Нажмите <strong>«Выбрать задачу»</strong>.</li>\n<li>Выберите подходящую задачу из списка ещё не распределённых.</li>\n<li>Задача появится в выбранной строке.</li>\n</ol>\n<p><strong>Зелёным цветом в таблице распределения выделены готовые задачи.</strong></p>"},{"title":"🗂 Что делать с ненужными идеями?","html":"<p>Если идея не подходит для текущего проекта, её можно вернуть в <strong>«Общий банк идей для задач»</strong> с помощью крестика справа.</p>\n<p>В банке идея сохраняется для возможного использования в будущем.</p>\n<p>При возврате уже созданной задачи её файлы сохраняются, а статусы одобрения и готовности сбрасываются.</p>"},{"title":"🔔 Как работают уведомления?","html":"<p>Система автоматически сообщает:</p>\n<ul>\n<li>автору — о назначении идеи, замечаниях, одобрении и готовности задачи;</li>\n<li>редактору — о поступлении новых идей и новых материалов, ожидающих рассмотрения.</li>\n</ul>\n<p>Отправлять отдельные сообщения вручную обычно не требуется.</p>\n<p><strong>Главное правило:</strong> регулярно проверяйте новые и ожидающие рассмотрения работы, своевременно оставляйте замечания и отмечайте готовность только полностью проверенных задач.</p>"}]};
 function openProjectWorkspaceHelp(editorView) {
     const help = editorView ? PROJECT_HELP_EDITOR : PROJECT_HELP_AUTHOR;
     const title = editorView ? 'В помощь редактору' : 'В помощь автору';
