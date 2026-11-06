@@ -286,6 +286,16 @@
         .priority-move { width:34px; height:32px; border:1px solid #d8dde5; background:#fff; border-radius:8px; cursor:pointer; font-size:17px; }
         .priority-move:disabled { opacity:.3; cursor:default; }
         .description-row { margin:7px 0; line-height:1.45; }
+        /* HOTFIX 15.45: обсуждение идеи и задачи в одном окне. */
+        .discussion-section { margin:12px 0; }
+        .discussion-section-title { display:block; margin-bottom:7px; }
+        .discussion-file { display:flex; align-items:center; gap:7px; margin:5px 0; overflow-wrap:anywhere; }
+        .discussion-history { margin:12px 0; border:1px solid #e1e5ec; border-radius:11px; }
+        .discussion-history > summary { cursor:pointer; padding:12px; font-weight:700; list-style-position:inside; }
+        .discussion-history-content { padding:0 12px 12px; }
+        .discussion-history .comment-item { margin:8px 0; }
+        .discussion-sender { font-weight:700; }
+        .discussion-history .message-time { margin-top:5px; }
         .workspace-file-row { display:flex; align-items:center; gap:8px; padding:8px 0; border-bottom:1px solid #edf0f3; }
         .workspace-file-name { flex:1; cursor:pointer; color:#2f6fed; font-weight:650; }
         .danger-x { border:0; background:#fff0f0; color:#c73535; border-radius:9px; width:32px; height:32px; cursor:pointer; font-weight:900; }
@@ -1575,16 +1585,17 @@ async function loadPayoutProfileSection(telegramId, isOwner) {
             return;
         }
         const d = data.details || {};
-        const lines = [`<strong>${payoutMethodLabels[data.method] || 'Способ выплаты'}</strong>`];
+        const lines = [`<strong>${data.method==='ip' ? 'ИП '+escapeHtml(d.full_name || currentProfile?.full_name || '') : (payoutMethodLabels[data.method] || 'Способ выплаты')}</strong>`];
         if (data.method === 'self_employed') lines.push(payoutStatusHtml(data));
-        if (d.full_name) lines.push(`<div class="payout-profile-line"><b>ФИО:</b> ${escapeHtml(d.full_name)}</div>`);
+        if (d.full_name && data.method!=='ip') lines.push(`<div class="payout-profile-line"><b>ФИО:</b> ${escapeHtml(d.full_name)}</div>`);
         if (d.inn) lines.push(`<div class="payout-profile-line"><b>ИНН:</b> ${escapeHtml(d.inn)}</div>`);
         if (d.bank_name) lines.push(`<div class="payout-profile-line"><b>Банк:</b> ${escapeHtml(d.bank_name)}</div>`);
         if (d.transfer_method) lines.push(`<div class="payout-profile-line"><b>Способ перевода:</b> ${d.transfer_method==='sbp'?'СБП':'На банковский счёт'}</div>`);
         if (d.phone) lines.push(`<div class="payout-profile-line"><b>Телефон:</b> ${escapeHtml(d.phone)}</div>`);
         if (d.bik) lines.push(`<div class="payout-profile-line"><b>БИК:</b> ${escapeHtml(d.bik)}</div>`);
         if (d.account_number) lines.push(`<div class="payout-profile-line"><b>Счёт:</b> ${escapeHtml(d.account_number)}</div>`);
-        if (d.invoice) lines.push(`<div class="payout-profile-line"><b>Счёт ИП:</b> ${escapeHtml(d.invoice.name)} <button class="small-button" onclick="sendPayoutInvoice()">Получить файл</button></div>`);
+        if (d.ip_requisites) lines.push(`<div class="payout-profile-line"><b>Реквизиты ИП:</b> ${escapeHtml(d.ip_requisites.name)} <button class="small-button" onclick="sendIpRequisites()">Получить файл</button></div>`);
+        if (d.legacy_invoice) lines.push(`<div class="payout-profile-line"><b>Ранее загруженный счёт (не реквизиты ИП):</b> ${escapeHtml(d.legacy_invoice.name)} <button class="small-button" onclick="sendPayoutInvoice()">Получить старый файл</button></div>`);
         if (isOwner && data.method==='self_employed' && data.npd_status!=='verified') lines.push('<button class="button secondary" onclick="retryPayoutNpd()" style="margin-top:8px">Проверить статус НПД повторно</button>');
         lines.push('<div class="payout-help">Реквизиты видны только вам и администратору АНОД.</div>');
         box.innerHTML = lines.join('');
@@ -1650,11 +1661,13 @@ function selectPayoutMethod(method) {
     const existing = payoutCurrent && payoutCurrent.exists && payoutCurrent.method===method ? (payoutCurrent.details||{}) : {};
     if (method==='ip') {
         container.innerHTML=`<div class="payout-section-heading">Данные индивидуального предпринимателя</div>
+            ${payoutNameField(existing.full_name || currentProfile?.full_name)}
             ${payoutField('payoutInn','ИНН ИП (12 цифр)',existing.inn,'text','12 цифр')}
-            <div class="payout-help">Для получения выплаты желательно самостоятельно выставить счёт на РОО «АНОД». Реквизиты организации можно получить по кнопке ниже.</div>
+            <div class="field"><label for="payoutIpRequisitesFile">Прикрепить реквизиты ИП (необязательно, PDF или DOCX, до 15 МБ)</label><input id="payoutIpRequisitesFile" type="file" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"></div>
+            <div class="payout-file">${existing.ip_requisites ? `Сохранённые реквизиты ИП: ${escapeHtml(existing.ip_requisites.name)} <button class="small-button" onclick="deleteIpRequisites()">Удалить реквизиты</button>` : 'Вы можете сохранить ФИО и ИНН, а реквизиты ИП прикрепить позднее.'}</div>
+            ${existing.legacy_invoice ? `<div class="payout-file">Ранее загруженный счёт (не считается реквизитами): ${escapeHtml(existing.legacy_invoice.name)} <button class="small-button" onclick="sendPayoutInvoice()">Получить</button> <button class="small-button" onclick="deletePayoutInvoice()">Удалить</button></div>` : ''}
+            <div class="payout-help">Для получения выплаты индивидуальному предпринимателю необходимо самостоятельно выставить счёт на РОО «АНОД». Реквизиты организации можно получить по кнопке ниже.</div>
             <button class="button secondary" style="margin:10px 0" onclick="sendPayoutOrgDocument()">Получить реквизиты РОО «АНОД»</button>
-            <div class="field"><label for="payoutInvoiceFile">Прикрепить готовый счёт (PDF или DOCX, до 15 МБ)</label><input id="payoutInvoiceFile" type="file" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"></div>
-            <div class="payout-file">${existing.invoice ? `Сохранённый счёт: ${escapeHtml(existing.invoice.name)} <button class="small-button" onclick="deletePayoutInvoice()">Удалить счёт</button>` : 'Счёт пока не прикреплён. Можно сохранить ИНН и прикрепить счёт позже.'}</div>
             ${payoutConsentMarkup()}<button id="payoutSaveButton" class="button" onclick="savePayoutDetails()">Сохранить</button>`;
     } else {
         const isSelf=method==='self_employed';
@@ -1687,7 +1700,7 @@ async function savePayoutDetails() {
     if (!m || currentProfileTelegramId!==currentUser.telegram_id) return;
     const byId=id=>document.getElementById(id)?.value?.trim()||'';
     const payload={init_data:tg.initData,method:m,consent:document.getElementById('payoutConsent')?.checked===true};
-    if (m==='ip') payload.inn=byId('payoutInn');
+    if (m==='ip') { payload.inn=byId('payoutInn');payload.full_name=byId('payoutFullName'); }
     else {
         payload.full_name=byId('payoutFullName');
         payload.transfer_method=byId('payoutTransferMethod');
@@ -1705,12 +1718,12 @@ async function savePayoutDetails() {
         const data=await api('/api/payouts/me',{method:'PUT',headers:{'Content-Type':'application/json'},cache:'no-store',body:JSON.stringify(payload)});
         payoutCurrent=data;
         if (m==='ip') {
-            const file=document.getElementById('payoutInvoiceFile')?.files?.[0];
+            const file=document.getElementById('payoutIpRequisitesFile')?.files?.[0];
             if (file) {
-                button.textContent='Прикрепляем счёт...';
+                button.textContent='Прикрепляем реквизиты ИП...';
                 const body=new FormData();body.append('init_data',tg.initData);body.append('file',file);
-                try { await api('/api/payouts/me/invoice',{method:'POST',cache:'no-store',body}); }
-                catch (uploadError) { error.textContent='Данные ИП сохранены, но счёт не загрузился: '+uploadError.message; return; }
+                try { await api('/api/payouts/me/ip-requisites',{method:'POST',cache:'no-store',body}); }
+                catch (uploadError) { error.textContent='Данные ИП сохранены, но реквизиты не загрузились: '+uploadError.message; return; }
             }
         }
         closePayoutSetup();
@@ -1719,8 +1732,22 @@ async function savePayoutDetails() {
     finally {button.disabled=false;button.textContent='Сохранить';}
 }
 
+async function deleteIpRequisites() {
+    if (!confirm('Удалить прикреплённые реквизиты ИП?')) return;
+    try {
+        await api('/api/payouts/me/ip-requisites/delete',payoutAuth());
+        payoutCurrent = await api(`/api/payouts/users/${currentUser.telegram_id}/view`,payoutAuth());
+        selectPayoutMethod('ip');
+    } catch(e) { document.getElementById('payoutPageError').textContent=e.message; }
+}
+
+async function sendIpRequisites() {
+    try { await api(`/api/payouts/users/${currentProfileTelegramId}/ip-requisites/send`,payoutAuth());demo('Реквизиты ИП отправлены вам сообщением от бота.'); }
+    catch(e) { demo('Не удалось получить реквизиты ИП: '+e.message); }
+}
+
 async function deletePayoutInvoice() {
-    if (!confirm('Удалить прикреплённый счёт ИП?')) return;
+    if (!confirm('Удалить ранее загруженный счёт ИП? Это не файл реквизитов.')) return;
     try {
         await api('/api/payouts/me/invoice/delete',payoutAuth());
         payoutCurrent = await api(`/api/payouts/users/${currentUser.telegram_id}/view`,payoutAuth());
@@ -1729,7 +1756,7 @@ async function deletePayoutInvoice() {
 }
 
 async function sendPayoutInvoice() {
-    try { await api(`/api/payouts/users/${currentProfileTelegramId}/invoice/send`,payoutAuth());demo('Счёт отправлен вам сообщением от бота.'); }
+    try { await api(`/api/payouts/users/${currentProfileTelegramId}/invoice/send`,payoutAuth());demo('Ранее загруженный счёт отправлен вам сообщением от бота.'); }
     catch(e) { demo('Не удалось получить счёт: '+e.message); }
 }
 
@@ -4490,17 +4517,76 @@ function openTaskTopic(taskId) {
     else openTaskReadOnly(taskId);
 }
 
-function openUnifiedTaskWorkspace(task, idea) {
-    const latest = task.latest_message;
-    const latestHtml = latest ? `<div class="description-row"><strong>Последняя отправка:</strong> ${latest.sender ? escapeHtml(latest.sender.name) : ''}</div><div class="description-row">${escapeHtml(latest.comment || '').replace(/\n/g, '<br>')}</div><div>${(latest.files || []).map(f => `📄 ${escapeHtml(f.name)}`).join('<br>')}</div>${(latest.files || []).length ? `<button class="mini-secondary" style="margin-top:8px" onclick="getTaskMessageFiles(${task.id},${latest.id})">Получить файлы</button>` : ''}` : '<div class="muted">Версий задачи ещё нет.</div>';
-    const ideaMaterials = idea ? `<div style="margin-top:10px">${ideaFilesHtml(idea)}</div>` : '';
-    const oldComments = idea && (idea.comments || []).length
-        ? `<div class="workspace-note" style="margin:10px 0 4px">Раннее обсуждение идеи:</div><div class="comment-thread">${idea.comments.map(c => `<div class="comment-item"><strong>${c.author ? escapeHtml(c.author.name) : 'Пользователь'}</strong><div>${escapeHtml(c.text).replace(/\n/g,'<br>')}</div><div class="message-time">${escapeHtml(c.created_at)}</div></div>`).join('')}</div>` : '';
-    const body = `<div class="description-row"><strong>Описание:</strong><br>${escapeHtml(task.description).replace(/\n/g, '<br>')}</div>${ideaMaterials}${oldComments}${latestHtml}<div class="field" style="margin-top:14px"><label>Комментарий</label><textarea id="wfTaskComment" class="big-textarea"></textarea></div><div class="field"><label>Прикрепите файл(ы)</label><input id="wfTaskReplyFiles" type="file" multiple></div>`;
-    showWorkflowModal(task.topic, body, [
-        {label:'Редактировать описание',className:'button secondary',onClick:()=>openTaskEditForm(task.id)},
-        {label:'Отправить',onClick:()=>sendTaskReply(task.id)}
-    ]);
+function discussionFilesBlock(files, action) {
+    if (!files || !files.length) return '';
+    return `<div>${files.map(file=>`<div class="discussion-file">📄 ${escapeHtml(file.name)}</div>`).join('')}</div><button class="mini-secondary" style="margin-top:8px" onclick="${action}">Получить файлы</button>`;
+}
+
+function discussionEvents(idea, task, taskMessages) {
+    const events = [];
+    (idea?.comments || []).forEach(c => events.push({
+        kind:'idea', id:Number(c.id), timestamp:c.created_at_iso || '',
+        date:c.created_at || '', sender:c.author?.name || 'Пользователь',
+        comment:c.text || '', files:c.files || [],
+        action:`getIdeaMessageFiles(${Number(idea.id)},${Number(c.id)})`
+    }));
+    (taskMessages || []).forEach(m => events.push({
+        kind:'task', id:Number(m.id), timestamp:m.created_at_iso || '',
+        date:m.created_at || '', sender:m.author?.name || 'Пользователь',
+        comment:m.comment || '', files:m.files || [],
+        action:`getTaskMessageFiles(${Number(task.id)},${Number(m.id)})`
+    }));
+    // Предпоследнее -> самое старое: сортируем по дате отправки, а не по роли.
+    events.sort((a,b) => b.timestamp.localeCompare(a.timestamp) || (b.kind === a.kind ? b.id - a.id : (b.kind === 'task' ? 1 : -1)));
+    return events;
+}
+
+function discussionMessageHtml(message) {
+    const text = message.comment ? escapeHtml(message.comment).replace(/\n/g,'<br>') : (message.files.length ? '<span class="muted">Отправлены файлы.</span>' : '');
+    return `<div class="comment-item"><div class="discussion-sender">${escapeHtml(message.sender)}</div><div>${text}</div>${discussionFilesBlock(message.files,message.action)}<div class="message-time">${escapeHtml(message.date)}</div></div>`;
+}
+
+function discussionWorkspaceHtml(idea, task, taskMessages) {
+    const events = discussionEvents(idea,task,taskMessages);
+    const latest = events[0] || null;
+    // Старые файлы идеи не привязаны к отдельным комментариям. Не угадываем эту связь.
+    const originalFiles = (idea?.files || []).filter(file => file.comment_id == null);
+    const latestWithFiles = events.find(message => message.files.length);
+    const latestFilesHtml = latestWithFiles
+        ? discussionFilesBlock(latestWithFiles.files,latestWithFiles.action)
+        : (originalFiles.length ? discussionFilesBlock(originalFiles,`getIdeaInitialFiles(${Number(idea.id)})`)
+            : '<div class="muted">Прикреплённых файлов пока нет.</div>');
+    const earlier = events.slice(1);
+    const earlierHtml = earlier.length
+        ? earlier.map(discussionMessageHtml).join('')
+        : '<div class="muted">Предыдущих сообщений пока нет.</div>';
+    const originalHtml = originalFiles.length
+        ? `<div class="comment-item"><strong>Исходные файлы идеи</strong><div class="muted" style="margin:4px 0">Файлы без точной привязки к сообщению</div>${discussionFilesBlock(originalFiles,`getIdeaInitialFiles(${Number(idea.id)})`)}</div>`
+        : '';
+    const description = task ? task.description : idea.description;
+    const lastMessageHtml = latest
+        ? `<div class="discussion-sender">${escapeHtml(latest.sender)}</div><div style="margin-top:6px">${latest.comment ? escapeHtml(latest.comment).replace(/\n/g,'<br>') : '<span class="muted">Отправлены файлы.</span>'}</div><div class="message-time">${escapeHtml(latest.date)}</div>`
+        : '<div class="muted">Отправок пока нет.</div>';
+    return `<div class="description-row"><strong>Описание:</strong><br>${escapeHtml(description || '').replace(/\n/g,'<br>')}</div>
+        <div class="discussion-section"><strong class="discussion-section-title">Последние файлы:</strong>${latestFilesHtml}</div>
+        <div class="discussion-section"><strong class="discussion-section-title">Последняя отправка:</strong>${lastMessageHtml}</div>
+        <details class="discussion-history"><summary>Ранее обсуждение идеи</summary><div class="discussion-history-content">${earlierHtml}${originalHtml}</div></details>`;
+}
+
+async function openUnifiedTaskWorkspace(task, idea) {
+    try {
+        // Полная история задачи доступна только владельцу работы и редактору.
+        const messages = await api(`/api/tasks/${task.id}/archive`, {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({init_data:tg.initData})
+        });
+        const body = discussionWorkspaceHtml(idea,task,messages)
+            + `<div class="field" style="margin-top:14px"><label>Комментарий</label><textarea id="wfTaskComment" class="big-textarea"></textarea></div><div class="field"><label>Прикрепите файл(ы)</label><input id="wfTaskReplyFiles" type="file" multiple></div>`;
+        showWorkflowModal(task.topic,body,[
+            {label:'Редактировать описание',className:'button secondary',onClick:()=>openTaskEditForm(task.id)},
+            {label:'Отправить',onClick:()=>sendTaskReply(task.id)}
+        ]);
+    } catch(e) { demo(e.message); }
 }
 
 async function openUnifiedArchive(ideaId, taskId) {
@@ -4586,6 +4672,8 @@ async function saveProjectIdea() {
 function findIdea(id){return (currentWorkspace?.ideas||[]).find(x=>x.id===id);}
 function ideaFilesHtml(idea){const files=idea.files||[];if(!files.length)return '<div class="muted">Файлов к идее нет.</div>';return `<div class="description-row"><strong>Файлы:</strong><br>${files.map(f=>`📄&nbsp;&nbsp;${escapeHtml(f.name)}`).join('<br>')}<br><button class="mini-secondary" style="margin-top:8px" onclick="getIdeaFiles(${idea.id})">Получить файлы</button></div>`;}
 async function getIdeaFiles(id){try{await api(`/api/ideas/${id}/files/send`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData})});demo('Файлы идеи отправлены Вам сообщением от бота.');}catch(e){demo(e.message);}}
+async function getIdeaMessageFiles(ideaId,messageId){try{await api(`/api/ideas/${ideaId}/files/send?message_id=${messageId}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData})});demo('Файлы отправлены вам в Telegram.');}catch(e){demo(e.message);}}
+async function getIdeaInitialFiles(ideaId){try{await api(`/api/ideas/${ideaId}/files/send?initial_only=true`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData})});demo('Исходные файлы идеи отправлены вам в Telegram.');}catch(e){demo(e.message);}}
 function openProjectIdeaDetail(id) {
     const idea=findIdea(id);
     if (!idea) return;
@@ -4598,9 +4686,8 @@ function openProjectIdeaDetail(id) {
         showWorkflowModal(idea.topic, readOnly, [{label:'Закрыть',className:'button secondary',onClick:closeWorkflowModal}]);
         return;
     }
-    const comments = (idea.comments || []).map(c=>`<div class="comment-item"><strong>${c.author ? escapeHtml(c.author.name) : 'Пользователь'}</strong><div>${escapeHtml(c.text).replace(/\n/g,'<br>')}</div><div class="message-time">${escapeHtml(c.created_at)}</div></div>`).join('') || '<div class="muted">Комментариев пока нет.</div>';
-    const editable = canEdit ? `<div class="field"><label>Комментарий</label><textarea id="wfIdeaComment" class="big-textarea"></textarea></div><div class="field"><label>Прикрепить файл(ы)</label><input id="wfIdeaMoreFiles" type="file" multiple></div>` : '';
-    const body = `<div class="description-row"><strong>Описание:</strong><br>${escapeHtml(idea.description).replace(/\n/g,'<br>')}</div><div class="description-row"><strong>Идея:</strong> ${personHtml(idea.creator)}</div>${ideaFilesHtml(idea)}<div class="comment-thread">${comments}</div>${editable}`;
+    const editable = `<div class="field"><label>Комментарий</label><textarea id="wfIdeaComment" class="big-textarea"></textarea></div><div class="field"><label>Прикрепите файл(ы)</label><input id="wfIdeaMoreFiles" type="file" multiple></div>`;
+    const body = discussionWorkspaceHtml(idea,null,[]) + editable;
     showWorkflowModal(idea.topic, body, canEdit ? [
         {label:'Редактировать описание',className:'button secondary',onClick:()=>openIdeaEditForm(id)},
         {label:'Отправить',onClick:()=>submitIdeaMessage(id)}
