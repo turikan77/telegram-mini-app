@@ -325,12 +325,11 @@
             #projectWorkspacePage .unified-tasks-table col:nth-child(1) { width: 5%; }
             #projectWorkspacePage .unified-tasks-table col:nth-child(2) { width: 8%; }
             #projectWorkspacePage .unified-tasks-table col:nth-child(3) { width: 6%; }
-            #projectWorkspacePage .unified-tasks-table col:nth-child(4) { width: 21%; }
-            #projectWorkspacePage .unified-tasks-table col:nth-child(5) { width: 19%; }
+            #projectWorkspacePage .unified-tasks-table col:nth-child(4) { width: 26%; }
+            #projectWorkspacePage .unified-tasks-table col:nth-child(5) { width: 23%; }
             #projectWorkspacePage .unified-tasks-table col:nth-child(6) { width: 13%; }
             #projectWorkspacePage .unified-tasks-table col:nth-child(7) { width: 13%; }
-            #projectWorkspacePage .unified-tasks-table col:nth-child(8) { width: 9%; }
-            #projectWorkspacePage .unified-tasks-table col:nth-child(9) { width: 6%; }
+            #projectWorkspacePage .unified-tasks-table col:nth-child(8) { width: 6%; }
             #projectWorkspacePage .unified-tasks-table th,
             #projectWorkspacePage .unified-tasks-table td {
                 white-space: normal;
@@ -4495,7 +4494,7 @@ function renderProjectIdeasTable() {
     if (!rows.length) return '<div class="muted">Идей проекта пока нет.</div>';
     const canReview = currentWorkspace.project.can_review;
     const authorRole = (currentWorkspace.project.my_roles || []).includes('author');
-    return `<div class="workflow-table-wrap"><table class="workflow-table unified-tasks-table"><colgroup><col><col><col><col><col><col><col><col><col></colgroup><thead><tr><th>№</th><th>Раздел</th><th>Класс</th><th>Тема</th><th>Составитель</th><th>Идея одобрена</th><th>Задача готова</th><th>Архив</th><th></th></tr></thead><tbody>${rows.map(({idea,task}, index) => {
+    return `<div class="workflow-table-wrap"><table class="workflow-table unified-tasks-table"><colgroup><col><col><col><col><col><col><col><col></colgroup><thead><tr><th>№</th><th>Раздел</th><th>Класс</th><th>Тема</th><th>Составитель</th><th>Идея одобрена</th><th>Задача готова</th><th></th></tr></thead><tbody>${rows.map(({idea,task}, index) => {
         const current = task || idea;
         const ready = !!task?.is_ready;
         const newIdea = canReview && !!idea && !idea.approved && !task && (idea.comments || []).length === 0;
@@ -4509,12 +4508,8 @@ function renderProjectIdeasTable() {
         const taskReady = !task ? '—' : canReview
             ? `<input type="checkbox" ${ready ? 'checked' : ''} onchange="setTaskReady(${task.id},this.checked)">`
             : (ready ? '✓' : '—');
-        const canViewArchive = canReview || (task ? task.can_work : !!idea?.is_mine);
-        const archive = canViewArchive
-            ? `<button class="table-action" onclick="openUnifiedArchive(${idea ? idea.id : 'null'},${task ? task.id : 'null'})">Архив</button>`
-            : '—';
         const remove = canReview ? `<button class="danger-x" ${ready ? 'disabled title="Сначала снимите готовность задачи"' : 'title="Вернуть в общий банк идей"'} onclick="${idea ? `returnIdeaGlobal(${idea.id})` : `returnTaskToGlobalIdea(${task.id})`}">✕</button>` : '';
-        return `<tr class="${ready ? 'ready-row' : newIdea ? 'new-idea-row' : yellow ? 'needs-attention' : ''}"><td>${index+1}</td><td>${escapeHtml(current.section_short)}</td><td>${escapeHtml(current.proposed_class)}</td><td><button class="table-action" onclick="${topic}">${escapeHtml(current.topic)}</button></td><td>${author}</td><td>${approve}</td><td>${taskReady}</td><td>${archive}</td><td>${remove}</td></tr>`;
+        return `<tr class="${ready ? 'ready-row' : newIdea ? 'new-idea-row' : yellow ? 'needs-attention' : ''}"><td>${index+1}</td><td>${escapeHtml(current.section_short)}</td><td>${escapeHtml(current.proposed_class)}</td><td><button class="table-action" onclick="${topic}">${escapeHtml(current.topic)}</button></td><td>${author}</td><td>${approve}</td><td>${taskReady}</td><td>${remove}</td></tr>`;
     }).join('')}</tbody></table></div>`;
 }
 
