@@ -1102,12 +1102,36 @@ function setAvatar(elementId, name, photoUrl) {
     }
 }
 
+function describeApiError(detail, status) {
+    if (typeof detail === 'string' && detail.trim()) return detail;
+    if (Array.isArray(detail) && detail.length) {
+        const labels = {topic:'Тема', chemistry_section:'Раздел химии', proposed_class:'Класс',
+            description:'Описание', init_data:'Данные Telegram', files:'Прикреплённые файлы',
+            is_open:'Доступность идеи', assignee_telegram_id:'Назначенный автор'};
+        const messages = detail.slice(0,3).map(item => {
+            if (!item || typeof item !== 'object') return String(item || 'Неверные данные');
+            const field = (item.loc || []).filter(x => typeof x === 'string' && x !== 'body').pop();
+            const label = labels[field] || field || 'Запрос';
+            const type = String(item.type || '');
+            let message = item.msg || 'Некорректное значение';
+            if (type === 'missing') message = 'не заполнено обязательное поле';
+            else if (type === 'string_too_long') message = `слишком длинный текст (не более ${item.ctx?.max_length ?? 'допустимого числа'} символов)`;
+            else if (type === 'string_too_short') message = 'поле не должно быть пустым';
+            else if (type === 'literal_error') message = 'выбрано недопустимое значение';
+            else if (type === 'int_parsing') message = 'укажите корректное число';
+            return `${label}: ${message}`;
+        });
+        return messages.join('; ');
+    }
+    if (detail && typeof detail === 'object') return String(detail.msg || detail.message || `Ошибка сервера ${status}`);
+    return `Ошибка сервера ${status}`;
+}
 async function api(path, options = {}) {
     if (!API_BASE) throw new Error('Не задан адрес backend. Перезапустите бота после обновления BACKEND_PUBLIC_URL в .env.');
     const response = await fetch(API_BASE + path, options);
     let data = {};
     try { data = await response.json(); } catch (_) {}
-    if (!response.ok) throw new Error(data.detail || `Ошибка сервера ${response.status}`);
+    if (!response.ok) throw new Error(describeApiError(data.detail, response.status));
     return data;
 }
 
@@ -3878,7 +3902,12 @@ function closeWorkflowModal() {
 }
 
 function workflowBackdropClick(event) {
-    if (event.target.id === 'workflowModalBackdrop') closeWorkflowModal();
+    if (event.target.id !== 'workflowModalBackdrop') return;
+    if (projectIdeaCreation && document.getElementById('wfProjectIdeaSubmit')) {
+        closeProjectIdeaForm();
+    } else {
+        closeWorkflowModal();
+    }
 }
 
 function setWorkflowError(text) {
@@ -3943,7 +3972,7 @@ function renderGlobalIdeasTable(items, forProject = false) {
             <td>${idea.creator ? personHtml(idea.creator) : ''}</td>
             <td>${idea.is_open ? '✓' : ''}</td>
             <td>${escapeHtml(idea.intended_olympiad || 'Любая')}</td>
-            ${forProject ? `<td><button class="table-action green" onclick="moveGlobalIdeaToProject(${idea.id})">Взять в олимпиаду</button></td>` : ''}
+            ${forProject ? `<td>${currentWorkspace?.project?.can_review || currentWorkspace?.project?.can_manage || idea.is_creator ? `<button class="table-action green" onclick="moveGlobalIdeaToProject(${idea.id})">Взять в олимпиаду</button>` : ''}</td>` : ''}
         </tr>`).join('');
     return `<div class="workflow-table-wrap"><table class="workflow-table">
         <thead><tr><th>Раздел</th><th>Класс</th><th>Тема</th><th>Имя</th><th>Свободна</th><th>Олимпиада</th>${forProject?'<th></th>':''}</tr></thead>
@@ -4017,6 +4046,8 @@ async function openGlobalIdeaPreview(id, fromProject = false) {
             className:'button secondary',
             onClick:()=>openGlobalIdeaEditForm(id),
         });
+    }
+    if (!fromProject && (idea.is_creator || currentUser?.is_admin)) {
         actions.push({
             label:'Удалить',
             className:'button danger',
@@ -4236,7 +4267,7 @@ function renderParticipantsSection(w) {
         card.appendChild(d);
     });
     if (p.can_close_author_recruitment) {
-        const close=document.createElement('button'); close.className='mini-secondary'; close.style.marginTop='10px'; close.textContent='Закрыть набор'; close.onclick=closeAuthorRecruitment; card.appendChild(close);
+        const close=document.createElement('button'); close.className='mini-secondary'; close.style.marginTop='10px'; close.textContent='Закрыть набор авторов'; close.onclick=closeAuthorRecruitment; card.appendChild(close);
     } else if (p.author_recruitment_open === false && p.show_limits) {
         const d=document.createElement('div'); d.className='muted'; d.style.marginTop='8px'; d.textContent='Набор авторов закрыт.'; card.appendChild(d);
     }
@@ -4620,7 +4651,45 @@ function updateProjectIdeaAssigneeVisibility() {
     const field = document.getElementById('wfIdeaAssigneeField');
     if (field) field.classList.toggle('hidden', selectedMode !== 'assigned');
 }
+let projectIdeaCreation = null;
+function freshProjectIdeaToken() {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
+    if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+        return Array.from(crypto.getRandomValues(new Uint8Array(16)),n=>n.toString(16).padStart(2,'0')).join('');
+    }
+    // Старые WebView: случайный идентификатор операции (не используется для авторизации).
+    return `${Date.now().toString(16)}-${Math.random().toString(16).slice(2)}-${Math.random().toString(16).slice(2)}`;
+}
+function checkNewIdeaAttachments(files) {
+    for (const file of files) {
+        if (file.size <= 0) throw new Error(`Файл «${file.name}» пустой. Выберите другой файл.`);
+        if (file.size > 45 * 1024 * 1024) throw new Error(`Файл «${file.name}» больше 45 МБ. Уменьшите его размер.`);
+    }
+}
+function setProjectIdeaSubmitBusy(busy) {
+    if (projectIdeaCreation) projectIdeaCreation.busy = busy;
+    const buttons = document.querySelectorAll('#workflowModalActions button');
+    buttons.forEach(button => { button.disabled = busy; });
+    const submit = document.getElementById('wfProjectIdeaSubmit');
+    if (submit) submit.textContent = busy ? 'Сохраняем…' : (projectIdeaCreation?.ideaId ? 'Повторить загрузку файлов' : 'Добавить');
+}
+function closeProjectIdeaForm() {
+    if (projectIdeaCreation?.busy) return;
+    const created = !!projectIdeaCreation?.ideaId;
+    projectIdeaCreation = null;
+    closeWorkflowModal();
+    if (created) refreshProjectWorkspace();
+}
+async function openCreatedProjectIdea() {
+    if (!projectIdeaCreation?.ideaId || projectIdeaCreation.busy) return;
+    const id = projectIdeaCreation.ideaId;
+    projectIdeaCreation = null;
+    closeWorkflowModal();
+    await refreshProjectWorkspace();
+    openProjectIdeaDetail(id);
+}
 function openProjectIdeaForm() {
+    projectIdeaCreation = {token:freshProjectIdeaToken(), ideaId:null, files:null, busy:false, uploaded:0};
     const canAssign = !!currentWorkspace?.project?.can_review;
     const authors = (currentWorkspace?.participants?.authors || []).filter(person => person && person.telegram_id);
     const assignedMode = canAssign ? `<label class="toggle-option" style="flex:1 1 100%"><input type="radio" name="wfIdeaOpen" value="assigned" onchange="updateProjectIdeaAssigneeVisibility()">Добавить задачу конкретного автора</label>` : '';
@@ -4641,34 +4710,90 @@ function openProjectIdeaForm() {
             ${assignedMode}
         </div>
         ${assigneeField}
-    `,[{label:'Отмена',className:'button secondary',onClick:closeWorkflowModal},{label:'Добавить',onClick:saveProjectIdea}]);
+    `,[{label:'Отмена',className:'button secondary',onClick:closeProjectIdeaForm},{id:'wfProjectIdeaSubmit',label:'Добавить',onClick:saveProjectIdea}]);
 }
 async function uploadIdeaFiles(ideaId,files){if(!files.length)return;const form=new FormData();form.append('init_data',tg.initData);files.forEach(f=>form.append('files',f));await api(`/api/ideas/${ideaId}/files`,{method:'POST',body:form});}
 async function saveProjectIdea() {
+    const state = projectIdeaCreation;
+    if (!state || state.busy) return;
+    setWorkflowError('');
     try {
-        const selectedMode = document.querySelector('input[name="wfIdeaOpen"]:checked').value;
-        const payload = {
-            init_data:tg.initData,
-            topic:document.getElementById('wfIdeaTopic').value.trim(),
-            chemistry_section:document.getElementById('wfIdeaSection').value,
-            proposed_class:document.getElementById('wfIdeaClass').value.trim(),
-            description:document.getElementById('wfIdeaDescription').value.trim(),
-            is_open:selectedMode === '1',
-            intended_olympiad:currentWorkspace.project.title
-        };
-        if (selectedMode === 'assigned') {
-            if (!currentWorkspace.project.can_review) throw new Error('Назначать автора может только редактор или менеджер.');
-            const selectedAuthor = document.getElementById('wfIdeaAssignee')?.value;
-            if (!selectedAuthor) throw new Error('Выберите автора проекта.');
-            payload.assignee_telegram_id = Number(selectedAuthor);
+        if (!state.ideaId) {
+            const selectedMode = document.querySelector('input[name="wfIdeaOpen"]:checked')?.value;
+            const payload = {
+                init_data:tg.initData,
+                topic:document.getElementById('wfIdeaTopic').value.trim(),
+                chemistry_section:document.getElementById('wfIdeaSection').value,
+                proposed_class:document.getElementById('wfIdeaClass').value.trim(),
+                description:document.getElementById('wfIdeaDescription').value.trim(),
+                is_open:selectedMode === '1',
+                intended_olympiad:currentWorkspace.project.title,
+                creation_token:state.token
+            };
+            if (!payload.topic) throw new Error('Укажите тему идеи.');
+            if (!payload.proposed_class) throw new Error('Укажите предполагаемый класс.');
+            if (payload.proposed_class.length > 40) throw new Error('Класс: не более 40 символов.');
+            if (!payload.description) throw new Error('Заполните описание идеи.');
+            if (payload.description.length > 10000) throw new Error('Описание: не более 10 000 символов.');
+            if (selectedMode === 'assigned') {
+                if (!currentWorkspace.project.can_review) throw new Error('Назначать автора может только редактор или менеджер.');
+                const selectedAuthor = document.getElementById('wfIdeaAssignee')?.value;
+                if (!selectedAuthor) throw new Error('Выберите автора проекта.');
+                payload.assignee_telegram_id = Number(selectedAuthor);
+            }
+            const files = Array.from(document.getElementById('wfIdeaFiles')?.files || []);
+            checkNewIdeaAttachments(files);
+            // Сохраняем список файлов до первого запроса: повторная попытка не создаст новую идею.
+            state.files = files;
+            setProjectIdeaSubmitBusy(true);
+            try {
+                const result = await api(`/api/projects/${currentWorkspaceProjectId}/ideas`,{
+                    method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)
+                });
+                state.ideaId = result.id;
+            } catch (error) {
+                // Ответ мог потеряться после COMMIT — повтор будет с тем же ключом операции.
+                throw new Error(`${error.message}. Если запрос прервался, нажмите «Добавить» повторно: это не создаст дубликат.`);
+            } finally {
+                setProjectIdeaSubmitBusy(false);
+            }
         }
-        const files=Array.from(document.getElementById('wfIdeaFiles')?.files||[]);
-        const result=await api(`/api/projects/${currentWorkspaceProjectId}/ideas`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-        await uploadIdeaFiles(result.id,files);
+        // Каждая загрузка сохраняется отдельно. Успешные файлы не теряются, если следующий не загрузился.
+        setProjectIdeaSubmitBusy(true);
+        try {
+            while (state.files && state.files.length) {
+                await uploadIdeaFiles(state.ideaId, [state.files[0]]);
+                state.files.shift();
+                state.uploaded += 1;
+            }
+        } finally {
+            setProjectIdeaSubmitBusy(false);
+        }
+        projectIdeaCreation = null;
         closeWorkflowModal();
         await refreshProjectWorkspace();
-    } catch(e) { setWorkflowError(e.message); }
+    } catch (error) {
+        if (state.ideaId) {
+            const remaining = (state.files || []).length;
+            const uploaded = state.uploaded;
+            setWorkflowError(`Идея уже успешно создана и сохранена! ${uploaded ? `Загружено файлов: ${uploaded}. ` : ''}Осталось файлов для загрузки: ${remaining}. Причина: ${error.message}. Нажмите «Повторить загрузку файлов» — новую идею создавать не нужно.`);
+            const cancel = document.querySelector('#workflowModalActions button:first-child');
+            if (cancel) cancel.textContent = 'Закрыть';
+            const actions = document.getElementById('workflowModalActions');
+            if (actions && !document.getElementById('wfProjectIdeaOpenCreated')) {
+                const open = document.createElement('button');
+                open.id = 'wfProjectIdeaOpenCreated';
+                open.className = 'button secondary';
+                open.textContent = 'Открыть созданную идею';
+                open.onclick = openCreatedProjectIdea;
+                actions.appendChild(open);
+            }
+        } else {
+            setWorkflowError(error.message);
+        }
+    }
 }
+
 function findIdea(id){return (currentWorkspace?.ideas||[]).find(x=>x.id===id);}
 function ideaFilesHtml(idea){const files=idea.files||[];if(!files.length)return '<div class="muted">Файлов к идее нет.</div>';return `<div class="description-row"><strong>Файлы:</strong><br>${files.map(f=>`📄&nbsp;&nbsp;${escapeHtml(f.name)}`).join('<br>')}<br><button class="mini-secondary" style="margin-top:8px" onclick="getIdeaFiles(${idea.id})">Получить файлы</button></div>`;}
 async function getIdeaFiles(id){try{await api(`/api/ideas/${id}/files/send`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData})});demo('Файлы идеи отправлены Вам сообщением от бота.');}catch(e){demo(e.message);}}
