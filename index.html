@@ -472,7 +472,30 @@
         details.workspace-collapsible { position:relative; }
         details.workspace-collapsible.has-floating-edit > summary { padding-right:52px; }
         .section-edit-floating { position:absolute !important; top:11px; right:12px; z-index:7; background:#eef1f5; }
-    </style>
+    
+        /* HOTFIX 15.52: архивный проект, независимая форма. */
+        .archive-section{border:1px solid var(--border, #e2e7e5);border-radius:12px;padding:13px;margin:13px 0;background:var(--card-bg,transparent)}
+        .archive-section .section-title{margin:0 0 11px;font-size:16px}
+        .archive-person-row{display:flex;align-items:end;gap:9px;margin:9px 0}
+        .archive-person-main{flex:1;min-width:0}
+        .archive-person-main>label{display:block;font-size:13px;margin-bottom:5px}
+        .archive-person-field select,.archive-person-field input{width:100%;box-sizing:border-box}
+        .archive-count-field{width:91px;margin:0!important;flex:none}
+        .archive-remove{flex:none;margin-bottom:5px}
+        .archive-classes{margin:3px 0 17px 0}
+        .archive-class-list{display:flex;flex-wrap:wrap;gap:7px;margin-top:7px}
+        .archive-class{display:inline-flex;align-items:center;gap:4px;padding:6px 8px;border:1px solid #c7d1cb;border-radius:8px;cursor:pointer}
+        .archive-class.selected{background:#e2f4e7;border-color:#7fb894}
+        .archive-class.busy{opacity:.5;cursor:not-allowed}
+        .archive-adjustment{border-top:1px solid #e0e6e4;padding:9px 0}
+        .archive-adjustment-inline{display:flex;gap:10px;align-items:end}
+        .archive-adjustment-inline .field{flex:1;min-width:0}
+        .archive-preview{font-weight:700;padding:12px;background:#ecf7ef;border-radius:10px}
+        .archive-folder-controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+        .archive-folder-controls .button{flex:1;min-width:180px}
+        .archive-candidate{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:7px 0}
+        @media(max-width:480px){.archive-person-row{gap:5px}.archive-count-field{width:76px}.archive-section{padding:10px}.archive-folder-controls .button{width:100%}}
+</style>
 </head>
 <body>
 <div id="loading">Загружаем приложение...</div>
@@ -1804,6 +1827,7 @@ function selectPayoutMethod(method) {
             ${isSelf ? payoutField('payoutInn','ИНН самозанятого (12 цифр)',existing.inn,'text','12 цифр') : ''}
             <div class="field"><label for="payoutTransferMethod">Способ выплаты</label><select id="payoutTransferMethod" onchange="payoutToggleTransferFields()"><option value="sbp" ${existing.transfer_method!=='bank_account'?'selected':''}>Через СБП по номеру телефона</option><option value="bank_account" ${existing.transfer_method==='bank_account'?'selected':''}>На банковский счёт</option></select></div>
             ${payoutField('payoutBankName','Название банка',existing.bank_name,'text','Укажите банк')}
+            <div class="payout-help" style="margin:-3px 0 12px">Предпочтительно указывать Т-Банк для получения выплат от АНОД. Можно выбрать и другой банк.</div>
             <div id="payoutSbpFields">${payoutField('payoutPhone','Телефон для СБП',existing.phone,'tel','+7 (999) 123-45-67')}</div>
             <div id="payoutBankFields">${payoutField('payoutBik','БИК банка',existing.bik,'text','9 цифр')}${payoutField('payoutAccount','Номер банковского счёта',existing.account_number,'text','20 цифр')}</div>
             ${isSelf?'<div class="payout-help" style="margin-bottom:12px">После сохранения проверим ИНН и актуальный статус НПД по базе ФНС. Это не подтверждает принадлежность банковского счёта.</div>':''}
@@ -3264,6 +3288,14 @@ async function openProjectTypeModal() {
             button.onclick = () => chooseProjectType(type.code);
             box.appendChild(button);
         });
+        if (currentUser?.is_admin) {
+            const archiveButton=document.createElement('button');
+            archiveButton.className='button secondary';
+            archiveButton.style.marginBottom='8px';
+            archiveButton.textContent='Архивное составление задач';
+            archiveButton.onclick=()=>chooseProjectType('archived_task_composition');
+            box.appendChild(archiveButton);
+        }
         document.getElementById('projectTypeModalBackdrop').classList.remove('hidden');
     } catch(e) { demo(e.message); }
 }
@@ -3278,6 +3310,7 @@ function chooseProjectType(code) {
         demo('Настройка типа «Проект 2» будет добавлена позже.');
         return;
     }
+    if (code === 'archived_task_composition') { openArchivedTaskForm(); return; }
     if (code === 'task_composition') openTaskCompositionForm();
 }
 
@@ -3935,6 +3968,12 @@ function renderMaterialFolder(data) {
     const list=document.getElementById('materialsList'); list.innerHTML='';
     (data.folders||[]).forEach(folder=>list.appendChild(buildFolderEntry(folder)));
     (data.files||[]).forEach(file=>list.appendChild(buildFileEntry(file)));
+    if (data.archive_project_id && currentUser?.is_admin) {
+        const tools=document.createElement('div'); tools.className='archive-folder-controls';
+        const edit=document.createElement('button'); edit.className='button secondary'; edit.textContent='✎ Редактировать архивный проект'; edit.onclick=()=>openArchivedTaskForm(data.archive_project_id);
+        const match=document.createElement('button'); match.className='button secondary'; match.textContent='Связать исторических участников'; match.onclick=()=>archivedShowCandidates(data.archive_project_id);
+        tools.append(edit,match); list.prepend(tools);
+    }
     const total=(data.folders||[]).length+(data.files||[]).length;
     document.getElementById('materialsEmpty').classList.toggle('hidden', total>0);
     document.getElementById('materialManageButtons').classList.toggle('hidden', !data.can_edit);
@@ -5173,6 +5212,244 @@ async function submitSurveyAnswers(id,questions){try{const answers={};for(const 
 async function finishSurvey(id){if(!confirm('Завершить опрос? После этого участники больше не смогут отвечать.'))return;try{await api(`/api/surveys/${id}/complete`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData})});await renderSurveysDashboard();}catch(e){demo(e.message);}}
 async function viewSurveyResults(id){try{const d=await api(`/api/surveys/${id}/results`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData})});const head=['Имя',...d.questions].map(x=>`<th>${escapeHtml(x)}</th>`).join('');const rows=d.rows.map(r=>`<tr><td>${r.user?escapeHtml(r.user.name):''}</td>${r.answers.map(a=>`<td>${escapeHtml(Array.isArray(a)?a.join(', '):String(a??''))}</td>`).join('')}</tr>`).join('');showWorkflowModal(d.title,`<div class="workflow-table-wrap"><table class="workflow-table survey-result-table"><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table></div>`,[{label:'Закрыть',className:'button secondary',onClick:closeWorkflowModal}]);}catch(e){demo(e.message);}}
 async function downloadSurveyExcel(id){try{await api(`/api/surveys/${id}/export/send`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData})});demo('Excel-файл отправлен Вам сообщением от бота.');}catch(e){demo(e.message);}}
+
+// HOTFIX 15.52 — архивные проекты (самостоятельный административный интерфейс).
+let archivedOptions = null;
+let archivedForm = null;
+let archivedBusy = false;
+let archivedSeq = 0;
+
+function archivedBlankPerson() {
+    return {local_id:++archivedSeq, person_key:'', user_id:null, entered_name:'', task_count:'', classes:[]};
+}
+function archivedNormalName(name) {
+    return String(name||'').trim().toLocaleLowerCase('ru').replace(/ё/g,'е').replace(/\s+/g,' ');
+}
+function archivedIdentity(row) {
+    if (row.person_key) return row.person_key;
+    const other=[...(archivedForm?.authors||[]),...(archivedForm?.editors||[]),...(archivedForm?.testers||[])];
+    if (row.user_id) {
+        const found=other.find(x=>x!==row&&Number(x.user_id)===Number(row.user_id)&&x.person_key);
+        return found?found.person_key:`u:${row.user_id}`;
+    }
+    const matched=other.find(x=>x!==row&&!x.user_id&&archivedNormalName(x.entered_name)===archivedNormalName(row.entered_name)&&x.person_key);
+    return matched?matched.person_key:`m:${archivedNormalName(row.entered_name).slice(0,150)}`;
+}
+async function openArchivedTaskForm(id=null) {
+    if (!currentUser?.is_admin) return demo('Архивные проекты доступны только администратору.');
+    try {
+        archivedOptions=await api('/api/admin/archived-task-projects/options',{
+            method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData})
+        });
+        archivedSeq=0;
+        let old=null;
+        if (id) old=await api(`/api/admin/archived-task-projects/${id}`,{
+            method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData})
+        });
+        const toRow=(p,kind)=>({
+            local_id:++archivedSeq, person_key:p.person_key,
+            user_id:p.user_id||null, entered_name:p.entered_name||'',
+            task_count:kind==='author'?String(p.author_task_count||''):'',
+            classes:kind==='editor'?[...(p.editor_classes||[])]:[],
+        });
+        archivedForm={
+            id:old?.id||null, title:old?.title||'',
+            academic_year_start:old?.academic_year_start||2026,
+            author_rate:String(old?.author_rate??''), editor_rate:String(old?.editor_rate??''), tester_rate:String(old?.tester_rate??''),
+            authors:(old?.people||[]).filter(p=>p.is_author).map(p=>toRow(p,'author')),
+            editors:(old?.people||[]).filter(p=>p.is_editor).map(p=>toRow(p,'editor')),
+            testers:(old?.people||[]).filter(p=>p.is_tester).map(p=>toRow(p,'tester')),
+            adjustments:(old?.adjustments||[]).map(a=>({...a,local_id:++archivedSeq})),
+        };
+        archivedRenderForm();
+    }catch(e){demo('Не удалось открыть архивный проект: '+e.message);}
+}
+function archivedSetHeader(key,value){if(archivedForm)archivedForm[key]=value;}
+function archivedSetPerson(kind,index,field,value){
+    const row=archivedForm?.[kind]?.[index]; if(!row)return;
+    if(field==='user_id'){
+        row.user_id=value==='manual'?null:Number(value);
+        if(row.user_id){row.entered_name=archivedOptions.users.find(u=>u.id===row.user_id)?.name||row.entered_name;}
+        else if(row.person_key&&!row.person_key.startsWith('m:')){row.person_key='';row.entered_name='';}
+        archivedRenderForm();
+    }else row[field]=value;
+}
+function archivedAddPerson(kind){archivedForm[kind].push(archivedBlankPerson());archivedRenderForm();}
+function archivedRemovePerson(kind,index){archivedForm[kind].splice(index,1);archivedRenderForm();}
+function archivedToggleClass(index,cls,checked){
+    const row=archivedForm.editors[index]; if(!row)return;
+    row.classes=checked?[...new Set([...row.classes,cls])].sort((a,b)=>a-b):row.classes.filter(c=>c!==cls);
+    archivedRenderForm();
+}
+function archivedPersonOptions(row,kind,i){
+    const userOptions=(archivedOptions?.users||[]).map(u=>`<option value="${u.id}" ${Number(row.user_id)===Number(u.id)?'selected':''}>${escapeHtml(u.name)}</option>`).join('');
+    const manual=!row.user_id;
+    return `<div class="archive-person-field">
+      <select onchange="archivedSetPerson('${kind}',${i},'user_id',this.value)" aria-label="Выбор участника">
+        <option value="manual" ${manual?'selected':''}>Не зарегистрирован — указать вручную</option>${userOptions}
+      </select>
+      ${manual?`<input style="margin-top:7px" value="${escapeHtml(row.entered_name)}" placeholder="Имя или имя и фамилия" oninput="archivedSetPerson('${kind}',${i},'entered_name',this.value)">`:''}
+    </div>`;
+}
+function archivedPersonRows(kind,label){
+    let html=`<div class="archive-section"><div class="section-title">${label}</div>`;
+    const rows=archivedForm[kind];
+    rows.forEach((r,i)=>{
+        const extra=kind==='authors'?`<div class="field archive-count-field"><label>Задач</label><input type="number" inputmode="numeric" min="1" max="999" value="${escapeHtml(r.task_count)}" oninput="archivedSetPerson('authors',${i},'task_count',this.value);document.getElementById('archivePreview').textContent=archivedPreview()"></div>`:'';
+        html+=`<div class="archive-person-row"><div class="archive-person-main"><label>${kind==='authors'?'Автор':kind==='editors'?'Редактор':'Тестировщик'} ${i+1}</label>${archivedPersonOptions(r,kind,i)}</div>${extra}<button class="red-x archive-remove" aria-label="Удалить участника" onclick="archivedRemovePerson('${kind}',${i})">✕</button></div>`;
+        if(kind==='editors'){
+            html+=`<div class="archive-classes"><span class="muted">Классы редактора:</span><div class="archive-class-list">${[5,6,7,8,9,10,11].map(c=>{
+                const checked=r.classes.includes(c);
+                const otherBusy=archivedForm.editors.some((e,j)=>j!==i&&e.classes.includes(c));
+                return `<label class="archive-class${checked?' selected':''}${otherBusy?' busy':''}"><input type="checkbox" ${checked?'checked':''} ${otherBusy?'disabled':''} onchange="archivedToggleClass(${i},${c},this.checked)">${c}</label>`;
+            }).join('')}</div></div>`;
+        }
+    });
+    html+=`<button class="button secondary" type="button" onclick="archivedAddPerson('${kind}')">＋ Добавить ${kind==='authors'?'автора':kind==='editors'?'редактора':'тестировщика'}</button></div>`;
+    return html;
+}
+function archivedPeopleChoices(){
+    const found=new Map();
+    for(const kind of ['authors','editors','testers'])for(const row of archivedForm[kind]){
+        const name=(row.user_id?archivedOptions.users.find(u=>u.id===Number(row.user_id))?.name:row.entered_name)||'';
+        if(name.trim())found.set(archivedIdentity(row), name.trim());
+    }
+    return [...found.entries()];
+}
+function archivedAddAdjustment(){
+    archivedForm.adjustments.push({local_id:++archivedSeq,person_key:archivedPeopleChoices()[0]?.[0]||'',type:'bonus',amount:'',reason:''});
+    archivedRenderForm();
+}
+function archivedRemoveAdjustment(index){archivedForm.adjustments.splice(index,1);archivedRenderForm();}
+function archivedSetAdjustment(index,key,value){archivedForm.adjustments[index][key]=value;const box=document.getElementById('archivePreview');if(box)box.textContent=archivedPreview();}
+function archivedRenderAdjustments(){
+    const people=archivedPeopleChoices();
+    return `<div class="archive-section"><div class="section-title">Премии и штрафы</div>
+      ${archivedForm.adjustments.map((a,i)=>`<div class="archive-adjustment">
+       <div class="field"><label>Участник</label><select onchange="archivedSetAdjustment(${i},'person_key',this.value)">
+         <option value="">Выберите участника</option>${people.map(([key,name])=>`<option value="${escapeHtml(key)}" ${key===a.person_key?'selected':''}>${escapeHtml(name)}</option>`).join('')}</select></div>
+       <div class="archive-adjustment-inline"><div class="field"><label>Вид</label><select onchange="archivedSetAdjustment(${i},'type',this.value)"><option value="bonus" ${a.type==='bonus'?'selected':''}>Премия</option><option value="penalty" ${a.type==='penalty'?'selected':''}>Штраф</option></select></div>
+       <div class="field"><label>Сумма, ₽</label><input inputmode="numeric" type="number" min="1" value="${escapeHtml(a.amount)}" oninput="archivedSetAdjustment(${i},'amount',this.value)"></div>
+       <button class="red-x" onclick="archivedRemoveAdjustment(${i})">✕</button></div>
+       <div class="field"><label>За что</label><input value="${escapeHtml(a.reason)}" maxlength="800" placeholder="Основание корректировки" oninput="archivedSetAdjustment(${i},'reason',this.value)"></div></div>`).join('')}
+       <button class="button secondary" onclick="archivedAddAdjustment()">＋ Добавить премию или штраф</button>
+       <div class="muted" style="margin-top:10px">Корректировки учитываются один раз на человека, даже если он совмещал роли.</div>
+    </div>`;
+}
+function archivedPreview(){
+    const rate=key=>Number(archivedForm[key])||0;
+    let total=archivedForm.authors.reduce((x,r)=>x+(Number(r.task_count)||0)*rate('author_rate'),0);
+    total+=archivedForm.editors.length*rate('editor_rate')+archivedForm.testers.length*rate('tester_rate');
+    for(const a of archivedForm.adjustments)total+=(a.type==='penalty'?-1:1)*(Number(a.amount)||0);
+    return `Предварительный итог: ${total.toLocaleString('ru-RU')} ₽`;
+}
+function archivedRenderForm(){
+    if(!archivedForm)return;
+    const f=archivedForm;
+    const originalScroll=document.getElementById('workflowModalBox').scrollTop;
+    const html=`<div class="archive-form">
+     <p class="muted">Архивная запись о завершённой олимпиаде. Участники не получат уведомлений. Отчёт отправляется только администратору и сохраняется в «Финансах».</p>
+     <div class="archive-section"><div class="field"><label>Название олимпиады</label>
+       <input list="archivedOlympiads" value="${escapeHtml(f.title)}" maxlength="220" placeholder="Выберите из списка или введите новое название" oninput="archivedSetHeader('title',this.value)">
+       <datalist id="archivedOlympiads">${(archivedOptions?.olympiads||[]).map(n=>`<option value="${escapeHtml(n)}">`).join('')}</datalist>
+     </div><div class="field"><label>Учебный год олимпиады</label><select onchange="archivedSetHeader('academic_year_start',Number(this.value))">${(archivedOptions?.years||[]).map(y=>`<option value="${y}" ${Number(f.academic_year_start)===Number(y)?'selected':''}>${y}–${y+1}</option>`).join('')}</select></div></div>
+     ${archivedPersonRows('authors','Авторы')}
+     ${archivedPersonRows('editors','Редакторы')}
+     ${archivedPersonRows('testers','Тестировщики')}
+     <div class="archive-section"><div class="section-title">Оплата</div>
+       ${[['author_rate','Оплата за задачу автору'],['editor_rate','Оплата одному редактору'],['tester_rate','Оплата одному тестировщику']].map(([key,label])=>`<div class="field"><label>${label}, ₽</label><input type="number" min="0" inputmode="numeric" value="${escapeHtml(f[key])}" oninput="archivedSetHeader('${key}',this.value);document.getElementById('archivePreview').textContent=archivedPreview()"></div>`).join('')}
+     </div>
+     ${archivedRenderAdjustments()}
+     <div id="archivePreview" class="archive-preview">${archivedPreview()}</div>
+     ${f.id?'<p class="muted">При сохранении отчёт в существующей папке заменится. Дата первоначального создания останется прежней.</p>':''}
+    </div>`;
+    showWorkflowModal(f.id?'Редактировать архивный проект':'Архивное составление задач',html,[
+        {label:'Отмена',className:'button secondary',onClick:closeWorkflowModal},
+        {label:f.id?'Сохранить и обновить отчёт':'Сохранить и сформировать отчёт',id:'archivedSaveButton',onClick:archivedSaveProject}
+    ]);
+    document.getElementById('workflowModalBox').scrollTop=originalScroll;
+}
+function archivedRequestPayload(){
+    if(!archivedForm)return null;
+    const rows=new Map();
+    for(const [kind,flag] of [['authors','is_author'],['editors','is_editor'],['testers','is_tester']]){
+        for(const row of archivedForm[kind]){
+            const name=(row.user_id?archivedOptions.users.find(u=>u.id===Number(row.user_id))?.name:row.entered_name)||'';
+            if(!name.trim())throw new Error('Заполните имена всех добавленных участников или удалите пустые строки.');
+            const person_key=archivedIdentity(row);
+            if(!rows.has(person_key))rows.set(person_key,{
+                person_key,entered_name:name.trim(),user_id:row.user_id||null,
+                is_author:false,author_task_count:0,is_editor:false,editor_classes:[],is_tester:false
+            });
+            const person=rows.get(person_key);
+            person[flag]=true;
+            if(kind==='authors')person.author_task_count=Number(row.task_count||0);
+            if(kind==='editors')person.editor_classes=[...row.classes];
+        }
+    }
+    if(!rows.size)throw new Error('Добавьте хотя бы одного участника архивного проекта.');
+    const notes=archivedForm.adjustments.map(a=>({
+        person_key:a.person_key,type:a.type,amount:Number(a.amount),reason:String(a.reason||'').trim()
+    }));
+    if(notes.some(a=>!rows.has(a.person_key)))throw new Error('В премиях и штрафах выберите существующего участника.');
+    const rates=['author_rate','editor_rate','tester_rate'];
+    if(rates.some(k=>archivedForm[k]===''||!Number.isInteger(Number(archivedForm[k]))||Number(archivedForm[k])<0))throw new Error('Заполните три ставки оплаты целыми неотрицательными числами.');
+    return {
+        init_data:tg.initData,title:archivedForm.title.trim(),academic_year_start:Number(archivedForm.academic_year_start),
+        author_rate:Number(archivedForm.author_rate),editor_rate:Number(archivedForm.editor_rate),tester_rate:Number(archivedForm.tester_rate),
+        people:[...rows.values()],adjustments:notes
+    };
+}
+async function archivedSaveProject(){
+    if(archivedBusy)return;
+    const saveButton=document.getElementById('archivedSaveButton');
+    try{
+        const data=archivedRequestPayload();
+        if(!data.title)throw new Error('Укажите название олимпиады.');
+        archivedBusy=true; if(saveButton){saveButton.disabled=true;saveButton.textContent='Сохраняем…';}
+        const path=archivedForm.id?`/api/admin/archived-task-projects/${archivedForm.id}`:'/api/admin/archived-task-projects';
+        const result=await api(path,{method:archivedForm.id?'PUT':'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+        closeWorkflowModal(); archivedForm=null;
+        await archivedShowFinanceFolder(result.folder_id);
+        demo('Архивный проект сохранён. Финансовый PDF добавлен в папку и отправлен администратору.');
+    }catch(e){setWorkflowError(e.message);}
+    finally{archivedBusy=false;const b=document.getElementById('archivedSaveButton');if(b){b.disabled=false;b.textContent=archivedForm?.id?'Сохранить и обновить отчёт':'Сохранить и сформировать отчёт';}}
+}
+async function archivedShowFinanceFolder(folderId){
+    switchTab('materials');
+    await loadMaterialsRoot();
+    const req={method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData})};
+    const root=await api('/api/materials/root',req);
+    const finance=(root.folders||[]).find(x=>x.name==='Финансы');
+    if(!finance)return;
+    const types=await api(`/api/materials/folder/${finance.id}`,req);
+    const compose=(types.folders||[]).find(x=>x.name==='Составление задач');
+    if(!compose)return;
+    materialBreadcrumbStack=[{id:finance.id,name:'Финансы'},{id:compose.id,name:'Составление задач'}];
+    await openMaterialFolder(folderId);
+}
+async function archivedShowCandidates(id){
+    try{
+        const data=await api(`/api/admin/archived-task-projects/${id}/candidates`,{
+            method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData})
+        });
+        const pending=data.people||[];
+        const html=pending.length?pending.map(p=>`<div class="archive-section"><strong>${escapeHtml(p.entered_name)}</strong>
+          ${p.candidates.length?p.candidates.map(u=>`<div class="archive-candidate"><span>${escapeHtml(u.name)}</span><button class="small-button" onclick="archivedLinkCandidate(${id},${p.person_id},${u.user_id})">Связать</button></div>`).join(''):'<div class="muted">Совпадений среди зарегистрированных пока нет.</div>'}</div>`).join(''):'<div class="muted">Все исторические участники уже привязаны к аккаунтам.</div>';
+        showWorkflowModal('Связать исторических участников',html,[{label:'Закрыть',className:'button secondary',onClick:closeWorkflowModal}]);
+    }catch(e){demo(e.message);}
+}
+async function archivedLinkCandidate(archiveId,personId,userId){
+    if(!confirm('Подтверждаете, что это тот самый исторический участник? Привязка выполняется один раз.'))return;
+    try{
+        const data=await api(`/api/admin/archived-task-projects/${archiveId}/people/${personId}/link`,{
+            method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({init_data:tg.initData,user_id:userId})
+        });
+        await archivedShowCandidates(archiveId);
+        demo(data.notice||'Историческое участие привязано.');
+    }catch(e){setWorkflowError(e.message);}
+}
+
 
 function demo(text) { tg.showAlert ? tg.showAlert(text) : alert(text); }
 
