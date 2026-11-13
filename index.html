@@ -7,7 +7,7 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <!-- Version 15.32: статус готовности задачи в таблице списка идей -->
-    <meta name="anod-build" content="15.17-leave-project-roles">
+    <meta name="anod-build" content="15.54-telegram-theme-contrast">
     <title>АНОД Наставник</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
@@ -71,6 +71,8 @@
         .payout-status { padding:10px 12px; border-radius:11px; font-size:13px; line-height:1.5; background:rgba(120,120,120,.09); margin:10px 0; }
         .payout-status.verified { background:#e4f5e9; color:#226b37; }
         .payout-status.not_verified { background:#fff2d6; color:#8a5900; }
+        .payout-save-notice { margin-top:12px; padding:10px 12px; border-radius:10px; border:1px solid rgba(80,145,104,.35); background:var(--tg-theme-secondary-bg-color,#f2f8f4); color:var(--tg-theme-text-color,#16241b); font-size:13px; line-height:1.5; }
+        .payout-save-notice:empty { display:none; }
         .payout-section-heading { font-weight:800; font-size:17px; margin:18px 0 10px; }
         .payout-guide-step { padding:13px; background:var(--tg-theme-secondary-bg-color,#fff); border:1px solid rgba(120,120,120,.18); border-radius:13px; line-height:1.55; margin-bottom:10px; }
         .payout-file { margin:8px 0; font-size:14px; overflow-wrap:anywhere; }
@@ -495,6 +497,194 @@
         .archive-folder-controls .button{flex:1;min-width:180px}
         .archive-candidate{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:7px 0}
         @media(max-width:480px){.archive-person-row{gap:5px}.archive-count-field{width:76px}.archive-section{padding:10px}.archive-folder-controls .button{width:100%}}
+
+        /* HOTFIX 15.54 — контраст в светлой и тёмной теме Telegram.
+           Используем Telegram CSS variables: они обновляются при смене темы
+           самим WebApp SDK, без перерисовки проекта и изменения логики JS. */
+        :root {
+            --anod-panel: var(--tg-theme-secondary-bg-color, #fff);
+            --anod-text: var(--tg-theme-text-color, #111);
+            --anod-muted: var(--tg-theme-hint-color, #777);
+            --anod-border: rgba(120,120,120,.28);
+        }
+
+        /* Нейтральные поверхности: исправление белого текста на белом фоне. */
+        .notification-time-card,
+        .comment-thread,
+        .survey-row,
+        .survey-picker,
+        .collapse-button,
+        .priority-editor-table th,
+        .priority-move,
+        .workflow-table th,
+        .mini-secondary,
+        .section-edit-floating,
+        .filename-popup-close,
+        .workspace-help-button,
+        .workspace-help-button:hover,
+        .workspace-help-button:focus-visible {
+            background: var(--anod-panel);
+            color: var(--anod-text);
+            border-color: var(--anod-border);
+        }
+        .workflow-table td { color: var(--anod-text); }
+        .workflow-table tr.needs-attention td,
+        .workflow-table tr.ready-row td,
+        .workflow-table tr.new-idea-row td,
+        .archive-preview,
+        .archive-class.selected {
+            background: var(--anod-panel);
+            color: var(--anod-text);
+        }
+        .archive-class.selected { border-color: var(--anod-border); }
+        .workspace-help-item,
+        .discussion-history,
+        .survey-question,
+        .survey-multiselect,
+        .workflow-table-wrap,
+        .survey-option-row input.sq-opt,
+        .survey-option-row input[type=text],
+        .survey-answer[type=number],
+        .notification-time-card input.time-mini-input,
+        .notification-time-card select {
+            border-color: var(--anod-border);
+        }
+        .survey-option-row input.sq-opt,
+        .survey-option-row input[type=text],
+        .survey-answer[type=number],
+        .notification-time-card input.time-mini-input,
+        .notification-time-card select {
+            background: var(--tg-theme-bg-color, #fff);
+            color: var(--anod-text);
+        }
+        .notification-line { color: var(--anod-text); }
+        .tiny-icon-button, .icon-button, .material-file-icon-button { color: var(--anod-text); }
+        .filename-popup-close { color: var(--anod-text); }
+        .workspace-help-button-icon,
+        .workspace-help-close,
+        .workspace-help-item > summary::after,
+        .survey-picker > summary::after,
+        .collapse-icon,
+        .message-time,
+        .workspace-note,
+        .project-deadline-line {
+            color: var(--anod-muted);
+        }
+        .workspace-help-item-body,
+        .comment-item,
+        .deadline-row,
+        .workspace-file-row,
+        .priority-editor-table th,
+        .priority-editor-table td,
+        .workflow-table th,
+        .workflow-table td,
+        .testing-result,
+        .delivery-message,
+        .adjustment-row,
+        .survey-picker .survey-multiselect {
+            border-color: var(--anod-border);
+        }
+        .person-link,
+        .telegram-profile-link,
+        .workspace-file-name { color: var(--tg-theme-link-color, #2476b9); }
+
+        /* Смысловые цветные блоки: цвет сохраняется, текст остаётся читаемым. */
+        .payout-choice-button.primary,
+        .payout-status.verified,
+        .profile-edit-pencil,
+        .manage-file,
+        .soft-green-button,
+        .table-action.green,
+        .delivery-finish,
+        .archive-class.selected,
+        .archive-preview,
+        .status-segment.ready,
+        .project-status-line.ready,
+        .attach-button.library {
+            color: var(--anod-text);
+        }
+        .payout-status.not_verified,
+        .manage-edit,
+        .status-segment.attention,
+        .project-status-line.attention { color: var(--anod-text); }
+        .idea-bank-button,
+        .tester-action,
+        .soft-blue-button,
+        .table-action,
+        .manage-folder,
+        .delivery-action { color: var(--anod-text); }
+        .hint-banner,
+        .tester-wait,
+        .delivery-placeholder { color: var(--anod-muted); }
+
+        /* Старые светлые плашки тоже становятся адаптивными. */
+        .payout-choice-button.primary,
+        .payout-status.verified,
+        .profile-edit-pencil,
+        .manage-file,
+        .soft-green-button,
+        .table-action.green,
+        .delivery-finish,
+        .archive-class.selected,
+        .archive-preview,
+        .attach-button.library,
+        .payout-status.not_verified,
+        .manage-edit,
+        .idea-bank-button,
+        .tester-action,
+        .soft-blue-button,
+        .table-action,
+        .manage-folder,
+        .delivery-action,
+        .hint-banner,
+        .tester-wait,
+        .delivery-placeholder,
+        .table-action.danger,
+        .danger-x {
+            background: var(--anod-panel);
+        }
+        /* Плашка «новый опрос» сохраняет розовый статус и контраст в обеих темах. */
+        .survey-pending-pink { color: var(--anod-text) !important; }
+        .section-edit-floating, .mini-secondary, .priority-move,
+        .collapse-button { color: var(--anod-text); }
+
+        /* Дополнительные оттенки в современных Telegram WebView. В основе всегда
+           лежит актуальный фон Telegram: при themeChanged CSS обновляется сам. */
+        @supports (background: color-mix(in srgb, white 50%, black)) {
+            :root {
+                --anod-border: color-mix(in srgb, var(--tg-theme-hint-color, #777) 35%, transparent);
+                --anod-neutral: color-mix(in srgb, var(--tg-theme-secondary-bg-color, #fff) 58%, var(--tg-theme-bg-color, #f5f6f8) 42%);
+                --anod-yellow: color-mix(in srgb, var(--tg-theme-secondary-bg-color, #fff) 81%, #f3c34c 19%);
+                --anod-green: color-mix(in srgb, var(--tg-theme-secondary-bg-color, #fff) 82%, #51ad75 18%);
+                --anod-blue: color-mix(in srgb, var(--tg-theme-secondary-bg-color, #fff) 82%, #5c9bdd 18%);
+                --anod-red: color-mix(in srgb, var(--tg-theme-secondary-bg-color, #fff) 85%, #d65b64 15%);
+                --anod-pink: color-mix(in srgb, var(--tg-theme-secondary-bg-color, #fff) 77%, #ee81a9 23%);
+                --anod-green-text: color-mix(in srgb, var(--anod-text) 65%, #25834a 35%);
+                --anod-yellow-text: color-mix(in srgb, var(--anod-text) 65%, #b27a16 35%);
+            }
+            .notification-time-card, .comment-thread, .survey-row,
+            .survey-picker, .collapse-button, .priority-editor-table th,
+            .priority-move, .workflow-table th, .mini-secondary,
+            .section-edit-floating, .filename-popup-close,
+            .workspace-help-button, .workspace-help-button:hover,
+            .workspace-help-button:focus-visible { background: var(--anod-neutral); }
+            .workflow-table tr.needs-attention td,
+            .payout-status.not_verified, .manage-edit { background: var(--anod-yellow); }
+            .workflow-table tr.ready-row td,
+            .payout-choice-button.primary, .payout-status.verified,
+            .profile-edit-pencil, .manage-file, .soft-green-button,
+            .table-action.green, .delivery-finish,
+            .archive-class.selected, .archive-preview,
+            .attach-button.library { background: var(--anod-green); }
+            .workflow-table tr.new-idea-row td,
+            .idea-bank-button, .tester-action, .soft-blue-button,
+            .table-action, .manage-folder, .delivery-action { background: var(--anod-blue); }
+            .table-action.danger, .danger-x { background: var(--anod-red); }
+            .hint-banner, .tester-wait, .delivery-placeholder { background: var(--anod-neutral); }
+            .survey-pending-pink { background: var(--anod-pink) !important; border-color: var(--anod-border) !important; }
+            .status-segment.ready, .project-status-line.ready { color: var(--anod-green-text); }
+            .status-segment.attention, .project-status-line.attention { color: var(--anod-yellow-text); }
+        }
 </style>
 </head>
 <body>
@@ -823,6 +1013,7 @@
             <div class="section-title" style="margin-top:0">Данные для выплат</div>
             <div id="profilePayoutContents" class="muted">Загрузка данных...</div>
             <button id="profilePayoutEditButton" class="button secondary hidden" style="margin-top:12px" onclick="openPayoutSetup()">Внести данные для выплат</button>
+            <div id="profilePayoutNotice" class="payout-save-notice" role="status" aria-live="polite"></div>
             <div id="profilePayoutError" class="error" role="status"></div>
             <div id="adminOrgPayoutDocBlock" class="hidden" style="margin-top:18px;border-top:1px solid rgba(120,120,120,.2);padding-top:12px">
                 <div style="font-weight:700;margin-bottom:8px">Реквизиты РОО «АНОД» — настройка администратора</div>
@@ -1196,7 +1387,11 @@ async function api(path, options = {}) {
     const response = await fetch(API_BASE + path, options);
     let data = {};
     try { data = await response.json(); } catch (_) {}
-    if (!response.ok) throw new Error(describeApiError(data.detail, response.status));
+    if (!response.ok) {
+        const error = new Error(describeApiError(data.detail, response.status));
+        error.httpStatus = response.status;
+        throw error;
+    }
     return data;
 }
 
@@ -1662,6 +1857,7 @@ function openProfile(p) {
     document.getElementById('profilePayoutEditButton').classList.add('hidden');
     document.getElementById('adminOrgPayoutDocBlock').classList.toggle('hidden', !(p.isMe && currentUser.is_admin));
     document.getElementById('profilePayoutError').textContent = '';
+    document.getElementById('profilePayoutNotice').textContent = '';
     if (payoutAllowed) loadPayoutProfileSection(p.telegram_id, !!p.isMe);
     if (p.isMe && currentUser.is_admin) loadOrgPayoutDocument();
 
@@ -1704,6 +1900,8 @@ let payoutSelectedMethod = null;
 let payoutSetupScrollY = 0;
 let payoutGuideMethod = 'gosuslugi';
 let payoutGuideStep = 0;
+let payoutSaveInProgress = false;
+let payoutNpdVerificationInProgress = false;
 const payoutAuth = () => ({method:'POST', headers:{'Content-Type':'application/json'}, cache:'no-store', body:JSON.stringify({init_data:tg.initData})});
 const payoutMethodLabels = {self_employed:'Самозанятый', individual:'Физлицо', ip:'ИП'};
 
@@ -1758,22 +1956,48 @@ async function loadPayoutProfileSection(telegramId, isOwner) {
     }
 }
 
-async function retryPayoutNpd() {
-    const error = document.getElementById('profilePayoutError');
-    error.textContent = 'Проверяем статус НПД через ФНС...';
+// Проверка НПД всегда отдельна от сохранения реквизитов.
+// Ошибка или тайм-аут ФНС не превращаются в ошибку сохранения.
+async function verifyPayoutNpdAfterSave() {
+    if (payoutNpdVerificationInProgress) return;
+    payoutNpdVerificationInProgress = true;
+    const telegramId = currentUser.telegram_id;
+    const notice = document.getElementById('profilePayoutNotice');
     try {
-        await api('/api/payouts/me/verify-npd', payoutAuth());
-        error.textContent = '';
-        await loadPayoutProfileSection(currentUser.telegram_id, true);
-    } catch(e) { error.textContent = e.message; }
+        const data = await api('/api/payouts/me/verify-npd', payoutAuth());
+        if (currentProfileTelegramId !== telegramId) return;
+        payoutCurrent = data;
+        await loadPayoutProfileSection(telegramId, true);
+        if (data.npd_status === 'verified') notice.textContent = 'Данные для выплат сохранены. ФНС подтвердила статус НПД.';
+        else if (data.npd_status === 'not_verified') notice.textContent = 'Данные для выплат сохранены. ФНС не подтвердила статус НПД. Проверьте регистрацию и ИНН.';
+        else notice.textContent = 'Данные для выплат сохранены. Статус НПД пока не проверен. Можно повторить проверку позже.';
+    } catch (_) {
+        if (currentProfileTelegramId === telegramId) {
+            notice.textContent = 'Данные для выплат сохранены. Проверка ФНС сейчас недоступна; повторите её позже.';
+        }
+    } finally {
+        payoutNpdVerificationInProgress = false;
+    }
 }
 
+async function retryPayoutNpd() {
+    const error = document.getElementById('profilePayoutError');
+    if (payoutNpdVerificationInProgress) {
+        error.textContent = 'Проверка НПД уже выполняется.';
+        return;
+    }
+    error.textContent = '';
+    const notice = document.getElementById('profilePayoutNotice');
+    notice.textContent = 'Проверяем статус НПД через ФНС. Сохранённые реквизиты не изменятся.';
+    await verifyPayoutNpdAfterSave();
+}
 function openPayoutSetup() {
     if (!currentProfile || currentProfile.telegram_id !== currentUser.telegram_id) return;
     payoutSetupScrollY = window.scrollY;
     document.getElementById('profilePage').classList.add('hidden');
     document.getElementById('payoutPage').classList.remove('hidden');
     document.getElementById('payoutPageError').textContent = '';
+    document.getElementById('profilePayoutNotice').textContent = '';
     selectPayoutMethod(payoutCurrent && payoutCurrent.exists ? payoutCurrent.method : null);
     window.scrollTo(0,0);
 }
@@ -1830,7 +2054,7 @@ function selectPayoutMethod(method) {
             <div class="payout-help" style="margin:-3px 0 12px">Предпочтительно указывать Т-Банк для получения выплат от АНОД. Можно выбрать и другой банк.</div>
             <div id="payoutSbpFields">${payoutField('payoutPhone','Телефон для СБП',existing.phone,'tel','+7 (999) 123-45-67')}</div>
             <div id="payoutBankFields">${payoutField('payoutBik','БИК банка',existing.bik,'text','9 цифр')}${payoutField('payoutAccount','Номер банковского счёта',existing.account_number,'text','20 цифр')}</div>
-            ${isSelf?'<div class="payout-help" style="margin-bottom:12px">После сохранения проверим ИНН и актуальный статус НПД по базе ФНС. Это не подтверждает принадлежность банковского счёта.</div>':''}
+            ${isSelf?'<div class="payout-help" style="margin-bottom:12px">Сначала сохраним реквизиты, затем отдельно проверим ИНН и актуальный статус НПД через ФНС. Ошибка проверки не отменяет сохранение. Это не подтверждает принадлежность банковского счёта.</div>':''}
             ${payoutConsentMarkup()}<button id="payoutSaveButton" class="button" onclick="savePayoutDetails()">Сохранить</button>`;
         payoutToggleTransferFields();
     }
@@ -1847,7 +2071,42 @@ function payoutToggleTransferFields() {
     document.getElementById('payoutBankFields').classList.toggle('hidden',choice.value!=='bank_account');
 }
 
+function payoutSavedRecordMatches(data, payload) {
+    if (!data?.exists || data.method !== payload.method) return false;
+    const d = data.details || {};
+    const text = value => String(value || '').trim().replace(/\s+/g, ' ');
+    if (text(d.full_name) !== text(payload.full_name)) return false;
+    if (payload.method !== 'individual' && text(d.inn) !== text(payload.inn)) return false;
+    if (payload.method === 'ip') return true;
+    if (d.transfer_method !== payload.transfer_method || text(d.bank_name) !== text(payload.bank_name)) return false;
+    if (payload.transfer_method === 'sbp') {
+        const phone = value => String(value || '').replace(/\D/g, '').replace(/^8(?=\d{10}$)/, '7');
+        return phone(d.phone) === phone(payload.phone);
+    }
+    return text(d.bik) === text(payload.bik) && text(d.account_number) === text(payload.account_number);
+}
+
+async function finishPayoutSave(data, method) {
+    payoutCurrent = data;
+    closePayoutSetup();
+    const telegramId = currentUser.telegram_id;
+    const notice = document.getElementById('profilePayoutNotice');
+    notice.textContent = method === 'self_employed'
+        ? 'Данные для выплат успешно сохранены. Статус НПД проверяется отдельно.'
+        : 'Данные для выплат успешно сохранены.';
+    await loadPayoutProfileSection(telegramId, true);
+    if (method === 'self_employed' && currentProfileTelegramId === telegramId) {
+        if (data.npd_status === 'verified' && data.npd_checked_at?.slice(0,10) === new Date().toISOString().slice(0,10)) {
+            notice.textContent = 'Данные для выплат сохранены. Статус НПД уже подтверждён ФНС.';
+        } else {
+            // Не ожидаем долгого ответа ФНС в обработчике сохранения.
+            void verifyPayoutNpdAfterSave();
+        }
+    }
+}
+
 async function savePayoutDetails() {
+    if (payoutSaveInProgress) return;
     const m = payoutSelectedMethod;
     if (!m || currentProfileTelegramId!==currentUser.telegram_id) return;
     const byId=id=>document.getElementById(id)?.value?.trim()||'';
@@ -1863,11 +2122,37 @@ async function savePayoutDetails() {
     }
     const button=document.getElementById('payoutSaveButton');
     const error=document.getElementById('payoutPageError');
+    payoutSaveInProgress = true;
     button.disabled=true;
-    button.textContent=m==='self_employed'?'Сохраняем и проверяем статус ФНС...':'Сохраняем данные...';
+    button.textContent='Сохраняем данные...';
     error.textContent='';
     try {
-        const data=await api('/api/payouts/me',{method:'PUT',headers:{'Content-Type':'application/json'},cache:'no-store',body:JSON.stringify(payload)});
+        let data;
+        try {
+            data=await api('/api/payouts/me',{method:'PUT',headers:{'Content-Type':'application/json'},cache:'no-store',body:JSON.stringify(payload)});
+        } catch (saveError) {
+            // Ошибки валидации/авторизации возвращаем как есть; старое совпадение
+            // реквизитов не должно скрыть отказ (например, отсутствие согласия).
+            if (saveError.httpStatus && saveError.httpStatus < 500) {
+                error.textContent = saveError.message;
+                return;
+            }
+            // Ответ мог потеряться уже после сохранения в PostgreSQL.
+            // Запрашиваем только свои данные и проверяем совпадение перед сообщением об успехе.
+            let recovered = null;
+            try {
+                const stored = await api(`/api/payouts/users/${currentUser.telegram_id}/view`,payoutAuth());
+                if (payoutSavedRecordMatches(stored, payload)) recovered = stored;
+            } catch (_) { /* При отсутствии ответа не утверждаем, что данные сохранены. */ }
+            if (!recovered) {
+                const networkError = saveError instanceof TypeError || /load failed|failed to fetch|networkerror|network request failed/i.test(saveError.message || '');
+                error.textContent = networkError
+                    ? 'Не удалось получить ответ от сервера. Возможно, данные уже сохранились. Вернитесь в профиль и проверьте их перед повторной отправкой.'
+                    : saveError.message;
+                return;
+            }
+            data = recovered;
+        }
         payoutCurrent=data;
         if (m==='ip') {
             const file=document.getElementById('payoutIpRequisitesFile')?.files?.[0];
@@ -1878,12 +2163,15 @@ async function savePayoutDetails() {
                 catch (uploadError) { error.textContent='Данные ИП сохранены, но реквизиты не загрузились: '+uploadError.message; return; }
             }
         }
-        closePayoutSetup();
-        await loadPayoutProfileSection(currentUser.telegram_id,true);
-    } catch(e) { error.textContent=e.message; }
-    finally {button.disabled=false;button.textContent='Сохранить';}
+        await finishPayoutSave(data,m);
+    } catch(e) {
+        error.textContent = 'Не удалось завершить отображение сохранённых данных. Проверьте сведения в профиле: ' + e.message;
+    } finally {
+        payoutSaveInProgress = false;
+        button.disabled=false;
+        button.textContent='Сохранить';
+    }
 }
-
 async function deleteIpRequisites() {
     if (!confirm('Удалить прикреплённые реквизиты ИП?')) return;
     try {
